@@ -1,6 +1,6 @@
 ---
 description: Coordinates multi‑PR epics, consolidating architecture, documentation, migrations, and release notes
-mode: subagent
+mode: all
 model: ollama/qwen3.6:27b
 temperature: 0.2
 max_steps: 8

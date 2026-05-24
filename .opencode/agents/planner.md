@@ -1,6 +1,6 @@
 ---
 description: Clarifies the request first, then creates a plan and hands work to the next agent
-mode: primary
+mode: all
 model: ollama/qwen3.6:27b
 temperature: 0.1
 max_spets: 8

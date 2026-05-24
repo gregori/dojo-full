@@ -1,6 +1,6 @@
 ---
 description: Analyzes clarified requirements and defines architecture, design patterns, and technical tasks
-mode: standard
+mode: subagent
 model: ollama/gemma4:26b
 temperature: 0.2
 max_steps: 10
