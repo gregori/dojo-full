@@ -1,7 +1,7 @@
 ---
 description: Clarifies the request first, then creates a plan and hands work to the next agent
 mode: all
-model: opencode-go/qwen3.6
+model: opencode-go/qwen3.6-plus
 temperature: 0.1
 max_spets: 8
 permission:

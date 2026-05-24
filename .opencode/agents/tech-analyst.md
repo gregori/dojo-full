@@ -1,7 +1,7 @@
 ---
 description: Analyzes clarified requirements and defines architecture, design patterns, and technical tasks
 mode: subagent
-model: opencode-go/qwen3.6
+model: opencode-go/qwen3.6-plus
 temperature: 0.2
 max_steps: 10
 permission:
