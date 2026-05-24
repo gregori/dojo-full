@@ -1,7 +1,7 @@
 ---
 description: Reviews clarified requirements for clarity, completeness, and testability
 mode: subagent
-model: ollama/qwen3.6:27b
+model: opencode-go/deepseek-thinking
 temperature: 0.2
 max_steps: 5
 permission:

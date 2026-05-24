@@ -1,7 +1,7 @@
 ---
 description: Analyzes clarified requirements and defines architecture, design patterns, and technical tasks
 mode: subagent
-model: ollama/gemma4:26b
+model: opencode-go/qwen3.6
 temperature: 0.2
 max_steps: 10
 permission:

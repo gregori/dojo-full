@@ -1,7 +1,7 @@
 ---
 description: Clarifies the request first, then creates a plan and hands work to the next agent
 mode: all
-model: ollama/qwen3.6:27b
+model: opencode-go/qwen3.6
 temperature: 0.1
 max_spets: 8
 permission:

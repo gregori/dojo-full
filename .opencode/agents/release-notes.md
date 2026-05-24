@@ -1,7 +1,7 @@
 ---
 description: Generates semantic release notes and updates CHANGELOG.md
 mode: subagent
-model: ollama/gemma4:e4b
+model: opencode-go/kimi-k2.6
 temperature: 0.2
 max_steps: 5
 permission:

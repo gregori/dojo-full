@@ -1,7 +1,7 @@
 ---
 description: Implements the approved plan and records what changed in WORKFLOW_STATE.md
 mode: subagent
-model: ollama/gemma4:26b
+model: opencode-go/glm
 temperature: 0.15
 max_steps: 12
 permission:

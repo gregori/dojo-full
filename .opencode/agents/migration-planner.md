@@ -1,7 +1,7 @@
 ---
 description: Plans safe and reversible database migrations for MySQL
 mode: subagent
-model: ollama/qwen3.6:27b
+model: opencode-go/deepseek-thinking
 temperature: 0.15
 max_steps: 7
 permission:

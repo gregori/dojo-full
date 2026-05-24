@@ -1,7 +1,7 @@
 ---
 description: Reviews the implementation for correctness and maintainability using WORKFLOW_STATE.md
 mode: subagent
-model: ollama/qwen3.6:27b
+model: opencode-go/glm
 temperature: 0.1
 max_steps: 5
 permission:

@@ -1,7 +1,7 @@
 ---
 description: Reviews proposed architecture and technical task decomposition for validity, clarity, and optimization
 mode: subagent
-model: ollama/qwen3.6:27b
+model: opencode-go/deepseek-thinking
 temperature: 0.3
 max_steps: 6
 permission:

@@ -1,7 +1,7 @@
 ---
 description: Generates the final commit message from the code changes and workflow state
 mode: subagent
-model: ollama/gemma4:e4b
+model: opencode-go/minimax-m2.5
 temperature: 0.2
 max_steps: 3
 permission:

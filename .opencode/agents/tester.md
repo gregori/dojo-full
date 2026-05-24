@@ -1,7 +1,7 @@
 ---
 description: Runs relevant tests across any language/framework and records outcomes
 mode: subagent
-model: ollama/qwen3.6:27b
+model: opencode-go/minimax-m2.7
 temperature: 0.0
 max_steps: 10
 permission:

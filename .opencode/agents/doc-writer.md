@@ -1,7 +1,7 @@
 ---
 description: Generates and updates project documentation based on recent changes
 mode: subagent
-model: ollama/qwen3.6:27b
+model: opencode-go/kimi-k2.6
 temperature: 0.2
 max_steps: 6
 permission:

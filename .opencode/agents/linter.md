@@ -1,7 +1,7 @@
 ---
 description: Runs linting and formatting checks and records the result in WORKFLOW_STATE.md
 mode: subagent
-model: ollama/gemma4:e4b
+model: opencode-go/minimax-m2.5
 temperature: 0.0
 max_steps: 4
 permission:

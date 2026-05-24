@@ -1,7 +1,7 @@
 ---
 description: Coordinates multi‑PR epics, consolidating architecture, documentation, migrations, and release notes
 mode: all
-model: ollama/qwen3.6:27b
+model: opencode-go/qwen3.6
 temperature: 0.2
 max_steps: 8
 permission:
