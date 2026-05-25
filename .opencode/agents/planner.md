@@ -6,7 +6,7 @@ temperature: 0.1
 max_spets: 8
 permission:
   edit:
-    "*": ask
+    "*.md": ask
     "WORKFLOW_STATE.md": allow
   bash: allow
   nushell: allow

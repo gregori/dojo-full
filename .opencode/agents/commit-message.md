@@ -24,6 +24,7 @@ Shared state rules:
 Your job:
 - read WORKFLOW_STATE.md and the current git diff
 - generate one clear conventional commit message with gitmoji based on the changes made and the context in WORKFLOW_STATE.md
+- Use the skill "caveman-commit" to generate the commit message
 - optionally add a short body with 1-3 bullets if useful
 - do not commit anything
 

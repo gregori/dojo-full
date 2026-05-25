@@ -1,0 +1,64 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: dojo-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: dojo
+      MYSQL_USER: dojo
+      MYSQL_PASSWORD: dojo
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - dojo-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: dojo-backend
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: dojo
+      DB_PASSWORD: dojo
+      DB_NAME: dojo
+      DEBUG: "true"
+      ALLOWED_ORIGINS: "http://localhost:5173,http://localhost:3000,http://localhost:80"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - /app/.venv
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - dojo-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: dojo-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - dojo-network
+
+volumes:
+  mysql_data:
+
+networks:
+  dojo-network:
+    driver: bridge

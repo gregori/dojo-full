@@ -1,7 +1,7 @@
 ---
 description: Reviews the implementation for correctness and maintainability using WORKFLOW_STATE.md
 mode: subagent
-model: opencode-go/glm
+model: opencode-go/glm-5.1
 temperature: 0.1
 max_steps: 5
 permission:
