@@ -1,5 +1,30 @@
 # Workflow State
 
+## Product Context
+
+### PRD Status
+- **PRD approved:** No — draft complete, pending Requirements Reviewer
+- **docs/PRD.md:** Product overview with vision, personas, goals, non-goals, belt hierarchy, epic list
+- **docs/epics/epic-01-mvp.md:** Epic 1 details with scope, PR breakdown, dependency graph, acceptance criteria, story list
+- **docs/stories/:** 11 story documents with user stories, acceptance criteria (Gherkin), domain models, UI/API requirements, dependencies
+
+### PRD Structure
+| File | Description |
+|------|-------------|
+| `docs/PRD.md` | Product overview: vision, problem, goals, personas, belt hierarchy, tech constraints |
+| `docs/epics/epic-01-mvp.md` | Epic 1: MVP scope, PR breakdown (PR-0 through PR-10), dependency graph, timeline |
+| `docs/stories/story-01-01-infra.md` | Infrastructure & CI/CD (PR-0) |
+| `docs/stories/story-02-01-auth.md` | Authentication & Multi-Org Foundation (PR-1) |
+| `docs/stories/story-02-02-students.md` | Student Management (PR-2) |
+| `docs/stories/story-03-01-belts.md` | Belt System & Requirements (PR-3) |
+| `docs/stories/story-04-01-classes.md` | Classes & Attendance (PR-4) |
+| `docs/stories/story-05-01-graduated.md` | Graduated Training Sessions (PR-5) |
+| `docs/stories/story-06-01-cleanings.md` | Cleaning Groups (PR-6) |
+| `docs/stories/story-07-01-events.md` | Events Management (PR-7) |
+| `docs/stories/story-08-01-exams.md` | Exams Management (PR-8) |
+| `docs/stories/story-09-01-eligibility.md` | Eligibility Checking (PR-9) |
+| `docs/stories/story-10-01-promotion.md` | Promotion System (PR-10) |
+
 ## Epic Summary (if epic-level)
 
 ### Epic: Dojo Manager - MVP (Gestão de Estudantes)
@@ -19,12 +44,12 @@
   - Depends on: PR-0-infra, PR-1-auth
 - PR-3-belts:
   - [ ] Status: waiting
-  - Blocks: PR-5-graduated, PR-8-exams, PR-9-eligibility
+  - Blocks: PR-4-classes, PR-5-graduated, PR-6-cleanings, PR-8-exams, PR-9-eligibility
   - Depends on: PR-0-infra, PR-1-auth, PR-2-students
 - PR-4-classes:
   - [ ] Status: waiting
   - Blocks: PR-9-eligibility
-  - Depends on: PR-0-infra, PR-1-auth, PR-2-students
+  - Depends on: PR-0-infra, PR-1-auth, PR-2-students, PR-3-belts
 - PR-5-graduated:
   - [ ] Status: waiting
   - Blocks: PR-9-eligibility
@@ -32,7 +57,7 @@
 - PR-6-cleanings:
   - [ ] Status: waiting
   - Blocks: PR-9-eligibility
-  - Depends on: PR-0-infra, PR-1-auth, PR-2-students
+  - Depends on: PR-0-infra, PR-1-auth, PR-2-students, PR-3-belts
 - PR-7-events:
   - [ ] Status: waiting
   - Blocks: PR-9-eligibility
@@ -52,18 +77,20 @@
 
 ### Dependency Graph
 ```
-PR-0-infra ──→ PR-1-auth ──→ PR-2-students ──┬─→ PR-3-belts ──┬─→ PR-5-graduated ──┐
-                                               │                │                    │
-                                               ├─→ PR-4-classes ─┤                    │
-                                               │                │                    ├──→ PR-9-eligibility ──→ PR-10-promotion
-                                               ├─→ PR-6-cleanings ─┤                    │
-                                               │                │                    │
-                                               ├─→ PR-7-events ──┘                    │
-                                               │                                      │
-                                               └─→ PR-8-exams ────────────────────────┘
+PR-0-infra ──→ PR-1-auth ──→ PR-2-students ──→ PR-3-belts ──┬─→ PR-4-classes ──┐
+                                                          │                    │
+                                                          ├─→ PR-5-graduated ──┤
+                                                          │                    │
+                                                          ├─→ PR-6-cleanings ──┤
+                                                          │                    │
+                                                          ├─→ PR-7-events ─────┤
+                                                          │                    │
+                                                          ├─→ PR-8-exams ──────┤
+                                                          │                    │
+                                                          └────────────────────┴──→ PR-9-eligibility ──→ PR-10-promotion
 ```
 
-**Merge Order:** 0 → 1 → 2 → (3, 4, 6, 7 parallel) → 5 → 8 → 9 → 10
+**Merge Order:** 0 → 1 → 2 → 3 → (4, 5, 6, 7, 8 parallel) → 9 → 10
 
 ### Consolidated Architecture
 - **Backend:** Python 3.13 + FastAPI, Clean Architecture
@@ -537,12 +564,19 @@ Task 6 (OCI Docs) ──→ Independent (can be done in parallel)
 - **Status:** PR-0 aprovado para merge.
 
 ## Current Status
-- PR-0 reviewed and approved.
-- All infrastructure files validated.
-- Ready for PR-1 (Auth + Multi-Org Foundation).
+- PRD created: docs/PRD.md + docs/epics/epic-01-mvp.md + 11 story documents
+- Requirements Review completed: APPROVED WITH MINOR ISSUES
+- 3 critical dependency graph inconsistencies fixed (C1, C2, C3):
+  - PR-4 (Classes) now depends on PR-3 (Belts) - graduated class type requires belt data
+  - PR-6 (Cleanings) now depends on PR-3 (Belts) - yudansha eligibility requires belt level
+  - Dependency graph updated to show PR-3 → PR-4, PR-6, PR-8 arrows
+- Merge order corrected: 0 → 1 → 2 → 3 → (4, 5, 6, 7, 8 parallel) → 9 → 10
+- Minor issues noted (M1-M4): not blocking, to be addressed during implementation
+- PR-0 reviewed and approved (infrastructure files validated)
+- PRD APPROVED for technical planning
 
 ## Next Agent
-- planner (PR-1-auth)
+- planner (PR-1-auth technical planning)
 
 ## Commit Message Draft
 -
