@@ -1,7 +1,7 @@
 ---
-description: Guide for planning and initiating multi-PR epics with proper dependency tracking and workflow sequencing
+description: Guide for planning and initiating multi-PR epics with proper dependency tracking and workflow sequences
 type: procedural-guide
-reference: epic-coordinator, planner
+reference: epic-coordinator, product-manager, planner
 ---
 
 # Guia: Iniciando um Épico
@@ -15,10 +15,34 @@ Um épico coordena múltiplas PRs relacionadas, garantindo alinhamento arquitetu
 ## Pré-requisitos
 
 Antes de iniciar um épico, tenha:
-- [ ] Lista de PRs que compõem o épico
-- [ ] Dependências conhecidas entre PRs
-- [ ] Restrições arquiteturais (se houver)
-- [ ] Mudanças de schema antecipadas (se houver)
+- [ ] Descrição geral do épico (pode ser bruta)
+- [ ] Histórias de usuário iniciais (se houver)
+- [ ] Restrições de negócio (se houver)
+
+---
+
+## Fase 0: Refinar Requisitos com Product Manager
+
+### 0.1 Chamar Product Manager
+
+O Epic Coordinator (ou usuário) chama `@product-manager` para:
+- Refinar requisitos brutos em PRD estruturado
+- Criar hierarquia de documentos com progressive disclosure
+- Validar com Requirements Reviewer
+
+### 0.2 Product Manager irá:
+
+1. **Clarificar requisitos** (grill mode se necessário)
+2. **Criar `docs/PRD.md`** (visão geral do produto)
+3. **Criar `docs/epics/epic-XX.md`** (detalhes por épico)
+4. **Criar `docs/stories/story-XX-X.md`** (histórias com critérios de aceitação)
+5. **Chamar Requirements Reviewer** para validação
+6. **Iterar** até aprovação
+
+### 0.3 Após PRD Aprovado
+
+- Epic Coordinator divide o épico em PRs baseados nas histórias
+- Para cada PR, chama o Planner para iniciar o fluxo per-PR
 
 ---
 
@@ -75,7 +99,7 @@ Rollback order: C → B → A
 
 ## Fase 2: Executar Fluxo Per-PR
 
-Cada PR segue o workflow padrão **1 → 13**:
+Cada PR (baseado em uma história do PRD) segue o workflow padrão:
 
 ```
 Planner → Requirements Reviewer → Tech Analyst → Architecture Reviewer 
@@ -153,13 +177,21 @@ Após Epic Coordinator:
 ## Checklist: Iniciando um Épico
 
 ```
-PRÉ-REQUISITOS:
-[ ] Lista de PRs mapeada
-[ ] Dependências documentadas
+FASE 0 - REFINAMENTO DE REQUISITOS:
+[ ] Product Manager chamado para refinar épico
+[ ] docs/PRD.md criado (visão geral)
+[ ] docs/epics/ criado (detalhes por épico)
+[ ] docs/stories/ criado (histórias com critérios de aceitação)
+[ ] Requirements Reviewer validou PRD
+[ ] PRD aprovado
+
+PRÉ-REQUISITOS (pós-PRD):
+[ ] Épico dividido em PRs baseados nas histórias
+[ ] Dependências entre PRs documentadas
 [ ] WORKFLOW_STATE.md criado com Epic Summary
 
 DURANTE DESENVOLVIMENTO:
-[ ] Cada PR segue workflow 1-13
+[ ] Cada PR segue workflow padrão
 [ ] Agents incrementais atualizam WORKFLOW_STATE.md
 [ ] Nenhum novo arquivo de documentação criado (tudo em WORKFLOW_STATE.md)
 [ ] Conflitos registrados conforme identificados
@@ -207,13 +239,26 @@ APÓS RELEASE:
 ```yaml
 Epic: User Authentication System
 
+FASE 0 - REFINAMENTO:
+1. @product-manager recebe requisitos brutos
+2. PM clarifica com usuário (grill mode)
+3. PM cria:
+   - docs/PRD.md (visão geral)
+   - docs/epics/epic-01.md (autenticação)
+   - docs/stories/story-01-1.md (login)
+   - docs/stories/story-01-2.md (registro)
+   - docs/stories/story-01-3.md (recuperação de senha)
+4. @requirements-reviewer valida PRD
+5. PRD aprovado
+
+FASE 1 - DIVISÃO EM PRs:
 PRs:
-1. PR-auth-backend
+1. PR-auth-backend (story-01-1 + story-01-2)
    - Depends on: none
    - Blocks: PR-auth-frontend, PR-auth-docs
    - Status: In Implementation
 
-2. PR-auth-frontend
+2. PR-auth-frontend (story-01-1 UI)
    - Depends on: PR-auth-backend
    - Blocks: PR-auth-docs
    - Status: Waiting for PR-auth-backend
@@ -233,4 +278,5 @@ Epic Coordinator: Inicia quando PR-auth-backend chegar no Tester
 
 - [AGENTS.md](../AGENTS.md) – Regras gerais de workflow
 - [epic-coordinator.md](./agents/epic-coordinator.md) – Instruções do agent
+- [product-manager.md](./agents/product-manager.md) – Instruções do agent
 - [WORKFLOW_STATE.md](../WORKFLOW_STATE.md) – Template de estado compartilhado

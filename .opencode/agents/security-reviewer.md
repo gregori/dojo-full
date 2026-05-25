@@ -1,7 +1,7 @@
 ---
 description: Security expert that performs a focused security review of recent changes
 mode: subagent
-model: opencode-go/deepseek-thinking
+model: opencode-go/deepseek-v4-pro
 temperature: 0.05
 maxsteps: 6
 permission:

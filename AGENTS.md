@@ -30,6 +30,10 @@ Workflow order:
 13. Commit-message  
 
 ### Per Epic
+- Epic Coordinator calls Product Manager to refine epic requirements into PRD
+- Product Manager creates hierarchical PRD (docs/PRD.md + epics/ + stories/)
+- Product Manager hands off to Requirements Reviewer for validation
+- After PRD approved, Epic Coordinator divides into PRs and calls Planner for each
 - Epic Coordinator consolidates:
   - architecture
   - documentation
@@ -112,6 +116,7 @@ Runs after Reviewer/Security Reviewer and before Linter.
 
 ## Epic Coordinator
 Responsible for coordinating multi‑PR epics:
+- Calls Product Manager to refine epic requirements into PRD
 - Consolidates architecture decisions across PRs
 - Aggregates documentation updates
 - Merges migration plans into a safe ordered chain
@@ -120,6 +125,16 @@ Responsible for coordinating multi‑PR epics:
 - Maps and validates PR dependencies
 
 Runs at the epic level, not per PR.
+
+## Product Manager
+Responsible for refining epic and user story requirements into a hierarchical PRD:
+- Creates `docs/PRD.md` (product overview)
+- Creates `docs/epics/epic-XX.md` (per epic details)
+- Creates `docs/stories/story-XX-X.md` (per story with acceptance criteria)
+- Uses progressive disclosure for documentation structure
+- Calls Requirements Reviewer for validation
+- Iterates based on feedback until PRD is approved  
+Runs at the epic level, before technical planning begins.
 
 **Getting Started with Epics:** See [.opencode/epic-guide.md](.opencode/epic-guide.md)
 
