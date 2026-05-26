@@ -6,13 +6,22 @@ This document provides essential information for AI coding agents working on thi
 
 All agents participate in one workflow.
 
-Shared handoff file:
-- Read `WORKFLOW_STATE.md` before starting work
-- Update `WORKFLOW_STATE.md` before finishing work
-- Never overwrite another section unnecessarily
-- Preserve decisions, assumptions, blockers and next steps
+## Handoff System
 
-Workflow order:
+Agents communicate via two mechanisms:
+
+1. **Handoff skill** — Each agent compacts context into .workflow/epic-XX/pr-X-xxx/handoff.md before transitioning to the next agent. The handoff.md contains: what was done, decisions made, open questions, and next action.
+
+2. **Generated documentation** — Agents produce structured documentation in .workflow/ and docs/:
+   - Product Manager creates PRD in docs/PRD.md + docs/epics/ + docs/stories/
+   - Tech Analyst creates implementation plan in .workflow/epic-XX/pr-X-xxx/plan.md
+   - Reviewer creates findings in .workflow/epic-XX/pr-X-xxx/review.md
+   - Security Reviewer creates findings in .workflow/epic-XX/pr-X-xxx/security.md
+   - Tester creates results in .workflow/epic-XX/pr-X-xxx/test-results.md
+   - Linter creates results in .workflow/epic-XX/pr-X-xxx/lint-results.md
+   - Release Notes creates notes in .workflow/epic-XX/pr-X-xxx/release-notes.md
+
+## Workflow Order
 
 ### Per PR
 1. Planner  
@@ -42,39 +51,40 @@ Workflow order:
 - Epic Coordinator detects conflicts between PRs
 - Epic Coordinator hands off to Release Notes for final epic-level release
 
-
-Writing rules:
+## Writing Rules
 - Keep entries short and structured
 - Prefer bullets over long paragraphs
 - Record file paths when discussing code changes
 - Record exact test commands and results
-- Record unresolved questions under "Open Questions"
+- Record unresolved questions under Open Questions in handoff.md
 
-# Shared workflow rules
+# Shared Workflow Rules
 
-All agents **must** use `WORKFLOW_STATE.md` as the shared handoff file.
+All agents **must** use the .workflow/ directory system for state management.
 
-**Always** use the skill `find-skills` to look for relevant skills before starting work. If a relevant skill exists, use it instead of guessing.
+**Always** use the skill ind-skills to look for relevant skills before starting work. If a relevant skill exists, use it instead of guessing.
+
+**Always** use the handoff skill to compact context before transitioning to the next agent.
 
 Before starting:
-- Read `WORKFLOW_STATE.md`
+- Read .workflow/epic-XX/pr-X-xxx/handoff.md (or .workflow/epic-XX/epic-summary.md for epic-level work)
 
 After finishing:
-- Update only the sections relevant to your role
+- Update handoff.md with what was done, decisions made, and next action
+- Write detailed findings to your designated output file (review.md, security.md, etc.)
 - Preserve existing content unless it is outdated or clearly incorrect
-- Add a short handoff note for the next agent
 
 When working on code, dependencies, libraries, frameworks or APIs:
 - Use context7 before proposing a plan
 - Use context7 before implementation if external library behavior is relevant
 - Use context7 during review when checking API usage or framework conventions
 - Prefer context7 over guessing library behavior from memory
-- Record important findings in `WORKFLOW_STATE.md`
+- Record important findings in handoff.md
 
 **Do not** use chat history as the only source of truth.  
-`WORKFLOW_STATE.md` is the canonical workflow record.
+.workflow/ is the canonical workflow record.
 
-# Serena usage rules
+# Serena Usage Rules
 
 Serena is the semantic code assistant for this project. Prefer Serena's MCP tools over raw grep for any code navigation.
 
@@ -88,7 +98,7 @@ When working with this codebase:
     - tracing where user input flows through the codebase
 - Only fall back to raw grep/edit/apply_patch when Serena tools are clearly not applicable.
 
-Serena tools are exposed via the MCP server. Use them by name whenever code understanding or structured refactors are needed. Record important Serena findings in `WORKFLOW_STATE.md`.
+Serena tools are exposed via the MCP server. Use them by name whenever code understanding or structured refactors are needed. Record important Serena findings in handoff.md.
 
 # Additional Agents
 
@@ -115,7 +125,7 @@ Triggered only when schema changes are detected:
 Runs after Reviewer/Security Reviewer and before Linter.
 
 ## Epic Coordinator
-Responsible for coordinating multi‑PR epics:
+Responsible for coordinating multi-PR epics:
 - Calls Product Manager to refine epic requirements into PRD
 - Consolidates architecture decisions across PRs
 - Aggregates documentation updates
@@ -128,9 +138,9 @@ Runs at the epic level, not per PR.
 
 ## Product Manager
 Responsible for refining epic and user story requirements into a hierarchical PRD:
-- Creates `docs/PRD.md` (product overview)
-- Creates `docs/epics/epic-XX.md` (per epic details)
-- Creates `docs/stories/story-XX-X.md` (per story with acceptance criteria)
+- Creates docs/PRD.md (product overview)
+- Creates docs/epics/epic-XX.md (per epic details)
+- Creates docs/stories/story-XX-X.md (per story with acceptance criteria)
 - Uses progressive disclosure for documentation structure
 - Calls Requirements Reviewer for validation
 - Iterates based on feedback until PRD is approved  
