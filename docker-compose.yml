@@ -26,13 +26,19 @@ services:
       dockerfile: Dockerfile
     container_name: dojo-backend
     environment:
-      DB_HOST: mysql
-      DB_PORT: 3306
-      DB_USER: dojo
-      DB_PASSWORD: dojo
-      DB_NAME: dojo
-      DEBUG: "true"
-      ALLOWED_ORIGINS: "http://localhost:5173,http://localhost:3000,http://localhost:80"
+      DATABASE_URL: mysql+aiomysql://dojo:dojo@mysql:3306/dojo
+      JWT_SECRET: dev-secret-change-me-in-production
+      JWT_ALGORITHM: HS256
+      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: 15
+      JWT_REFRESH_TOKEN_EXPIRE_DAYS: 7
+      GOOGLE_CLIENT_ID: your-client-id-here.apps.googleusercontent.com
+      GOOGLE_CLIENT_SECRET: your-client-secret-here
+      GOOGLE_REDIRECT_URI: http://localhost:8000/api/v1/auth/google/callback
+      ALLOWED_ORIGINS: http://localhost:5173,http://localhost:80
+      RATE_LIMIT_DEFAULT: 100/minute
+      RATE_LIMIT_AUTH: 5/minute
+      APP_ENV: development
+      API_PREFIX: /api/v1
     ports:
       - "8000:8000"
     volumes:

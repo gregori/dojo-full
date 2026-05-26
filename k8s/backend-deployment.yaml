@@ -9,6 +9,14 @@ data:
   DB_NAME: dojo
   API_PREFIX: /api/v1
   APP_NAME: Dojo Manager API
+  APP_ENV: production
+  JWT_ALGORITHM: HS256
+  JWT_ACCESS_TOKEN_EXPIRE_MINUTES: "15"
+  JWT_REFRESH_TOKEN_EXPIRE_DAYS: "7"
+  RATE_LIMIT_DEFAULT: 100/minute
+  RATE_LIMIT_AUTH: 5/minute
+  GOOGLE_REDIRECT_URI: https://dojo.example.com/api/v1/auth/google/callback
+  ALLOWED_ORIGINS: https://dojo.example.com
 ---
 apiVersion: v1
 kind: Secret
@@ -18,8 +26,13 @@ metadata:
 type: Opaque
 stringData:
   DB_USER: dojo
-  DB_PASSWORD: dojo
-  SECRET_KEY: change-me-in-production
+  # IMPORTANT: Replace ALL empty values below before deploying to any environment.
+  # The application will refuse to start if JWT_SECRET is missing or insecure.
+  # Generate a strong JWT_SECRET: python -c "import secrets; print(secrets.token_urlsafe(32))"
+  DB_PASSWORD: ""
+  JWT_SECRET: ""
+  GOOGLE_CLIENT_ID: ""
+  GOOGLE_CLIENT_SECRET: ""
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -38,6 +51,19 @@ spec:
       labels:
         app: backend
     spec:
+      initContainers:
+        - name: migrate
+          # Same image as backend — runs alembic upgrade head before app starts
+          image: <ocir-namespace>/dojo-backend:latest
+          command: ["alembic", "upgrade", "head"]
+          envFrom:
+            - configMapRef:
+                name: backend-config
+            - secretRef:
+                name: backend-secret
+          env:
+            - name: DATABASE_URL
+              value: "mysql+aiomysql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)"
       containers:
         - name: backend
           # Replace with your OCIR image path
@@ -51,6 +77,9 @@ spec:
                 name: backend-config
             - secretRef:
                 name: backend-secret
+          env:
+            - name: DATABASE_URL
+              value: "mysql+aiomysql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)"
           resources:
             requests:
               cpu: 250m
