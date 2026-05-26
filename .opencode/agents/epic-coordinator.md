@@ -6,12 +6,13 @@ temperature: 0.2
 max_steps: 8
 permission:
   edit:
-    "*": ask
+    "*": deny
     "WORKFLOW_STATE.md": allow
   bash: allow
   webfetch: allow
   task:
     "*": deny
+    "product-manager": allow
     "planner": allow
     "tech-analyst": allow
     "doc-writer": allow
@@ -39,6 +40,11 @@ Shared state rules:
 You MAY invoke these subagents to assist with consolidation:
 
 ### When to Invoke
+
+**`product-manager`** - FIRST step for new epics: refine raw requirements into PRD
+- Task: Refine epic requirements, create hierarchical PRD (docs/PRD.md + epics/ + stories/)
+- Invocation: `@product-manager refine epic requirements`
+- When: At the start of a new epic, before any technical planning
 
 **`planner`** - If epic scope is unclear or needs clarification before consolidation
 - Task: Clarify epic scope, constraints, acceptance criteria
@@ -202,6 +208,7 @@ Invalid patterns to detect:
 
 | Issue | Invoke | Task |
 |-------|--------|------|
+| New epic needs requirement refinement | `@product-manager` | Create PRD, refine stories, acceptance criteria |
 | Two migrations modify same table | `@migration-planner` | Validate sequence, detect conflicts, suggest ordering |
 | Architecture divergence between PRs | `@tech-analyst` | Analyze patterns, resolve design conflicts |
 | Release notes inconsistent/incomplete | (wait for Phase 5) | Release Notes agent handles final consolidation |

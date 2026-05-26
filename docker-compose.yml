@@ -1,0 +1,70 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: dojo-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: dojo
+      MYSQL_USER: dojo
+      MYSQL_PASSWORD: dojo
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - dojo-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: dojo-backend
+    environment:
+      DATABASE_URL: mysql+aiomysql://dojo:dojo@mysql:3306/dojo
+      JWT_SECRET: dev-secret-change-me-in-production
+      JWT_ALGORITHM: HS256
+      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: 15
+      JWT_REFRESH_TOKEN_EXPIRE_DAYS: 7
+      GOOGLE_CLIENT_ID: your-client-id-here.apps.googleusercontent.com
+      GOOGLE_CLIENT_SECRET: your-client-secret-here
+      GOOGLE_REDIRECT_URI: http://localhost:8000/api/v1/auth/google/callback
+      ALLOWED_ORIGINS: http://localhost:5173,http://localhost:80
+      RATE_LIMIT_DEFAULT: 100/minute
+      RATE_LIMIT_AUTH: 5/minute
+      APP_ENV: development
+      API_PREFIX: /api/v1
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - /app/.venv
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - dojo-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: dojo-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - dojo-network
+
+volumes:
+  mysql_data:
+
+networks:
+  dojo-network:
+    driver: bridge

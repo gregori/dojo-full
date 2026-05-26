@@ -1,7 +1,7 @@
 ---
 description: Reviews proposed architecture and technical task decomposition for validity, clarity, and optimization
 mode: subagent
-model: opencode-go/deepseek-thinking
+model: opencode-go/deepseek-v4-pro
 temperature: 0.3
 max_steps: 6
 permission:
