@@ -152,7 +152,7 @@ export default function DojosPage() {
           className="w-full max-w-md px-3 py-2 border rounded-md"
         >
           <option value="">Selecione uma organização...</option>
-          {organizations?.map((org: any) => (
+          {organizations?.map((org: Organization) => (
             <option key={org.id} value={org.id}>
               {org.name}
             </option>

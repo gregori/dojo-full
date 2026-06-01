@@ -1,8 +1,21 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Edit, Trash2, Users, Award, Eye, X, Check, AlertTriangle } from 'lucide-react'
+import { Plus, Trash2, Users, Award, Eye, X, Check, AlertTriangle } from 'lucide-react'
 import api from '../services/api'
 import { useAuth } from '../hooks/useAuth'
+
+interface Belt {
+  id: string
+  name: string
+  color: string
+  order: number
+}
+
+interface ExamEvent {
+  id: string
+  title: string
+  event_date: string
+}
 
 interface Exam {
   id: string
@@ -29,9 +42,23 @@ interface ExamParticipant {
   updated_at: string
 }
 
+interface Student {
+  id: string
+  full_name: string
+  registration_number: string
+  current_belt?: { name: string }
+}
+
+interface BoardMember {
+  id: string
+  student_id: string
+  student_name?: string
+  role: string
+}
+
 interface ExamDetail extends Exam {
   participants: ExamParticipant[]
-  board_members: any[]
+  board_members: BoardMember[]
   event_title?: string
   belt_name?: string
 }
@@ -116,8 +143,9 @@ export default function ExamsPage() {
       resetParticipantForm()
       if (selectedExam) loadExamDetail(selectedExam.id)
     },
-    onError: (error: any) => {
-      const detail = error?.response?.data?.detail
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { detail?: { message?: string; reasons?: string[] } } } }
+      const detail = err?.response?.data?.detail
       if (detail?.message) {
         alert(`Requisitos não atendidos:\n${detail.reasons?.join('\n') || detail.message}`)
       }
@@ -252,7 +280,7 @@ export default function ExamsPage() {
                 required
               >
                 <option value="">Selecione...</option>
-                {events?.map((event: any) => (
+                {events?.map((event: ExamEvent) => (
                   <option key={event.id} value={event.id}>
                     {event.title}
                   </option>
@@ -268,7 +296,7 @@ export default function ExamsPage() {
                 required
               >
                 <option value="">Selecione...</option>
-                {belts?.map((belt: any) => (
+                {belts?.map((belt: Belt) => (
                   <option key={belt.id} value={belt.id}>
                     {belt.name}
                   </option>
@@ -478,7 +506,7 @@ export default function ExamsPage() {
                       required
                     >
                       <option value="">Selecione...</option>
-                      {students?.map((s: any) => (
+                      {students?.map((s: Student) => (
                         <option key={s.id} value={s.id}>
                           {s.full_name} ({s.registration_number})
                         </option>
@@ -585,7 +613,7 @@ export default function ExamsPage() {
                     {selectedExam.participants.map((p) => (
                       <tr key={p.id}>
                         <td className="px-4 py-3 text-sm text-gray-900">
-                          {(p as any).student?.full_name || p.student_id}
+                          {(p as { student?: { full_name: string } }).student?.full_name || p.student_id}
                         </td>
                         <td className="px-4 py-3 text-sm">
                           <span
@@ -632,7 +660,7 @@ export default function ExamsPage() {
                                     className="px-2 py-1 border rounded text-xs"
                                   >
                                     <option value="">Nova faixa...</option>
-                                    {belts?.map((belt: any) => (
+{belts?.map((belt: Belt) => (
                                       <option key={belt.id} value={belt.id}>
                                         {belt.name}
                                       </option>

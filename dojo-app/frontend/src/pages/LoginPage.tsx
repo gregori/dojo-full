@@ -29,8 +29,9 @@ export default function LoginPage() {
 
       login(response.data.access_token)
       navigate('/')
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Erro ao fazer login')
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { detail?: string } } }
+      setError(error.response?.data?.detail || 'Erro ao fazer login')
     } finally {
       setLoading(false)
     }

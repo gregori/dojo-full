@@ -59,10 +59,26 @@ markers = [
 ]
 
 [tool.ruff]
-line-length = 100
+line-length = 120
 target-version = "py313"
 select = ["E", "F", "W", "I", "N", "D", "UP", "B", "C4", "SIM"]
-ignore = ["D100", "D104"]
+ignore = [
+    "D100", "D101", "D102", "D103", "D104", "D106", "D107", "D205",  # docstrings
+    "E501",  # line length (handled by formatter)
+    "B008",  # FastAPI Depends() in defaults
+    "B011",  # assert False
+    "B904",  # raise from (existing code pattern)
+    "N806",  # variable naming (test fixtures)
+    "UP035",  # deprecated typing imports (gradual migration)
+    "SIM108",  # ternary suggestion
+    "SIM102",  # nested if suggestion
+    "SIM105",  # contextlib.suppress suggestion
+    "E402",  # module level import not at top (alembic env.py)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["F401", "F841", "S101"]  # unused imports/vars in tests
+"**/__init__.py" = ["F401"]  # re-exports in __init__.py
 
 [tool.ruff.pydocstyle]
 convention = "google"

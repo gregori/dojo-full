@@ -4,6 +4,13 @@ import { Plus, Edit, Trash2, Search, TrendingUp } from 'lucide-react'
 import api from '../services/api'
 import { useAuth } from '../hooks/useAuth'
 
+interface Belt {
+  id: string
+  name: string
+  color: string
+  order: number
+}
+
 interface Student {
   id: string
   full_name: string
@@ -271,7 +278,7 @@ export default function StudentsPage() {
                 required
               >
                 <option value="">Selecione...</option>
-                {belts?.map((belt: any) => (
+                {belts?.map((belt: Belt) => (
                   <option key={belt.id} value={belt.id}>
                     {belt.name} ({belt.category === 'child' ? 'Criança' : 'Adulto'})
                   </option>

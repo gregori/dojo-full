@@ -3,6 +3,13 @@ import { useSearchParams } from 'react-router-dom'
 import api from '../services/api'
 import { CheckCircle, XCircle, Loader } from 'lucide-react'
 
+interface BeltRequirement {
+  name: string
+  completed: boolean
+  current: number
+  required: number
+}
+
 export default function CheckInPage() {
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token')
@@ -10,7 +17,11 @@ export default function CheckInPage() {
   const [registrationNumber, setRegistrationNumber] = useState('')
   const [pin, setPin] = useState('')
   const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<any>(null)
+  const [result, setResult] = useState<{
+    student_name: string
+    event_name: string
+    checkin_time: string
+  } | null>(null)
   const [error, setError] = useState('')
 
   // Kiosk mode detection
@@ -55,8 +66,9 @@ export default function CheckInPage() {
         setResult(null)
         document.getElementById('registration')?.focus()
       }, 5000)
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Erro ao registrar presença')
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { detail?: string } } }
+      setError(error.response?.data?.detail || 'Erro no check-in')
     } finally {
       setLoading(false)
     }
@@ -110,7 +122,7 @@ export default function CheckInPage() {
                     </p>
                     <div className="mt-3">
                       <p className="text-sm font-medium mb-2">Progresso:</p>
-                      {result.progress.requirements?.map((req: any, index: number) => (
+                      {result.progress.requirements?.map((req: BeltRequirement, index: number) => (
                         <div key={index} className="flex justify-between text-sm mb-1">
                           <span>{req.description}:</span>
                           <span className={req.is_complete ? 'text-green-600' : 'text-orange-600'}>
