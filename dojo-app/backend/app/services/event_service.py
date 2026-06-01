@@ -1,15 +1,15 @@
-from datetime import datetime, timezone
-from typing import Optional
-from sqlalchemy.orm import Session
+from datetime import UTC, datetime
+
 from fastapi import HTTPException, status
+from sqlalchemy.orm import Session
 
 from app.models import Event, EventType
-from app.schemas import EventCreate, EventUpdate, EventTypeCreate, EventTypeUpdate
+from app.schemas import EventCreate, EventTypeCreate, EventTypeUpdate, EventUpdate
 
 
 class EventTypeService:
     @staticmethod
-    def get_event_type(db: Session, event_type_id: str) -> Optional[EventType]:
+    def get_event_type(db: Session, event_type_id: str) -> EventType | None:
         return db.query(EventType).filter(EventType.id == event_type_id).first()
 
     @staticmethod
@@ -29,11 +29,11 @@ class EventTypeService:
         event_type = EventTypeService.get_event_type(db, event_type_id)
         if not event_type:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event type not found")
-        
+
         update_data = event_type_data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(event_type, field, value)
-        
+
         db.commit()
         db.refresh(event_type)
         return event_type
@@ -49,20 +49,16 @@ class EventTypeService:
 
 class EventService:
     @staticmethod
-    def get_event(db: Session, event_id: str) -> Optional[Event]:
+    def get_event(db: Session, event_id: str) -> Event | None:
         return db.query(Event).filter(Event.id == event_id).first()
 
     @staticmethod
-    def get_event_by_token(db: Session, token: str) -> Optional[Event]:
+    def get_event_by_token(db: Session, token: str) -> Event | None:
         return db.query(Event).filter(Event.check_in_token == token).first()
 
     @staticmethod
     def get_events(
-        db: Session,
-        status: Optional[str] = None,
-        event_type_id: Optional[str] = None,
-        skip: int = 0,
-        limit: int = 100
+        db: Session, status: str | None = None, event_type_id: str | None = None, skip: int = 0, limit: int = 100
     ) -> list[Event]:
         query = db.query(Event)
         if status:
@@ -88,12 +84,12 @@ class EventService:
         event = EventService.get_event(db, event_id)
         if not event:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
-        
+
         update_data = event_data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(event, field, value)
-        
-        event.updated_at = datetime.now(timezone.utc)
+
+        event.updated_at = datetime.now(UTC)
         db.commit()
         db.refresh(event)
         return event
@@ -104,5 +100,5 @@ class EventService:
         if not event:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
         event.status = "cancelled"
-        event.updated_at = datetime.now(timezone.utc)
+        event.updated_at = datetime.now(UTC)
         db.commit()

@@ -1,19 +1,17 @@
-from datetime import datetime, timezone
-from typing import Optional
-from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
+from sqlalchemy.orm import Session
 
 from app.models import Belt, BeltRequirement
-from app.schemas import BeltCreate, BeltUpdate, BeltRequirementCreate, BeltRequirementUpdate
+from app.schemas import BeltCreate, BeltRequirementCreate, BeltRequirementUpdate, BeltUpdate
 
 
 class BeltService:
     @staticmethod
-    def get_belt(db: Session, belt_id: str) -> Optional[Belt]:
+    def get_belt(db: Session, belt_id: str) -> Belt | None:
         return db.query(Belt).filter(Belt.id == belt_id).first()
 
     @staticmethod
-    def get_belts(db: Session, category: Optional[str] = None, skip: int = 0, limit: int = 100) -> list[Belt]:
+    def get_belts(db: Session, category: str | None = None, skip: int = 0, limit: int = 100) -> list[Belt]:
         query = db.query(Belt)
         if category:
             query = query.filter(Belt.category == category)
@@ -32,11 +30,11 @@ class BeltService:
         belt = BeltService.get_belt(db, belt_id)
         if not belt:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Belt not found")
-        
+
         update_data = belt_data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(belt, field, value)
-        
+
         db.commit()
         db.refresh(belt)
         return belt

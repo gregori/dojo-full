@@ -1,49 +1,50 @@
 from datetime import datetime
-from typing import Optional
+
 from pydantic import BaseModel, ConfigDict
+
 from app.schemas.belt import BeltResponse
 
 
 class StudentBase(BaseModel):
     full_name: str
-    email: Optional[str] = None
-    phone: Optional[str] = None
-    birth_date: Optional[datetime] = None
+    email: str | None = None
+    phone: str | None = None
+    birth_date: datetime | None = None
     category: str
     current_belt_id: str
-    dojo_id: Optional[str] = None
-    contract_name: Optional[str] = None
-    contract_cpf: Optional[str] = None
-    address_street: Optional[str] = None
-    address_neighborhood: Optional[str] = None
-    address_city: Optional[str] = None
-    address_zip: Optional[str] = None
-    classes_per_week: Optional[int] = 2
-    class_days: Optional[str] = None
+    dojo_id: str | None = None
+    contract_name: str | None = None
+    contract_cpf: str | None = None
+    address_street: str | None = None
+    address_neighborhood: str | None = None
+    address_city: str | None = None
+    address_zip: str | None = None
+    classes_per_week: int | None = 2
+    class_days: str | None = None
 
 
 class StudentCreate(StudentBase):
     pin: str
-    registration_number: Optional[str] = None
+    registration_number: str | None = None
 
 
 class StudentUpdate(BaseModel):
-    full_name: Optional[str] = None
-    email: Optional[str] = None
-    phone: Optional[str] = None
-    birth_date: Optional[datetime] = None
-    category: Optional[str] = None
-    current_belt_id: Optional[str] = None
-    pin: Optional[str] = None
-    is_active: Optional[bool] = None
-    contract_name: Optional[str] = None
-    contract_cpf: Optional[str] = None
-    address_street: Optional[str] = None
-    address_neighborhood: Optional[str] = None
-    address_city: Optional[str] = None
-    address_zip: Optional[str] = None
-    classes_per_week: Optional[int] = None
-    class_days: Optional[str] = None
+    full_name: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    birth_date: datetime | None = None
+    category: str | None = None
+    current_belt_id: str | None = None
+    pin: str | None = None
+    is_active: bool | None = None
+    contract_name: str | None = None
+    contract_cpf: str | None = None
+    address_street: str | None = None
+    address_neighborhood: str | None = None
+    address_city: str | None = None
+    address_zip: str | None = None
+    classes_per_week: int | None = None
+    class_days: str | None = None
 
 
 class StudentResponse(StudentBase):
@@ -56,4 +57,4 @@ class StudentResponse(StudentBase):
 
 
 class StudentWithBelt(StudentResponse):
-    current_belt: Optional[BeltResponse] = None
+    current_belt: BeltResponse | None = None

@@ -4,32 +4,27 @@ os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 
 from behave import use_fixture
 from behave.fixture import fixture
-
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from fastapi.testclient import TestClient
-
 import app.core.config as _config
+
 
 class _TestConfig(_config.Settings):
     database_url: str = "sqlite:///:memory:"
     debug: bool = True
     environment: str = "test"
 
+
 _config.get_settings = lambda: _TestConfig()
 
+from app.core.database import get_db
+from app.main import app
 from app.models import (
     Base,
-    User, Student, Belt, BeltRequirement, BeltPromotion,
-    EventType, Event, Attendance,
-    Exam, ExamParticipant, ExamBoardMember,
-    Organization, Dojo,
 )
-from app.core.database import get_db, engine
-from app.main import app
-
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
 
@@ -121,5 +116,5 @@ def before_scenario(context, scenario):
 
 def after_scenario(context, scenario):
     """Cleanup after each scenario."""
-    if hasattr(context, 'db'):
+    if hasattr(context, "db"):
         context.db.close()

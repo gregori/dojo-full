@@ -3,8 +3,10 @@
 Uses SQLite in-memory database for fast, isolated test execution.
 Each test gets a fresh database with all tables created and dropped.
 """
-import os
+
 import itertools
+import os
+
 import pytest
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
@@ -13,14 +15,23 @@ from sqlalchemy.pool import StaticPool
 # Force test database URL before any app imports
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 
-from app.models import (
-    Base,
-    Organization, Dojo, User, Belt, BeltRequirement,
-    EventType, Event, Student, Attendance,
-    Exam, ExamParticipant, ExamBoardMember, BeltPromotion,
-)
-from app.core.security import get_password_hash
+from datetime import UTC
 
+from app.core.security import get_password_hash
+from app.models import (
+    Attendance,
+    Base,
+    Belt,
+    BeltPromotion,
+    BeltRequirement,
+    Dojo,
+    Event,
+    EventType,
+    Exam,
+    Organization,
+    Student,
+    User,
+)
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
 
@@ -64,6 +75,7 @@ def db_session(db_engine):
 
 
 # --- Entity Factories ---
+
 
 def make_organization(db, **kwargs):
     n = _next_id()
@@ -125,7 +137,8 @@ def make_event_type(db, **kwargs):
 
 
 def make_event(db, event_type_id=None, created_by=None, **kwargs):
-    from datetime import datetime, timezone
+    from datetime import datetime
+
     if event_type_id is None:
         et = make_event_type(db)
         event_type_id = et.id
@@ -136,7 +149,7 @@ def make_event(db, event_type_id=None, created_by=None, **kwargs):
     defaults = {
         "title": f"Test Event {n}",
         "event_type_id": event_type_id,
-        "start_datetime": datetime.now(timezone.utc),
+        "start_datetime": datetime.now(UTC),
         "created_by": created_by,
         "status": "scheduled",
     }
@@ -168,7 +181,8 @@ def make_student(db, current_belt_id=None, **kwargs):
 
 
 def make_attendance(db, event_id=None, student_id=None, **kwargs):
-    from datetime import datetime, timezone
+    from datetime import datetime
+
     if event_id is None:
         event = make_event(db)
         event_id = event.id
@@ -179,7 +193,7 @@ def make_attendance(db, event_id=None, student_id=None, **kwargs):
         "event_id": event_id,
         "student_id": student_id,
         "check_in_method": "tablet",
-        "check_in_at": datetime.now(timezone.utc),
+        "check_in_at": datetime.now(UTC),
     }
     defaults.update(kwargs)
     attendance = Attendance(**defaults)
@@ -209,7 +223,8 @@ def make_belt_requirement(db, belt_id=None, event_type_id=None, **kwargs):
 
 
 def make_exam(db, event_id=None, belt_id=None, created_by=None, **kwargs):
-    from datetime import datetime, timezone
+    from datetime import datetime
+
     if event_id is None:
         event = make_event(db)
         event_id = event.id
@@ -222,7 +237,7 @@ def make_exam(db, event_id=None, belt_id=None, created_by=None, **kwargs):
     defaults = {
         "event_id": event_id,
         "belt_id": belt_id,
-        "exam_date": datetime.now(timezone.utc),
+        "exam_date": datetime.now(UTC),
         "status": "scheduled",
         "created_by": created_by,
     }
@@ -234,7 +249,8 @@ def make_exam(db, event_id=None, belt_id=None, created_by=None, **kwargs):
 
 
 def make_belt_promotion(db, student_id=None, belt_id=None, **kwargs):
-    from datetime import datetime, timezone
+    from datetime import datetime
+
     if student_id is None:
         student = make_student(db)
         student_id = student.id
@@ -244,7 +260,7 @@ def make_belt_promotion(db, student_id=None, belt_id=None, **kwargs):
     defaults = {
         "student_id": student_id,
         "belt_id": belt_id,
-        "promoted_at": datetime.now(timezone.utc),
+        "promoted_at": datetime.now(UTC),
         "notes": "Initial belt assignment",
     }
     defaults.update(kwargs)

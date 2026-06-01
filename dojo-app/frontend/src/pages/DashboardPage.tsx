@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Users, Calendar, Award, TrendingUp } from 'lucide-react'
+import { Users, Calendar, Award } from 'lucide-react'
 import api from '../services/api'
 
 export default function DashboardPage() {

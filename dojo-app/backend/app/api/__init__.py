@@ -1,1 +1,1 @@
-from app.api import auth, users, belts, students, events, checkin, exams, organizations
+from app.api import auth, belts, checkin, events, exams, organizations, students, users

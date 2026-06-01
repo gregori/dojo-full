@@ -1,12 +1,18 @@
 """Unit tests for app.dependencies.auth module."""
+
+from unittest.mock import MagicMock
+
 import pytest
-from unittest.mock import MagicMock, patch
 from fastapi import HTTPException
 from jose import jwt
 
 from app.core.config import get_settings
 from app.core.security import create_access_token, get_password_hash
-from app.dependencies.auth import get_current_user, get_current_admin, get_current_instructor_or_admin
+from app.dependencies.auth import (
+    get_current_admin,
+    get_current_instructor_or_admin,
+    get_current_user,
+)
 from app.models import User
 
 
@@ -39,6 +45,7 @@ class TestGetCurrentUser:
     def test_expired_token_raises_401(self, db_session):
         """Should raise 401 for expired JWT token."""
         from datetime import timedelta
+
         token = create_access_token(
             {"sub": "some-user-id"},
             expires_delta=timedelta(seconds=-1),

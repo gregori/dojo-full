@@ -1,11 +1,11 @@
 from datetime import datetime
-from typing import Optional
+
 from pydantic import BaseModel, ConfigDict
 
 
 class OrganizationBase(BaseModel):
     name: str
-    description: Optional[str] = None
+    description: str | None = None
 
 
 class OrganizationCreate(OrganizationBase):
@@ -13,8 +13,8 @@ class OrganizationCreate(OrganizationBase):
 
 
 class OrganizationUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
+    name: str | None = None
+    description: str | None = None
 
 
 class OrganizationResponse(OrganizationBase):
@@ -27,7 +27,7 @@ class DojoBase(BaseModel):
     organization_id: str
     code: int
     name: str
-    address: Optional[str] = None
+    address: str | None = None
 
 
 class DojoCreate(DojoBase):
@@ -35,9 +35,9 @@ class DojoCreate(DojoBase):
 
 
 class DojoUpdate(BaseModel):
-    code: Optional[int] = None
-    name: Optional[str] = None
-    address: Optional[str] = None
+    code: int | None = None
+    name: str | None = None
+    address: str | None = None
 
 
 class DojoResponse(DojoBase):
@@ -47,4 +47,4 @@ class DojoResponse(DojoBase):
 
 
 class DojoWithOrganization(DojoResponse):
-    organization: Optional[OrganizationResponse] = None
+    organization: OrganizationResponse | None = None

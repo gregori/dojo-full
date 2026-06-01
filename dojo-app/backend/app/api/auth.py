@@ -1,11 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from typing import List
 
 from app.core.database import get_db
-from app.core.config import get_settings
-from app.schemas import UserCreate, UserUpdate, UserResponse, Token
+from app.schemas import Token, UserCreate, UserResponse
 from app.services import AuthService, UserService
 
 router = APIRouter(prefix="/api/v1/auth", tags=["authentication"])
@@ -14,10 +12,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 
 @router.post("/login", response_model=Token)
-def login(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db)
-):
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     """Login with email and password."""
     user = AuthService.authenticate_user(db, form_data.username, form_data.password)
     if not user:
@@ -26,7 +21,7 @@ def login(
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     access_token = AuthService.create_access_token(user)
     return {"access_token": access_token, "token_type": "bearer"}
 

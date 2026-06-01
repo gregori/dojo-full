@@ -1,6 +1,6 @@
+from datetime import UTC, datetime, timedelta
+
 import bcrypt
-from datetime import datetime, timedelta, timezone
-from typing import Optional
 from jose import jwt
 
 from app.core.config import get_settings
@@ -21,16 +21,16 @@ def get_password_hash(password: str) -> str:
     return hashed.decode("utf-8")
 
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
     """Create a JWT access token."""
     settings = get_settings()
     to_encode = data.copy()
-    
+
     if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+        expire = datetime.now(UTC) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)
-    
+        expire = datetime.now(UTC) + timedelta(minutes=settings.access_token_expire_minutes)
+
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
     return encoded_jwt

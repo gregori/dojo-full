@@ -1,14 +1,18 @@
 """Unit tests for app.services.attendance_service module."""
+
 import pytest
-from datetime import datetime, timezone
 from fastapi import HTTPException
 
-from app.services.attendance_service import AttendanceService
-from app.schemas import CheckInRequest, CheckInQRRequest, AttendanceCreate
 from app.core.security import get_password_hash
+from app.schemas import AttendanceCreate, CheckInQRRequest, CheckInRequest
+from app.services.attendance_service import AttendanceService
 from tests.unit.conftest import (
-    make_event_type, make_event, make_user, make_student, make_belt,
     make_attendance,
+    make_belt,
+    make_event,
+    make_event_type,
+    make_student,
+    make_user,
 )
 
 

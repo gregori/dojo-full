@@ -43,7 +43,7 @@ def import_students_from_excel(file_path: str, organization_id: str = None, dojo
     print(f"Importing students from: {file_path}")
 
     # Read file
-    if file_path.endswith('.csv'):
+    if file_path.endswith(".csv"):
         df = pd.read_csv(file_path)
     else:
         df = pd.read_excel(file_path)
@@ -54,15 +54,9 @@ def import_students_from_excel(file_path: str, organization_id: str = None, dojo
 
     try:
         # Get default belt (Branca for adults, Branca for children)
-        default_belt_adult = db.query(Belt).filter(
-            Belt.name == "Branca",
-            Belt.category == "adult"
-        ).first()
+        default_belt_adult = db.query(Belt).filter(Belt.name == "Branca", Belt.category == "adult").first()
 
-        default_belt_child = db.query(Belt).filter(
-            Belt.name == "Branca",
-            Belt.category == "child"
-        ).first()
+        default_belt_child = db.query(Belt).filter(Belt.name == "Branca", Belt.category == "child").first()
 
         imported = 0
         errors = []
@@ -70,79 +64,76 @@ def import_students_from_excel(file_path: str, organization_id: str = None, dojo
         for index, row in df.iterrows():
             try:
                 # Required field
-                full_name = str(row.get('Nome', '')).strip()
+                full_name = str(row.get("Nome", "")).strip()
                 if not full_name:
                     errors.append(f"Row {index + 2}: Missing name")
                     continue
 
                 # Optional fields
-                email = str(row.get('Email', '')).strip() if pd.notna(row.get('Email')) else None
-                phone = str(row.get('Telefone', '')).strip() if pd.notna(row.get('Telefone')) else None
+                email = str(row.get("Email", "")).strip() if pd.notna(row.get("Email")) else None
+                phone = str(row.get("Telefone", "")).strip() if pd.notna(row.get("Telefone")) else None
 
                 # Birth date
                 birth_date = None
-                if pd.notna(row.get('Data_Nascimento')):
+                if pd.notna(row.get("Data_Nascimento")):
                     try:
-                        date_str = str(row['Data_Nascimento']).strip()
-                        birth_date = datetime.strptime(date_str, '%d/%m/%Y')
+                        date_str = str(row["Data_Nascimento"]).strip()
+                        birth_date = datetime.strptime(date_str, "%d/%m/%Y")
                     except ValueError:
                         errors.append(f"Row {index + 2}: Invalid date format for {full_name}")
 
                 # Category
-                category = 'adult'
-                if pd.notna(row.get('Categoria')):
-                    cat = str(row['Categoria']).strip().lower()
-                    if cat in ['child', 'crianca', 'criança', 'infantil']:
-                        category = 'child'
+                category = "adult"
+                if pd.notna(row.get("Categoria")):
+                    cat = str(row["Categoria"]).strip().lower()
+                    if cat in ["child", "crianca", "criança", "infantil"]:
+                        category = "child"
 
                 # Belt
                 current_belt_id = None
-                if pd.notna(row.get('Faixa')):
-                    belt_name = str(row['Faixa']).strip()
-                    belt = db.query(Belt).filter(
-                        Belt.name.ilike(f"%{belt_name}%"),
-                        Belt.category == category
-                    ).first()
+                if pd.notna(row.get("Faixa")):
+                    belt_name = str(row["Faixa"]).strip()
+                    belt = db.query(Belt).filter(Belt.name.ilike(f"%{belt_name}%"), Belt.category == category).first()
                     if belt:
                         current_belt_id = belt.id
 
                 if not current_belt_id:
-                    current_belt_id = default_belt_child.id if category == 'child' else default_belt_adult.id
+                    current_belt_id = default_belt_child.id if category == "child" else default_belt_adult.id
 
                 # PIN
-                pin = str(row.get('PIN', '1234')).strip()
+                pin = str(row.get("PIN", "1234")).strip()
                 if len(pin) != 4 or not pin.isdigit():
-                    pin = '1234'
+                    pin = "1234"
 
                 # Contractor info
-                contract_name = str(row.get('Contratante', '')).strip() if pd.notna(row.get('Contratante')) else None
-                contract_cpf = str(row.get('CPF_Contratante', '')).strip() if pd.notna(row.get('CPF_Contratante')) else None
+                contract_name = str(row.get("Contratante", "")).strip() if pd.notna(row.get("Contratante")) else None
+                contract_cpf = (
+                    str(row.get("CPF_Contratante", "")).strip() if pd.notna(row.get("CPF_Contratante")) else None
+                )
 
                 # Address
-                address_street = str(row.get('Rua', '')).strip() if pd.notna(row.get('Rua')) else None
-                address_neighborhood = str(row.get('Bairro', '')).strip() if pd.notna(row.get('Bairro')) else None
-                address_city = str(row.get('Cidade', '')).strip() if pd.notna(row.get('Cidade')) else None
-                address_zip = str(row.get('CEP', '')).strip() if pd.notna(row.get('CEP')) else None
+                address_street = str(row.get("Rua", "")).strip() if pd.notna(row.get("Rua")) else None
+                address_neighborhood = str(row.get("Bairro", "")).strip() if pd.notna(row.get("Bairro")) else None
+                address_city = str(row.get("Cidade", "")).strip() if pd.notna(row.get("Cidade")) else None
+                address_zip = str(row.get("CEP", "")).strip() if pd.notna(row.get("CEP")) else None
 
                 # Schedule
                 classes_per_week = 2
-                if pd.notna(row.get('Aulas_Semana')):
+                if pd.notna(row.get("Aulas_Semana")):
                     try:
-                        classes_per_week = int(row['Aulas_Semana'])
+                        classes_per_week = int(row["Aulas_Semana"])
                     except (ValueError, TypeError):
                         pass
 
-                class_days = str(row.get('Dias_Aula', '')).strip() if pd.notna(row.get('Dias_Aula')) else None
+                class_days = str(row.get("Dias_Aula", "")).strip() if pd.notna(row.get("Dias_Aula")) else None
 
                 from app.schemas import StudentCreate
 
                 registration_number = None
-                if pd.notna(row.get('Matricula')):
-                    matricula = str(row['Matricula']).strip()
+                if pd.notna(row.get("Matricula")):
+                    matricula = str(row["Matricula"]).strip()
                     if matricula:
-                        existing_reg = db.query(Student).filter(
-                            Student.registration_number == matricula
-                        ).first()
+                        existing_reg = db.query(Student).filter(Student.registration_number == matricula).first()
                         if existing_reg:
                             errors.append(
                                 f"Row {index + 2}: Matricula '{matricula}' for {full_name} "
@@ -173,9 +164,7 @@ def import_students_from_excel(file_path: str, organization_id: str = None, dojo
                 )
 
                 # Check if student already exists by name
-                existing = db.query(Student).filter(
-                    Student.full_name.ilike(f"%{full_name}%")
-                ).first()
+                existing = db.query(Student).filter(Student.full_name.ilike(f"%{full_name}%")).first()
 
                 if existing:
                     errors.append(f"Row {index + 2}: Student {full_name} already exists")
@@ -244,10 +233,7 @@ def create_sample_belts(db: SessionLocal):
 
     created = 0
     for belt_data in belts:
-        existing = db.query(Belt).filter(
-            Belt.name == belt_data["name"],
-            Belt.category == belt_data["category"]
-        ).first()
+        existing = db.query(Belt).filter(Belt.name == belt_data["name"], Belt.category == belt_data["category"]).first()
 
         if not existing:
             belt = Belt(**belt_data)
@@ -259,11 +245,11 @@ def create_sample_belts(db: SessionLocal):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Import students from Excel/CSV file')
-    parser.add_argument('file', help='Path to Excel or CSV file')
-    parser.add_argument('--org-id', help='Organization ID (optional)', default=None)
-    parser.add_argument('--dojo-id', help='Dojo ID (optional)', default=None)
-    parser.add_argument('--create-belts', action='store_true', help='Create default belts if not exists')
+    parser = argparse.ArgumentParser(description="Import students from Excel/CSV file")
+    parser.add_argument("file", help="Path to Excel or CSV file")
+    parser.add_argument("--org-id", help="Organization ID (optional)", default=None)
+    parser.add_argument("--dojo-id", help="Dojo ID (optional)", default=None)
+    parser.add_argument("--create-belts", action="store_true", help="Create default belts if not exists")
 
     args = parser.parse_args()
 
@@ -280,11 +266,7 @@ def main():
     finally:
         db.close()
 
-    imported, errors = import_students_from_excel(
-        args.file,
-        organization_id=args.org_id,
-        dojo_id=args.dojo_id
-    )
+    imported, errors = import_students_from_excel(args.file, organization_id=args.org_id, dojo_id=args.dojo_id)
 
     print(f"\nTotal imported: {imported}")
     if errors:
@@ -292,5 +274,5 @@ def main():
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

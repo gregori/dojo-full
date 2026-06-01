@@ -1,17 +1,28 @@
 """Unit tests for app.services.exam_service module."""
+
+from datetime import UTC, datetime
+
 import pytest
-from datetime import datetime, timezone
 from fastapi import HTTPException
 
-from app.services.exam_service import ExamService
 from app.schemas import (
-    ExamCreate, ExamUpdate,
-    ExamParticipantCreate, ExamParticipantUpdate,
     ExamBoardMemberCreate,
+    ExamCreate,
+    ExamParticipantCreate,
+    ExamParticipantUpdate,
+    ExamUpdate,
 )
+from app.services.exam_service import ExamService
 from tests.unit.conftest import (
-    make_belt, make_event_type, make_event, make_user, make_student,
-    make_exam, make_belt_requirement, make_attendance, make_belt_promotion,
+    make_attendance,
+    make_belt,
+    make_belt_promotion,
+    make_belt_requirement,
+    make_event,
+    make_event_type,
+    make_exam,
+    make_student,
+    make_user,
 )
 
 
@@ -65,7 +76,7 @@ class TestExamServiceCreate:
         data = ExamCreate(
             event_id=event.id,
             belt_id=belt.id,
-            exam_date=datetime.now(timezone.utc),
+            exam_date=datetime.now(UTC),
         )
         exam = ExamService.create_exam(db_session, data, created_by=user.id)
         assert exam.id is not None
@@ -80,7 +91,7 @@ class TestExamServiceCreate:
         data = ExamCreate(
             event_id="nonexistent",
             belt_id=belt.id,
-            exam_date=datetime.now(timezone.utc),
+            exam_date=datetime.now(UTC),
         )
         with pytest.raises(HTTPException) as exc_info:
             ExamService.create_exam(db_session, data, created_by="user1")
@@ -96,7 +107,7 @@ class TestExamServiceCreate:
         data = ExamCreate(
             event_id=event.id,
             belt_id="nonexistent",
-            exam_date=datetime.now(timezone.utc),
+            exam_date=datetime.now(UTC),
         )
         with pytest.raises(HTTPException) as exc_info:
             ExamService.create_exam(db_session, data, created_by=user.id)
@@ -352,6 +363,7 @@ class TestExamServiceParticipants:
 
         ExamService.remove_participant(db_session, participant_id)
         from app.models import ExamParticipant
+
         assert db_session.query(ExamParticipant).filter(ExamParticipant.id == participant_id).first() is None
 
     def test_remove_nonexistent_participant(self, db_session):
@@ -425,6 +437,7 @@ class TestExamServiceBoardMembers:
 
         ExamService.remove_board_member(db_session, member_id)
         from app.models import ExamBoardMember
+
         assert db_session.query(ExamBoardMember).filter(ExamBoardMember.id == member_id).first() is None
 
     def test_remove_nonexistent_board_member(self, db_session):
@@ -502,6 +515,7 @@ class TestExamServicePromoteCandidate:
         db_session.commit()
 
         from app.models import ExamParticipant
+
         participant = ExamParticipant(
             exam_id=exam.id,
             student_id=student.id,
@@ -531,6 +545,7 @@ class TestExamServicePromoteCandidate:
         db_session.commit()
 
         from app.models import ExamParticipant
+
         participant = ExamParticipant(
             exam_id=exam.id,
             student_id=student.id,

@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- toast singleton pattern */
 import { useState, useEffect } from 'react'
 
 interface Toast {

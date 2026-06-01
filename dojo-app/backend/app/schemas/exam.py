@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, List
+
 from pydantic import BaseModel, ConfigDict
 
 
@@ -7,7 +7,7 @@ class ExamBase(BaseModel):
     event_id: str
     belt_id: str
     exam_date: datetime
-    notes: Optional[str] = None
+    notes: str | None = None
 
 
 class ExamCreate(ExamBase):
@@ -15,9 +15,9 @@ class ExamCreate(ExamBase):
 
 
 class ExamUpdate(BaseModel):
-    exam_date: Optional[datetime] = None
-    status: Optional[str] = None
-    notes: Optional[str] = None
+    exam_date: datetime | None = None
+    status: str | None = None
+    notes: str | None = None
 
 
 class ExamResponse(ExamBase):
@@ -36,19 +36,19 @@ class ExamParticipantBase(BaseModel):
 
 
 class ExamParticipantCreate(BaseModel):
-    exam_id: Optional[str] = None
+    exam_id: str | None = None
     student_id: str
     role: str
     override_eligibility: bool = False
-    override_reason: Optional[str] = None
+    override_reason: str | None = None
 
 
 class ExamParticipantUpdate(BaseModel):
-    status: Optional[str] = None  # 'pending', 'approved', 'rejected'
-    is_eligible: Optional[bool] = None
-    override_eligibility: Optional[bool] = None
-    override_reason: Optional[str] = None
-    notes: Optional[str] = None
+    status: str | None = None  # 'pending', 'approved', 'rejected'
+    is_eligible: bool | None = None
+    override_eligibility: bool | None = None
+    override_reason: str | None = None
+    notes: str | None = None
 
 
 class ExamParticipantResponse(ExamParticipantBase):
@@ -57,9 +57,9 @@ class ExamParticipantResponse(ExamParticipantBase):
     status: str
     is_eligible: bool
     override_eligibility: bool
-    override_reason: Optional[str] = None
-    overridden_by: Optional[str] = None
-    notes: Optional[str] = None
+    override_reason: str | None = None
+    overridden_by: str | None = None
+    notes: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -73,7 +73,7 @@ class ExamBoardMemberBase(BaseModel):
 class ExamBoardMemberCreate(BaseModel):
     user_id: str
     role_in_board: str = "member"  # 'president', 'member'
-    exam_id: Optional[str] = None  # Set from path parameter
+    exam_id: str | None = None  # Set from path parameter
 
 
 class ExamBoardMemberResponse(ExamBoardMemberBase):
@@ -83,7 +83,7 @@ class ExamBoardMemberResponse(ExamBoardMemberBase):
 
 
 class ExamWithDetails(ExamResponse):
-    participants: List[ExamParticipantResponse] = []
-    board_members: List[ExamBoardMemberResponse] = []
-    event_title: Optional[str] = None
-    belt_name: Optional[str] = None
+    participants: list[ExamParticipantResponse] = []
+    board_members: list[ExamBoardMemberResponse] = []
+    event_title: str | None = None
+    belt_name: str | None = None

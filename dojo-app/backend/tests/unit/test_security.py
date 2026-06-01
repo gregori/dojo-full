@@ -1,7 +1,7 @@
 """Unit tests for app.core.security module."""
-import pytest
-from app.core.security import verify_password, get_password_hash, create_access_token
+
 from app.core.config import get_settings
+from app.core.security import create_access_token, get_password_hash, verify_password
 
 
 class TestPasswordHashing:
@@ -35,7 +35,7 @@ class TestPasswordHashing:
         assert verify_password("", hashed) is True
 
     def test_verify_password_long_password_truncated(self):
-        """bcrypt truncates passwords at 72 bytes; verify should still work."""
+        """Bcrypt truncates passwords at 72 bytes; verify should still work."""
         long_pw = "a" * 100
         hashed = get_password_hash(long_pw)
         # First 72 chars should match
@@ -68,6 +68,7 @@ class TestAccessToken:
     def test_create_token_decodable(self):
         """Token should be decodable with the secret key."""
         from jose import jwt
+
         settings = get_settings()
         token = create_access_token({"sub": "user123", "role": "admin"})
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
@@ -78,7 +79,9 @@ class TestAccessToken:
     def test_create_token_with_custom_expiry(self):
         """Token with custom expiry delta should be decodable."""
         from datetime import timedelta
+
         from jose import jwt
+
         settings = get_settings()
         token = create_access_token(
             {"sub": "user456"},
@@ -90,6 +93,7 @@ class TestAccessToken:
     def test_create_token_preserves_data(self):
         """Token should preserve all data fields."""
         from jose import jwt
+
         settings = get_settings()
         data = {"sub": "abc", "role": "instructor", "org_id": "org1"}
         token = create_access_token(data)

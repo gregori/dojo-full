@@ -1,10 +1,11 @@
 """Unit tests for app.services.belt_service module."""
+
 import pytest
 from fastapi import HTTPException
 
+from app.schemas import BeltCreate, BeltRequirementCreate, BeltRequirementUpdate, BeltUpdate
 from app.services.belt_service import BeltService
-from app.schemas import BeltCreate, BeltUpdate, BeltRequirementCreate, BeltRequirementUpdate
-from tests.unit.conftest import make_belt, make_event_type, make_belt_requirement
+from tests.unit.conftest import make_belt, make_belt_requirement, make_event_type
 
 
 class TestBeltServiceGet:
@@ -158,6 +159,7 @@ class TestBeltRequirementService:
         BeltService.delete_requirement(db_session, req_id)
         # Verify it's gone
         from app.models import BeltRequirement
+
         assert db_session.query(BeltRequirement).filter(BeltRequirement.id == req_id).first() is None
 
     def test_delete_nonexistent_requirement(self, db_session):

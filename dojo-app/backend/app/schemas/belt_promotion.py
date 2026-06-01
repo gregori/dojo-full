@@ -1,21 +1,21 @@
 from datetime import datetime
-from typing import Optional
+
 from pydantic import BaseModel, ConfigDict
 
 
 class BeltPromotionBase(BaseModel):
     student_id: str
     belt_id: str
-    promoted_at: Optional[datetime] = None
-    notes: Optional[str] = None
+    promoted_at: datetime | None = None
+    notes: str | None = None
 
 
 class BeltPromotionCreate(BaseModel):
     student_id: str
     belt_id: str
-    promoted_at: Optional[datetime] = None
-    exam_id: Optional[str] = None
-    notes: Optional[str] = None
+    promoted_at: datetime | None = None
+    exam_id: str | None = None
+    notes: str | None = None
 
 
 class BeltPromotionResponse(BaseModel):
@@ -24,8 +24,8 @@ class BeltPromotionResponse(BaseModel):
     student_id: str
     belt_id: str
     promoted_at: datetime
-    promoted_by: Optional[str] = None
-    exam_id: Optional[str] = None
-    notes: Optional[str] = None
+    promoted_by: str | None = None
+    exam_id: str | None = None
+    notes: str | None = None
     created_at: datetime
     updated_at: datetime

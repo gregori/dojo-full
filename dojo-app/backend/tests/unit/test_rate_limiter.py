@@ -1,5 +1,7 @@
 """Unit tests for app.core.rate_limiter module."""
+
 import pytest
+
 from app.core.rate_limiter import RateLimiter
 
 
@@ -38,6 +40,7 @@ class TestRateLimiter:
     def test_check_rate_limit_raises_on_exceeded(self):
         """check_rate_limit should raise HTTPException when limit exceeded."""
         from fastapi import HTTPException
+
         limiter = RateLimiter()
         limiter.max_attempts = 1
 
@@ -63,6 +66,7 @@ class TestRateLimiter:
     def test_clean_old_attempts(self):
         """Old attempts outside the window should be cleaned."""
         from datetime import datetime, timedelta
+
         limiter = RateLimiter()
         limiter.max_attempts = 2
         limiter.window_seconds = 60

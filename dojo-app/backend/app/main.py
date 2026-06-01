@@ -1,10 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api import auth, belts, checkin, events, exams, organizations, students, users
 from app.core.config import get_settings
 from app.core.database import engine
 from app.models import Base
-from app.api import auth, users, belts, students, events, checkin, exams, organizations
 
 settings = get_settings()
 

@@ -1,11 +1,11 @@
 from datetime import datetime
-from typing import Optional
+
 from pydantic import BaseModel, ConfigDict, model_validator
 
 
 class EventTypeBase(BaseModel):
     name: str
-    color: Optional[str] = None
+    color: str | None = None
     counts_for_belt: bool = True
 
 
@@ -14,9 +14,9 @@ class EventTypeCreate(EventTypeBase):
 
 
 class EventTypeUpdate(BaseModel):
-    name: Optional[str] = None
-    color: Optional[str] = None
-    counts_for_belt: Optional[bool] = None
+    name: str | None = None
+    color: str | None = None
+    counts_for_belt: bool | None = None
 
 
 class EventTypeResponse(EventTypeBase):
@@ -28,29 +28,29 @@ class EventTypeResponse(EventTypeBase):
 class EventBase(BaseModel):
     title: str
     event_type_id: str
-    description: Optional[str] = None
+    description: str | None = None
     start_datetime: datetime
-    end_datetime: Optional[datetime] = None
-    location: Optional[str] = None
-    organization_id: Optional[str] = None
+    end_datetime: datetime | None = None
+    location: str | None = None
+    organization_id: str | None = None
 
 
 class EventCreate(EventBase):
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def validate_dates(self):
         if self.end_datetime and self.start_datetime and self.end_datetime < self.start_datetime:
-            raise ValueError('end_datetime must be after start_datetime')
+            raise ValueError("end_datetime must be after start_datetime")
         return self
 
 
 class EventUpdate(BaseModel):
-    title: Optional[str] = None
-    event_type_id: Optional[str] = None
-    description: Optional[str] = None
-    start_datetime: Optional[datetime] = None
-    end_datetime: Optional[datetime] = None
-    location: Optional[str] = None
-    status: Optional[str] = None
+    title: str | None = None
+    event_type_id: str | None = None
+    description: str | None = None
+    start_datetime: datetime | None = None
+    end_datetime: datetime | None = None
+    location: str | None = None
+    status: str | None = None
 
 
 class EventResponse(EventBase):
@@ -64,5 +64,5 @@ class EventResponse(EventBase):
 
 
 class EventWithDetails(EventResponse):
-    event_type: Optional[EventTypeResponse] = None
+    event_type: EventTypeResponse | None = None
     attendance_count: int = 0

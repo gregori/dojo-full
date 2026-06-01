@@ -1,6 +1,6 @@
 from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel, EmailStr, ConfigDict
+
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
 class UserBase(BaseModel):
@@ -8,8 +8,8 @@ class UserBase(BaseModel):
     full_name: str
     role: str
     is_active: bool = True
-    organization_id: Optional[str] = None
-    dojo_id: Optional[str] = None
+    organization_id: str | None = None
+    dojo_id: str | None = None
 
 
 class UserCreate(UserBase):
@@ -17,11 +17,11 @@ class UserCreate(UserBase):
 
 
 class UserUpdate(BaseModel):
-    email: Optional[EmailStr] = None
-    full_name: Optional[str] = None
-    role: Optional[str] = None
-    is_active: Optional[bool] = None
-    password: Optional[str] = None
+    email: EmailStr | None = None
+    full_name: str | None = None
+    role: str | None = None
+    is_active: bool | None = None
+    password: str | None = None
 
 
 class UserResponse(UserBase):
@@ -42,5 +42,5 @@ class Token(BaseModel):
 
 
 class TokenPayload(BaseModel):
-    sub: Optional[str] = None  # user id
-    role: Optional[str] = None
+    sub: str | None = None  # user id
+    role: str | None = None

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+
 from pydantic import BaseModel, ConfigDict
 
 
@@ -10,15 +10,15 @@ class AttendanceBase(BaseModel):
 
 
 class AttendanceCreate(AttendanceBase):
-    registered_by: Optional[str] = None
+    registered_by: str | None = None
 
 
 class AttendanceResponse(AttendanceBase):
     model_config = ConfigDict(from_attributes=True)
     id: str
-    student_name: Optional[str] = None
+    student_name: str | None = None
     check_in_at: datetime
-    registered_by: Optional[str] = None
+    registered_by: str | None = None
     created_at: datetime
 
 
@@ -39,4 +39,4 @@ class CheckInResponse(BaseModel):
     message: str
     student_name: str
     event_title: str
-    progress: Optional[dict] = None
+    progress: dict | None = None

@@ -1,5 +1,7 @@
 """Integration tests for auth API endpoints."""
+
 import os
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event
@@ -9,10 +11,10 @@ from sqlalchemy.pool import StaticPool
 # Force test database URL before any app imports
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 
-from app.models import Base, User
-from app.core.security import get_password_hash, create_access_token
 from app.core.database import get_db
+from app.core.security import get_password_hash
 from app.main import app
+from app.models import Base, User
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
 
@@ -50,6 +52,7 @@ def db_session(db_engine):
 @pytest.fixture(scope="function")
 def client(db_session):
     """Create a TestClient with the test database session."""
+
     def override_get_db():
         try:
             yield db_session
@@ -65,6 +68,7 @@ def client(db_session):
 def _make_admin_user(db, **kwargs):
     """Create an admin user directly in the database."""
     from itertools import count
+
     n = next(count(1))
     defaults = {
         "email": f"admin{n}@dojo.com",
