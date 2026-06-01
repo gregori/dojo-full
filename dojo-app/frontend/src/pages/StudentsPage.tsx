@@ -511,9 +511,7 @@ export default function StudentsPage() {
                           {progress.overall_progress.total_complete}/
                           {progress.overall_progress.total_required}
                         </span>
-                        {!progress.next_belt && (
-                          <TrendingUp className="w-4 h-4 text-green-500" />
-                        )}
+                        {!progress.next_belt && <TrendingUp className="w-4 h-4 text-green-500" />}
                       </div>
                     ) : (
                       <span className="text-xs text-gray-400">Carregando...</span>
