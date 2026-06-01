@@ -40,7 +40,4 @@ variable "bucket_namespace" {
   type        = string
 }
 
-variable "ssh_public_key_path" {
-  description = "Path to SSH public key for compute instance access"
-  type        = string
-}
+
