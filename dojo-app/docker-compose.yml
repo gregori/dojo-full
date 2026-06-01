@@ -1,0 +1,61 @@
+version: "3.8"
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: dojo-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: dojo_db
+      MYSQL_USER: dojo_user
+      MYSQL_PASSWORD: dojo_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: dojo-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: mysql+pymysql://dojo_user:dojo_pass@db:3306/dojo_db
+      SECRET_KEY: dev-secret-key-change-in-production
+      DEBUG: "true"
+    volumes:
+      - ./backend:/app
+      - /app/__pycache__
+    depends_on:
+      db:
+        condition: service_healthy
+    # Entrypoint defined in Dockerfile.dev runs migrations, seed, and uvicorn
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: dojo-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      VITE_API_URL: http://localhost:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    command: npm run dev -- --host
+
+volumes:
+  mysql_data:
