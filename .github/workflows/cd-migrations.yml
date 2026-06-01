@@ -36,9 +36,9 @@ jobs:
 
       - name: Install OCI CLI
         run: |
-          mkdir -p $HOME/.oci
-          echo "${{ secrets.OCI_PRIVATE_KEY }}" > $HOME/.oci/oci_api_key.pem
-          chmod 600 $HOME/.oci/oci_api_key.pem
+          mkdir -p /home/runner/.oci
+          echo "${{ secrets.OCI_PRIVATE_KEY }}" > /home/runner/.oci/oci_api_key.pem
+          chmod 600 /home/runner/.oci/oci_api_key.pem
 
           curl -L -O https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh
           bash install.sh --accept-all-defaults
@@ -55,7 +55,7 @@ jobs:
           OCI_CLI_USER: ${{ secrets.OCI_USER_OCID }}
           OCI_CLI_TENANCY: ${{ secrets.OCI_TENANCY_OCID }}
           OCI_CLI_FINGERPRINT: ${{ secrets.OCI_FINGERPRINT }}
-          OCI_CLI_KEY_FILE: $HOME/.oci/oci_api_key.pem
+          OCI_CLI_KEY_FILE: /home/runner/.oci/oci_api_key.pem
           OCI_CLI_REGION: sa-saopaulo-1
 
       - name: Run migration

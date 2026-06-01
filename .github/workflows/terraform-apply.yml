@@ -29,15 +29,15 @@ jobs:
 
       - name: Configure OCI API Key
         run: |
-          mkdir -p $HOME/.oci
-          echo "${{ secrets.OCI_PRIVATE_KEY }}" > $HOME/.oci/oci_api_key.pem
-          chmod 600 $HOME/.oci/oci_api_key.pem
+          mkdir -p /home/runner/.oci
+          echo "${{ secrets.OCI_PRIVATE_KEY }}" > /home/runner/.oci/oci_api_key.pem
+          chmod 600 /home/runner/.oci/oci_api_key.pem
 
       - name: Configure SSH Public Key
         run: |
-          mkdir -p $HOME/.ssh
-          echo "${{ secrets.OCI_SSH_PUBLIC_KEY }}" > $HOME/.ssh/dojo-k8s.pub
-          chmod 644 $HOME/.ssh/dojo-k8s.pub
+          mkdir -p /home/runner/.ssh
+          echo "${{ secrets.OCI_SSH_PUBLIC_KEY }}" > /home/runner/.ssh/dojo-k8s.pub
+          chmod 644 /home/runner/.ssh/dojo-k8s.pub
 
       - name: Terraform Init
         run: terraform init
