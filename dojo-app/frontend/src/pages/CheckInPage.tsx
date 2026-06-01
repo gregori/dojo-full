@@ -4,10 +4,22 @@ import api from '../services/api'
 import { CheckCircle, XCircle, Loader } from 'lucide-react'
 
 interface BeltRequirement {
-  name: string
-  completed: boolean
-  current: number
+  description: string
+  completed: number
   required: number
+  is_complete: boolean
+}
+
+interface CheckInResult {
+  student_name: string
+  event_name: string
+  checkin_time: string
+  progress?: {
+    current_belt: string
+    next_belt?: string
+    requirements?: BeltRequirement[]
+    message?: string
+  }
 }
 
 export default function CheckInPage() {
@@ -17,11 +29,7 @@ export default function CheckInPage() {
   const [registrationNumber, setRegistrationNumber] = useState('')
   const [pin, setPin] = useState('')
   const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<{
-    student_name: string
-    event_name: string
-    checkin_time: string
-  } | null>(null)
+  const [result, setResult] = useState<CheckInResult | null>(null)
   const [error, setError] = useState('')
 
   // Kiosk mode detection

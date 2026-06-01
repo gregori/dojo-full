@@ -9,6 +9,7 @@ interface Belt {
   name: string
   color: string
   order: number
+  category?: string
 }
 
 interface Student {
@@ -62,7 +63,7 @@ export default function StudentsPage() {
     birth_date: '',
     category: 'adult' as 'child' | 'adult',
     current_belt_id: '',
-    pin: '',
+    pin: '' as string | undefined,
     contract_name: '',
     contract_cpf: '',
     address_street: '',
@@ -511,7 +512,7 @@ export default function StudentsPage() {
                           {progress.overall_progress.total_required}
                         </span>
                         {!progress.next_belt && (
-                          <TrendingUp className="w-4 h-4 text-green-500" title="Faixa máxima!" />
+                          <TrendingUp className="w-4 h-4 text-green-500" />
                         )}
                       </div>
                     ) : (

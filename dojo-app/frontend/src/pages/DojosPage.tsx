@@ -95,7 +95,7 @@ export default function DojosPage() {
     e.preventDefault()
     const data = {
       ...formData,
-      address: formData.address || undefined,
+      address: formData.address || null,
     }
     if (editingDojo) {
       updateMutation.mutate({ org_id: editingDojo.organization_id, id: editingDojo.id, data })
