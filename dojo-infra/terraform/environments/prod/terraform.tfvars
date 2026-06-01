@@ -1,9 +1,8 @@
 tenancy_ocid        = "ocid1.tenancy.oc1..aaaaaaaaazrni56c6y654ju2tj72hymad54z4xv3imn4of3ns34mt5khd7da"
 user_ocid           = "ocid1.user.oc1..aaaaaaaawkcpvlcrhxflb7q2k7ay5pnauu52nboulsqrzco2xrsinptpjmgq"
 fingerprint         = "56:af:9e:86:1e:50:46:55:47:51:04:67:aa:fb:70:43"
-private_key_path    = "~/.oci/oci_api_key.pem"
 region              = "sa-saopaulo-1"
 compartment_id      = "ocid1.compartment.oc1..aaaaaaaaqzkaic4iksnifaevb4xhegxftjuniyzbvwc6tp32ho3vd7vvrdta"
 availability_domain = "RXtC:SA-SAOPAULO-1-AD-1"
-bucket_namespace       = "grlidgqnerdm"
-ssh_public_key_path    = "/Users/rodrigo/.ssh/dojo-k8s.pub"
+bucket_namespace    = "grlidgqnerdm"
+# ssh_public_key_path and private_key_path are set via TF_VAR_* in CI
