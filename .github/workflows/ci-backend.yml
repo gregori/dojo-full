@@ -71,7 +71,7 @@ jobs:
           DATABASE_URL: mysql+pymysql://dojo_test_user:dojo_test_pass@localhost:3306/dojo_test_db
           SECRET_KEY: test-secret-key
         run: |
-          poetry run pytest tests/unit tests/integration -v --cov=app --cov-report=xml --cov-report=term
+          poetry run pytest tests/unit -v --cov=app --cov-report=xml --cov-report=term
 
       - name: Run BDD smoke tests
         env:

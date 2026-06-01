@@ -144,7 +144,9 @@ export default function ExamsPage() {
       if (selectedExam) loadExamDetail(selectedExam.id)
     },
     onError: (error: unknown) => {
-      const err = error as { response?: { data?: { detail?: { message?: string; reasons?: string[] } } } }
+      const err = error as {
+        response?: { data?: { detail?: { message?: string; reasons?: string[] } } }
+      }
       const detail = err?.response?.data?.detail
       if (detail?.message) {
         alert(`Requisitos não atendidos:\n${detail.reasons?.join('\n') || detail.message}`)
@@ -613,7 +615,8 @@ export default function ExamsPage() {
                     {selectedExam.participants.map((p) => (
                       <tr key={p.id}>
                         <td className="px-4 py-3 text-sm text-gray-900">
-                          {(p as { student?: { full_name: string } }).student?.full_name || p.student_id}
+                          {(p as { student?: { full_name: string } }).student?.full_name ||
+                            p.student_id}
                         </td>
                         <td className="px-4 py-3 text-sm">
                           <span
@@ -660,7 +663,7 @@ export default function ExamsPage() {
                                     className="px-2 py-1 border rounded text-xs"
                                   >
                                     <option value="">Nova faixa...</option>
-{belts?.map((belt: Belt) => (
+                                    {belts?.map((belt: Belt) => (
                                       <option key={belt.id} value={belt.id}>
                                         {belt.name}
                                       </option>
