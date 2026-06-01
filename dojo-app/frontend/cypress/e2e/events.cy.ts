@@ -170,4 +170,186 @@ describe('Events Page', () => {
     // Verify event is deleted
     cy.contains('Evento para Deletar').should('not.exist')
   })
+
+  describe('Eventos — Expansão', () => {
+    it('deve listar eventos existentes', () => {
+      // Login
+      cy.intercept('POST', '/api/v1/auth/login').as('loginRequest')
+      cy.get('input[type="email"]').type(testEmail)
+      cy.get('input[type="password"]').type(testPassword)
+      cy.get('button[type="submit"]').click()
+      cy.wait('@loginRequest')
+
+      // Navigate to Events page
+      cy.intercept('GET', '/api/v1/events').as('getEvents')
+      cy.get('a[href="/events"]').click()
+      cy.wait('@getEvents')
+
+      // Verify table has headers
+      cy.contains('Título').should('be.visible')
+      cy.contains('Tipo').should('be.visible')
+      cy.contains('Data').should('be.visible')
+
+      // Verify events are listed
+      cy.get('table tbody tr').should('have.length.greaterThan', 0)
+    })
+
+    it('deve filtrar eventos por tipo', () => {
+      // Login
+      cy.intercept('POST', '/api/v1/auth/login').as('loginRequest')
+      cy.get('input[type="email"]').type(testEmail)
+      cy.get('input[type="password"]').type(testPassword)
+      cy.get('button[type="submit"]').click()
+      cy.wait('@loginRequest')
+
+      // Navigate to Events page
+      cy.intercept('GET', '/api/v1/events').as('getEvents')
+      cy.intercept('GET', '/api/v1/events/types').as('getEventTypes')
+      cy.get('a[href="/events"]').click()
+      cy.wait('@getEvents')
+      cy.wait('@getEventTypes')
+
+      // Look for type filter dropdown
+      cy.get('select').filter(':visible').first().select(1)
+
+      // Verify filtered results
+      cy.wait('@getEvents')
+      cy.get('table tbody tr').should('have.length.greaterThan', 0)
+    })
+
+    it('deve cancelar um evento', () => {
+      // Login
+      cy.intercept('POST', '/api/v1/auth/login').as('loginRequest')
+      cy.get('input[type="email"]').type(testEmail)
+      cy.get('input[type="password"]').type(testPassword)
+      cy.get('button[type="submit"]').click()
+      cy.wait('@loginRequest')
+
+      // Navigate to Events page
+      cy.intercept('GET', '/api/v1/events').as('getEvents')
+      cy.intercept('GET', '/api/v1/events/types').as('getEventTypes')
+      cy.get('a[href="/events"]').click()
+      cy.wait('@getEvents')
+      cy.wait('@getEventTypes')
+
+      // Create an event first
+      cy.contains('Novo Evento').click()
+      cy.get('input[type="text"]').first().type('Evento para Cancelar')
+      cy.get('select').first().select(0)
+      cy.get('input[type="datetime-local"]').first().type('2030-12-01T10:00')
+
+      cy.intercept('POST', '/api/v1/events').as('createEvent')
+      cy.contains('Criar').click()
+      cy.wait('@createEvent')
+
+      // Now cancel the event
+      cy.intercept('DELETE', '/api/v1/events/*').as('cancelEvent')
+      cy.intercept('GET', '/api/v1/events').as('getEventsAfterCancel')
+
+      // Click cancel button (may be third button or have cancel text)
+      cy.get('table tbody tr').first().within(() => {
+        cy.contains(/cancelar/i).click()
+      })
+
+      cy.wait('@cancelEvent').then((interception) => {
+        expect(interception.response?.statusCode).to.eq(204)
+      })
+
+      // Verify event shows cancelled status
+      cy.wait('@getEventsAfterCancel')
+      cy.contains(/cancelado/i).should('be.visible')
+    })
+
+    it('deve visualizar detalhes de um evento', () => {
+      // Login
+      cy.intercept('POST', '/api/v1/auth/login').as('loginRequest')
+      cy.get('input[type="email"]').type(testEmail)
+      cy.get('input[type="password"]').type(testPassword)
+      cy.get('button[type="submit"]').click()
+      cy.wait('@loginRequest')
+
+      // Navigate to Events page
+      cy.intercept('GET', '/api/v1/events').as('getEvents')
+      cy.get('a[href="/events"]').click()
+      cy.wait('@getEvents')
+
+      // Click on event to view details
+      cy.get('table tbody tr').first().click()
+
+      // Verify event details are shown in modal/page
+      cy.contains(/título|title|descrição/i).should('be.visible')
+      cy.contains(/tipo|type|evento/i).should('be.visible')
+      cy.contains(/data|datetime|horário/i).should('be.visible')
+    })
+
+    it('deve gerar QR Code para evento', () => {
+      // Login
+      cy.intercept('POST', '/api/v1/auth/login').as('loginRequest')
+      cy.get('input[type="email"]').type(testEmail)
+      cy.get('input[type="password"]').type(testPassword)
+      cy.get('button[type="submit"]').click()
+      cy.wait('@loginRequest')
+
+      // Navigate to Events page
+      cy.intercept('GET', '/api/v1/events').as('getEvents')
+      cy.get('a[href="/events"]').click()
+      cy.wait('@getEvents')
+
+      // Create an event if none exists
+      cy.contains('Novo Evento').click()
+      cy.get('input[type="text"]').first().type('Evento com QR')
+      cy.get('select').first().select(0)
+      cy.get('input[type="datetime-local"]').first().type('2030-12-01T10:00')
+
+      cy.intercept('POST', '/api/v1/events').as('createEvent')
+      cy.contains('Criar').click()
+      cy.wait('@createEvent')
+
+      // Click on QR code button
+      cy.intercept('GET', '/api/v1/events/*/qr-code').as('getQR')
+      cy.get('table tbody tr').first().within(() => {
+        cy.contains(/qr|code/i).click()
+      })
+
+      cy.wait('@getQR').then((interception) => {
+        expect(interception.response?.statusCode).to.eq(200)
+        // QR code should contain token data
+        expect(interception.response?.body).to.have.property('qr_code_url').or('qr_code_data').or('token')
+      })
+    })
+
+    it('instrutor deve conseguir criar evento', () => {
+      // Login as instructor
+      cy.clearLocalStorage()
+      cy.intercept('POST', '/api/v1/auth/login').as('loginRequest')
+      cy.visit('/login')
+      cy.get('input[type="email"]').type('instructor@dojo.com')
+      cy.get('input[type="password"]').type('instruct123')
+      cy.get('button[type="submit"]').click()
+      cy.wait('@loginRequest')
+
+      // Navigate to Events page
+      cy.intercept('GET', '/api/v1/events').as('getEvents')
+      cy.intercept('GET', '/api/v1/events/types').as('getEventTypes')
+      cy.get('a[href="/events"]').click()
+      cy.wait('@getEvents')
+      cy.wait('@getEventTypes')
+
+      // Create event
+      cy.contains('Novo Evento').click()
+      cy.get('input[type="text"]').first().type('Aula do Sensei')
+      cy.get('select').first().select(0)
+      cy.get('input[type="datetime-local"]').first().type('2030-12-01T10:00')
+      cy.get('textarea').type('Aula ministrada pelo sensei')
+
+      cy.intercept('POST', '/api/v1/events').as('createEvent')
+      cy.contains('Criar').click()
+      cy.wait('@createEvent').then((interception) => {
+        expect(interception.response?.statusCode).to.eq(201)
+      })
+
+      // Verify event appears in list
+      cy.contains('Aula do Sensei').should('be.visible')
+    })
+  })
 })

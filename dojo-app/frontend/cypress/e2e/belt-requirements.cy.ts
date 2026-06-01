@@ -192,4 +192,127 @@ describe('Belt Requirements Page', () => {
       })
     })
   })
+
+  describe('Requisitos de Faixa — Expansão', () => {
+    it('deve listar requisitos existentes para uma faixa', () => {
+      cy.intercept('POST', '/api/v1/auth/login').as('loginRequest')
+      cy.get('input[type="email"]').type(testEmail)
+      cy.get('input[type="password"]').type(testPassword)
+      cy.get('button[type="submit"]').click()
+      cy.wait('@loginRequest')
+
+      cy.get('a[href="/belt-requirements"]').click()
+      cy.wait('@getBelts')
+
+      cy.get('select').first().select(1)
+      cy.intercept('GET', '/api/v1/belts/*/requirements').as('getRequirements')
+      cy.wait('@getRequirements')
+
+      cy.contains('Tipo de Evento').should('be.visible')
+      cy.contains('Quantidade').should('be.visible')
+    })
+
+    it('deve editar requisito de presença existente', () => {
+      cy.intercept('POST', '/api/v1/auth/login').as('loginRequest')
+      cy.get('input[type="email"]').type(testEmail)
+      cy.get('input[type="password"]').type(testPassword)
+      cy.get('button[type="submit"]').click()
+      cy.wait('@loginRequest')
+
+      cy.get('a[href="/belt-requirements"]').click()
+      cy.wait('@getBelts')
+      cy.wait('@getEventTypes')
+
+      cy.get('select').first().select(1)
+      cy.intercept('GET', '/api/v1/belts/*/requirements').as('getRequirements')
+      cy.wait('@getRequirements')
+
+      cy.contains('Adicionar').click()
+      cy.get('select').filter(':visible').last().select(0)
+      cy.get('input[type="number"]').clear().type('30')
+      cy.get('input[type="text"]').filter(':visible').last().type('Treinos normais')
+
+      cy.intercept('POST', '/api/v1/belts/*/requirements').as('createReq')
+      cy.contains('Adicionar').last().click()
+      cy.wait('@createReq')
+
+      // Note: PUT /api/v1/belts/requirements/* does not exist in backend
+      // Edit is handled by delete + recreate pattern
+      cy.intercept('DELETE', '/api/v1/belts/requirements/*').as('deleteReq')
+      cy.intercept('GET', '/api/v1/belts/*/requirements').as('getReqAfterUpdate')
+
+      cy.get('table tbody tr').first().within(() => {
+        cy.get('button').first().click() // Delete old requirement
+      })
+
+      cy.wait('@deleteReq')
+
+      // Recreate with updated values
+      cy.contains('Adicionar').click()
+      cy.get('select').filter(':visible').last().select(0)
+      cy.get('input[type="number"]').clear().type('40')
+      cy.get('input[type="text"]').filter(':visible').last().type('Treinos atualizados')
+
+      cy.intercept('POST', '/api/v1/belts/*/requirements').as('createUpdatedReq')
+      cy.contains('Adicionar').last().click()
+
+      cy.wait('@createUpdatedReq').then((interception) => {
+        expect(interception.response?.statusCode).to.eq(201)
+      })
+    })
+
+    it('deve configurar múltiplos requisitos para mesma faixa', () => {
+      cy.intercept('POST', '/api/v1/auth/login').as('loginRequest')
+      cy.get('input[type="email"]').type(testEmail)
+      cy.get('input[type="password"]').type(testPassword)
+      cy.get('button[type="submit"]').click()
+      cy.wait('@loginRequest')
+
+      cy.get('a[href="/belt-requirements"]').click()
+      cy.wait('@getBelts')
+      cy.wait('@getEventTypes')
+
+      cy.get('select').first().select(1)
+      cy.intercept('GET', '/api/v1/belts/*/requirements').as('getRequirements')
+      cy.wait('@getRequirements')
+
+      cy.contains('Adicionar').click()
+      cy.get('select').filter(':visible').last().select(0)
+      cy.get('input[type="number"]').clear().type('30')
+      cy.get('input[type="text"]').filter(':visible').last().type('Aula Regular')
+
+      cy.intercept('POST', '/api/v1/belts/*/requirements').as('createReq1')
+      cy.contains('Adicionar').last().click()
+      cy.wait('@createReq1')
+
+      cy.intercept('GET', '/api/v1/belts/*/requirements').as('getReqAfterFirst')
+      cy.wait('@getReqAfterFirst')
+
+      cy.contains('Adicionar').click()
+      cy.get('select').filter(':visible').last().select(1)
+      cy.get('input[type="number"]').clear().type('5')
+      cy.get('input[type="text"]').filter(':visible').last().type('Limpeza')
+
+      cy.intercept('POST', '/api/v1/belts/*/requirements').as('createReq2')
+      cy.contains('Adicionar').last().click()
+      cy.wait('@createReq2')
+
+      cy.wait('@getReqAfterFirst')
+      cy.get('table tbody tr').should('have.length', 2)
+    })
+
+    it('instrutor não deve acessar página de requisitos', () => {
+      cy.clearLocalStorage()
+      cy.intercept('POST', '/api/v1/auth/login').as('loginRequest')
+      cy.visit('/login')
+      cy.get('input[type="email"]').type('instructor@dojo.com')
+      cy.get('input[type="password"]').type('instruct123')
+      cy.get('button[type="submit"]').click()
+      cy.wait('@loginRequest')
+
+      cy.visit('/belt-requirements')
+      cy.url().should('not.include', '/belt-requirements')
+      cy.url().should.match(/(\/dashboard|\/login|\/students)/)
+    })
+  })
 })

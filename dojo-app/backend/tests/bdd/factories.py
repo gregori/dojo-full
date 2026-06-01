@@ -1,0 +1,82 @@
+"""Factory Boy models for BDD test data generation.
+
+Usage in step definitions:
+    from tests.bdd.factories import UserFactory, StudentFactory, BeltFactory
+
+    # Set the session before using factories
+    from factory.alchemy import SQLAlchemyModelFactory
+    from app.models import Session
+
+    # In a step:
+    user = UserFactory(email="test@dojo.com", role="admin")
+"""
+import factory
+from factory.alchemy import SQLAlchemyModelFactory
+
+from app.models import User, Student, Belt, EventType, Event, Exam
+from app.core.security import get_password_hash
+
+
+class UserFactory(SQLAlchemyModelFactory):
+    class Meta:
+        model = User
+
+    email = factory.Sequence(lambda n: f"user{n}@dojo.com")
+    password_hash = factory.LazyFunction(lambda: get_password_hash("test123"))
+    full_name = factory.Sequence(lambda n: f"Test User {n}")
+    role = "admin"
+    is_active = True
+
+
+class BeltFactory(SQLAlchemyModelFactory):
+    class Meta:
+        model = Belt
+
+    name = factory.Sequence(lambda n: f"Belt {n}")
+    category = "adult"
+    sort_order = factory.Sequence(lambda n: n)
+
+
+class EventTypeFactory(SQLAlchemyModelFactory):
+    class Meta:
+        model = EventType
+
+    name = factory.Sequence(lambda n: f"Event Type {n}")
+    color = "#3498db"
+    counts_for_belt = True
+
+
+class StudentFactory(SQLAlchemyModelFactory):
+    class Meta:
+        model = Student
+
+    full_name = factory.Sequence(lambda n: f"Student {n}")
+    registration_number = factory.Sequence(lambda n: f"2024{n:03d}")
+    pin = factory.LazyFunction(lambda: get_password_hash("1234"))
+    category = "adult"
+    is_active = True
+    current_belt_id = factory.LazyAttribute(lambda _: BeltFactory().id)
+
+
+class EventFactory(SQLAlchemyModelFactory):
+    class Meta:
+        model = Event
+
+    title = factory.Sequence(lambda n: f"Event {n}")
+    event_type_id = factory.LazyAttribute(lambda _: EventTypeFactory().id)
+    start_datetime = factory.LazyFunction(lambda: __import__("datetime").datetime.now(__import__("datetime").timezone.utc))
+    created_by = factory.LazyAttribute(lambda _: UserFactory().id)
+    check_in_token = factory.LazyFunction(lambda: str(__import__("uuid").uuid4()))
+    status = "scheduled"
+
+
+class ExamFactory(SQLAlchemyModelFactory):
+    class Meta:
+        model = Exam
+
+    event_id = factory.LazyAttribute(lambda _: EventFactory().id)
+    belt_id = factory.LazyAttribute(lambda _: BeltFactory().id)
+    exam_date = factory.LazyFunction(lambda: __import__("datetime").datetime.now(__import__("datetime").timezone.utc))
+    status = "scheduled"
+    notes = ""
+    created_by = factory.LazyAttribute(lambda _: UserFactory().id)
