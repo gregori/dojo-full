@@ -47,19 +47,15 @@ module "registry" {
   repository_names = ["dojo-backend", "dojo-frontend"]
 }
 
-# OKE Cluster (Managed Kubernetes)
-module "oke" {
-  source = "../../modules/oke"
+# Kubernetes Node (Compute Instance - manual kubeadm setup)
+module "k8s_node" {
+  source = "../../modules/k8s_node"
 
-  compartment_id      = var.compartment_id
-  vcn_id              = module.networking.vcn_id
-  subnet_id           = module.networking.cluster_endpoint_subnet_id
-  node_subnet_id      = module.networking.node_public_subnet_id
-  availability_domain = local.ad_name
-  cluster_name        = "dojo-cluster"
-  node_pool_name      = "dojo-node-pool"
+  compartment_id       = var.compartment_id
+  subnet_id           = module.networking.public_subnet_id
+  availability_domain  = local.ad_name
   node_shape          = "VM.Standard.A1.Flex"
   node_ocpus          = 4
   node_memory         = 24
-  node_count          = 1
+  ssh_public_key_path = var.ssh_public_key_path
 }
