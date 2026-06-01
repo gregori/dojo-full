@@ -58,9 +58,10 @@ jobs:
           TF_VAR_availability_domain: ${{ secrets.OCI_AVAILABILITY_DOMAIN }}
           TF_VAR_bucket_namespace: ${{ secrets.OCI_BUCKET_NAMESPACE }}
           TF_VAR_ssh_public_key_path: ~/.ssh/dojo-k8s.pub
+          TF_VAR_region: sa-saopaulo-1
 
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/master'
         run: terraform apply -auto-approve tfplan
         env:
           TF_VAR_tenancy_ocid: ${{ secrets.OCI_TENANCY_OCID }}
@@ -71,3 +72,4 @@ jobs:
           TF_VAR_availability_domain: ${{ secrets.OCI_AVAILABILITY_DOMAIN }}
           TF_VAR_bucket_namespace: ${{ secrets.OCI_BUCKET_NAMESPACE }}
           TF_VAR_ssh_public_key_path: ~/.ssh/dojo-k8s.pub
+          TF_VAR_region: sa-saopaulo-1
