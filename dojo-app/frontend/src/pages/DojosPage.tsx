@@ -100,7 +100,7 @@ export default function DojosPage() {
     if (editingDojo) {
       updateMutation.mutate({ org_id: editingDojo.organization_id, id: editingDojo.id, data })
     } else {
-      createMutation.mutate(data as any)
+      createMutation.mutate(data as any) // eslint-disable-line @typescript-eslint/no-explicit-any
     }
   }
 

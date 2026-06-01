@@ -77,7 +77,7 @@ export default function BeltsPage() {
     if (editingBelt) {
       updateMutation.mutate({ id: editingBelt.id, data })
     } else {
-      createMutation.mutate(data as any)
+      createMutation.mutate(data as any) // eslint-disable-line @typescript-eslint/no-explicit-any
     }
   }
 
