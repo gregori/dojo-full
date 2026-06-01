@@ -1,15 +1,21 @@
 """Unit tests for app.services.student_service module."""
+
 import pytest
-from datetime import datetime, timezone
 from fastapi import HTTPException
 
-from app.services.student_service import StudentService
+from app.core.security import verify_password
 from app.schemas import StudentCreate, StudentUpdate
-from app.core.security import get_password_hash, verify_password
+from app.services.student_service import StudentService
 from tests.unit.conftest import (
-    make_belt, make_student, make_event_type, make_event, make_user,
-    make_attendance, make_belt_requirement, make_belt_promotion,
-    make_dojo, make_organization, make_exam,
+    make_belt,
+    make_belt_requirement,
+    make_dojo,
+    make_event,
+    make_event_type,
+    make_exam,
+    make_organization,
+    make_student,
+    make_user,
 )
 
 
@@ -153,9 +159,8 @@ class TestStudentServiceCreate:
         student = StudentService.create_student(db_session, data)
 
         from app.models import BeltPromotion
-        promotion = db_session.query(BeltPromotion).filter(
-            BeltPromotion.student_id == student.id
-        ).first()
+
+        promotion = db_session.query(BeltPromotion).filter(BeltPromotion.student_id == student.id).first()
         assert promotion is not None
         assert promotion.belt_id == belt.id
         assert promotion.notes == "Initial belt assignment"
@@ -263,6 +268,7 @@ class TestStudentServiceExamHistory:
     def test_exam_history_with_participation(self, db_session):
         """Should return exam history with participation details."""
         from app.models import ExamParticipant
+
         belt = make_belt(db_session, name="Blue", sort_order=2)
         et = make_event_type(db_session)
         user = make_user(db_session)

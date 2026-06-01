@@ -1,12 +1,16 @@
 """Unit tests for app.services.event_service module."""
+
+from datetime import UTC, datetime
+
 import pytest
-from datetime import datetime, timezone, timedelta
 from fastapi import HTTPException
 
+from app.schemas import EventCreate, EventTypeCreate, EventTypeUpdate, EventUpdate
 from app.services.event_service import EventService, EventTypeService
-from app.schemas import EventCreate, EventUpdate, EventTypeCreate, EventTypeUpdate
 from tests.unit.conftest import (
-    make_event_type, make_event, make_user, make_belt,
+    make_event,
+    make_event_type,
+    make_user,
 )
 
 
@@ -151,7 +155,7 @@ class TestEventServiceCreate:
         data = EventCreate(
             title="New Event",
             event_type_id=et.id,
-            start_datetime=datetime.now(timezone.utc),
+            start_datetime=datetime.now(UTC),
         )
         event = EventService.create_event(db_session, data, created_by=user.id)
         assert event.id is not None

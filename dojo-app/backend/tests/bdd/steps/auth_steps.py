@@ -1,9 +1,6 @@
 """Step definitions for authentication scenarios (Portuguese Gherkin)."""
-import json
-from behave import given, when, then
 
-from app.models import User
-from app.core.security import get_password_hash, create_access_token
+from behave import given, then, when
 
 
 @given('estou autenticado como "{email}" com senha "{password}"')
@@ -14,15 +11,14 @@ def step_authenticated_as(context, email, password):
         "/api/v1/auth/login",
         data={"username": email, "password": password},
     )
-    assert response.status_code == 200, \
-        f"Authentication failed for {email}: {response.status_code} {response.text}"
+    assert response.status_code == 200, f"Authentication failed for {email}: {response.status_code} {response.text}"
     token_data = response.json()
     context.user_token = token_data["access_token"]
     # Set Authorization header on client for all subsequent requests
     context.client.headers["Authorization"] = f"Bearer {context.user_token}"
 
 
-@then('a resposta deve conter um token de acesso válido')
+@then("a resposta deve conter um token de acesso válido")
 def step_response_contains_valid_token(context):
     """Verify the response contains a valid access token."""
     data = context.response.json()
@@ -36,29 +32,29 @@ def step_response_contains_valid_token(context):
 def step_token_role(context, expected_role):
     """Verify the role claim in the JWT token."""
     from jose import jwt
+
     from app.core.config import get_settings
 
     token = context.user_token
     settings = get_settings()
     payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
 
-    assert payload.get("role") == expected_role, \
-        f"Expected role '{expected_role}', got '{payload.get('role')}'"
+    assert payload.get("role") == expected_role, f"Expected role '{expected_role}', got '{payload.get('role')}'"
 
 
 @when('eu envio uma requisição POST para "{endpoint}" com:')
 def step_send_post_request_with_table(context, endpoint):
     """Send a POST request with table data (Portuguese) - colon variant for data tables."""
-    data = {row['field']: row['value'] for row in context.table}
+    data = {row["field"]: row["value"] for row in context.table}
     endpoint = _resolve_endpoint(context, endpoint)
     data = _resolve_placeholders(context, data, endpoint=endpoint)
 
     headers = {}
-    if hasattr(context, 'user_token') and context.user_token:
-        headers['Authorization'] = f'Bearer {context.user_token}'
+    if hasattr(context, "user_token") and context.user_token:
+        headers["Authorization"] = f"Bearer {context.user_token}"
 
     # Auth login endpoint uses OAuth2PasswordRequestForm (form data, not JSON)
-    if '/auth/login' in endpoint:
+    if "/auth/login" in endpoint:
         context.response = context.client.post(endpoint, data=data, headers=headers)
         if context.response.status_code == 200:
             token_data = context.response.json()
@@ -72,16 +68,16 @@ def step_send_post_request_with_table(context, endpoint):
 @when('eu envio uma requisição POST para "{endpoint}" com')
 def step_send_post_request_pt(context, endpoint):
     """Send a POST request with table data (Portuguese) - no colon variant."""
-    data = {row['field']: row['value'] for row in context.table}
+    data = {row["field"]: row["value"] for row in context.table}
     endpoint = _resolve_endpoint(context, endpoint)
     data = _resolve_placeholders(context, data, endpoint=endpoint)
 
     headers = {}
-    if hasattr(context, 'user_token') and context.user_token:
-        headers['Authorization'] = f'Bearer {context.user_token}'
+    if hasattr(context, "user_token") and context.user_token:
+        headers["Authorization"] = f"Bearer {context.user_token}"
 
     # Auth login endpoint uses OAuth2PasswordRequestForm (form data, not JSON)
-    if '/auth/login' in endpoint:
+    if "/auth/login" in endpoint:
         context.response = context.client.post(endpoint, data=data, headers=headers)
         if context.response.status_code == 200:
             token_data = context.response.json()
@@ -99,8 +95,8 @@ def step_send_get_request_pt(context, endpoint):
     endpoint = _resolve_endpoint(context, endpoint)
 
     headers = {}
-    if hasattr(context, 'user_token') and context.user_token:
-        headers['Authorization'] = f'Bearer {context.user_token}'
+    if hasattr(context, "user_token") and context.user_token:
+        headers["Authorization"] = f"Bearer {context.user_token}"
 
     context.response = context.client.get(endpoint, headers=headers)
 
@@ -108,13 +104,13 @@ def step_send_get_request_pt(context, endpoint):
 @when('eu envio uma requisição PUT para "{endpoint}" com:')
 def step_send_put_request_with_table(context, endpoint):
     """Send a PUT request with table data (Portuguese) - colon variant for data tables."""
-    data = {row['field']: row['value'] for row in context.table}
+    data = {row["field"]: row["value"] for row in context.table}
     endpoint = _resolve_endpoint(context, endpoint)
     data = _resolve_placeholders(context, data, endpoint=endpoint)
 
     headers = {}
-    if hasattr(context, 'user_token') and context.user_token:
-        headers['Authorization'] = f'Bearer {context.user_token}'
+    if hasattr(context, "user_token") and context.user_token:
+        headers["Authorization"] = f"Bearer {context.user_token}"
 
     context.response = context.client.put(endpoint, json=data, headers=headers)
 
@@ -122,13 +118,13 @@ def step_send_put_request_with_table(context, endpoint):
 @when('eu envio uma requisição PUT para "{endpoint}" com')
 def step_send_put_request_pt(context, endpoint):
     """Send a PUT request with table data (Portuguese) - no colon variant."""
-    data = {row['field']: row['value'] for row in context.table}
+    data = {row["field"]: row["value"] for row in context.table}
     endpoint = _resolve_endpoint(context, endpoint)
     data = _resolve_placeholders(context, data, endpoint=endpoint)
 
     headers = {}
-    if hasattr(context, 'user_token') and context.user_token:
-        headers['Authorization'] = f'Bearer {context.user_token}'
+    if hasattr(context, "user_token") and context.user_token:
+        headers["Authorization"] = f"Bearer {context.user_token}"
 
     context.response = context.client.put(endpoint, json=data, headers=headers)
 
@@ -140,17 +136,18 @@ def step_send_delete_request_pt(context, endpoint):
     endpoint = _resolve_endpoint(context, endpoint)
 
     headers = {}
-    if hasattr(context, 'user_token') and context.user_token:
-        headers['Authorization'] = f'Bearer {context.user_token}'
+    if hasattr(context, "user_token") and context.user_token:
+        headers["Authorization"] = f"Bearer {context.user_token}"
 
     context.response = context.client.delete(endpoint, headers=headers)
 
 
-@then('o status da resposta deve ser {status_code:d}')
+@then("o status da resposta deve ser {status_code:d}")
 def step_response_status_pt(context, status_code):
     """Verify response status code (Portuguese)."""
-    assert context.response.status_code == status_code, \
+    assert context.response.status_code == status_code, (
         f"Expected {status_code}, got {context.response.status_code}: {context.response.text}"
+    )
 
 
 @then('a resposta deve conter "{field}" com valor "{expected_value}"')
@@ -160,12 +157,11 @@ def step_response_contains_field_pt(context, field, expected_value):
     actual = data.get(field, f"<field '{field}' not found>")
 
     # Resolve placeholder in expected_value
-    if expected_value.startswith('<') and expected_value.endswith('>'):
-        placeholder = expected_value.strip('<>')
+    if expected_value.startswith("<") and expected_value.endswith(">"):
+        placeholder = expected_value.strip("<>")
         expected_value = str(getattr(context, placeholder, expected_value))
 
-    assert str(actual) == expected_value, \
-        f"Expected '{field}' to be '{expected_value}', got '{actual}'"
+    assert str(actual) == expected_value, f"Expected '{field}' to be '{expected_value}', got '{actual}'"
 
 
 @then('a resposta deve conter "{field}"')
@@ -179,25 +175,26 @@ def _resolve_placeholders(context, data, endpoint=""):
     """Resolve <placeholder> values in request data from context attributes."""
     resolved = {}
     for key, value in data.items():
-        if isinstance(value, str) and value.startswith('<') and value.endswith('>'):
-            placeholder = value.strip('<>')
+        if isinstance(value, str) and value.startswith("<") and value.endswith(">"):
+            placeholder = value.strip("<>")
             resolved_value = getattr(context, placeholder, value)
             resolved[key] = str(resolved_value) if resolved_value != value else value
         else:
             resolved[key] = value
     # Map belt_id -> current_belt_id only for student API endpoints
     # (exams, belts, etc. use belt_id directly)
-    if 'belt_id' in resolved and 'current_belt_id' not in resolved and '/students' in endpoint:
-        resolved['current_belt_id'] = resolved.pop('belt_id')
+    if "belt_id" in resolved and "current_belt_id" not in resolved and "/students" in endpoint:
+        resolved["current_belt_id"] = resolved.pop("belt_id")
     return resolved
 
 
 def _resolve_endpoint(context, endpoint):
     """Resolve <placeholder> values in endpoint URLs from context attributes."""
     import re
+
     def replace_placeholder(match):
         placeholder = match.group(1)
         value = getattr(context, placeholder, match.group(0))
         return str(value)
 
-    return re.sub(r'<(\w+)>', replace_placeholder, endpoint)
+    return re.sub(r"<(\w+)>", replace_placeholder, endpoint)

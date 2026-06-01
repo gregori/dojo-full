@@ -1,0 +1,65 @@
+name: CI - Frontend
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'dojo-app/frontend/**'
+      - '.github/workflows/ci-frontend.yml'
+  pull_request:
+    branches: [master]
+    paths:
+      - 'dojo-app/frontend/**'
+      - '.github/workflows/ci-frontend.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dojo-app/frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: ./dojo-app/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run lint (ESLint)
+        run: npm run lint
+
+      - name: Check formatting (Prettier)
+        run: npm run format:check
+
+      - name: Run unit tests
+        run: npm test -- --coverage --watchAll=false --passWithNoTests
+
+      - name: Build application
+        run: npm run build
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/master'
+    defaults:
+      run:
+        working-directory: dojo-app/frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build -t dojo-frontend:${{ github.sha }} -f Dockerfile.prod .
+
+      - name: Push to OCI Registry (production)
+        if: github.event_name == 'push'
+        run: |
+          echo "Push to OCIR would happen here"

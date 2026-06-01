@@ -1,8 +1,10 @@
 """Integration tests for event and event type API endpoints."""
-import os
+
 import itertools
+import os
+from datetime import UTC, datetime, timedelta
+
 import pytest
-from datetime import datetime, timezone, timedelta
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
@@ -11,13 +13,20 @@ from sqlalchemy.pool import StaticPool
 # Force test database URL before any app imports
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 
-from app.models import (
-    Base, Organization, Dojo, User, Belt, EventType, Event,
-)
-from app.core.security import get_password_hash, create_access_token
 from app.core.database import get_db
-from app.dependencies.auth import get_current_user, get_current_admin, get_current_instructor_or_admin
+from app.core.security import get_password_hash
+from app.dependencies.auth import (
+    get_current_admin,
+    get_current_instructor_or_admin,
+    get_current_user,
+)
 from app.main import app
+from app.models import (
+    Base,
+    Event,
+    EventType,
+    User,
+)
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
 _counter = itertools.count(1)
@@ -94,7 +103,7 @@ def _make_event(db, event_type_id=None, created_by=None, **kwargs):
     defaults = {
         "title": f"Test Event {n}",
         "event_type_id": event_type_id,
-        "start_datetime": datetime.now(timezone.utc),
+        "start_datetime": datetime.now(UTC),
         "created_by": created_by,
         "status": "scheduled",
     }
@@ -114,6 +123,7 @@ def admin_user(db_session):
 @pytest.fixture(scope="function")
 def client(db_session, admin_user):
     """TestClient with DB override and auth dependency override."""
+
     def override_get_db():
         try:
             yield db_session
@@ -130,6 +140,7 @@ def client(db_session, admin_user):
 
 
 # --- Event Type Tests ---
+
 
 class TestListEventTypes:
     """Tests for GET /api/v1/events/types."""
@@ -193,6 +204,7 @@ class TestDeleteEventType:
 
 # --- Event Tests ---
 
+
 class TestListEvents:
     """Tests for GET /api/v1/events."""
 
@@ -228,8 +240,6 @@ class TestGetEvent:
         assert data["id"] == ev.id
         assert data["title"] == ev.title
 
-    
-
 
 class TestCreateEvent:
     """Tests for POST /api/v1/events."""
@@ -237,7 +247,7 @@ class TestCreateEvent:
     def test_create_event_success(self, client, db_session):
         """Create a new event returns 201."""
         et = _make_event_type(db_session)
-        start = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
+        start = (datetime.now(UTC) + timedelta(days=1)).isoformat()
         response = client.post(
             "/api/v1/events",
             json={

@@ -10,11 +10,12 @@ Usage in step definitions:
     # In a step:
     user = UserFactory(email="test@dojo.com", role="admin")
 """
+
 import factory
 from factory.alchemy import SQLAlchemyModelFactory
 
-from app.models import User, Student, Belt, EventType, Event, Exam
 from app.core.security import get_password_hash
+from app.models import Belt, Event, EventType, Exam, Student, User
 
 
 class UserFactory(SQLAlchemyModelFactory):
@@ -64,7 +65,9 @@ class EventFactory(SQLAlchemyModelFactory):
 
     title = factory.Sequence(lambda n: f"Event {n}")
     event_type_id = factory.LazyAttribute(lambda _: EventTypeFactory().id)
-    start_datetime = factory.LazyFunction(lambda: __import__("datetime").datetime.now(__import__("datetime").timezone.utc))
+    start_datetime = factory.LazyFunction(
+        lambda: __import__("datetime").datetime.now(__import__("datetime").timezone.utc)
+    )
     created_by = factory.LazyAttribute(lambda _: UserFactory().id)
     check_in_token = factory.LazyFunction(lambda: str(__import__("uuid").uuid4()))
     status = "scheduled"

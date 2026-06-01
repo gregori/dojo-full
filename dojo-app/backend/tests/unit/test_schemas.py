@@ -1,15 +1,17 @@
 """Unit tests for app.schemas validation."""
+
+from datetime import UTC, datetime
+
 import pytest
-from datetime import datetime, timezone, timedelta
 from pydantic import ValidationError
 
-from app.schemas.user import UserCreate, UserUpdate, UserLogin, Token
+from app.schemas.attendance import AttendanceCreate, CheckInQRRequest, CheckInRequest
+from app.schemas.belt import BeltCreate, BeltRequirementCreate, BeltUpdate
+from app.schemas.event import EventCreate, EventTypeCreate, EventUpdate
+from app.schemas.exam import ExamBoardMemberCreate, ExamCreate, ExamParticipantCreate
+from app.schemas.organization import DojoCreate, OrganizationCreate
 from app.schemas.student import StudentCreate, StudentUpdate
-from app.schemas.event import EventCreate, EventUpdate, EventTypeCreate, EventTypeUpdate
-from app.schemas.attendance import CheckInRequest, CheckInQRRequest, AttendanceCreate
-from app.schemas.belt import BeltCreate, BeltUpdate, BeltRequirementCreate
-from app.schemas.exam import ExamCreate, ExamUpdate, ExamParticipantCreate, ExamBoardMemberCreate
-from app.schemas.organization import OrganizationCreate, DojoCreate
+from app.schemas.user import Token, UserCreate, UserLogin, UserUpdate
 
 
 class TestUserSchemas:
@@ -96,7 +98,7 @@ class TestEventSchemas:
         data = EventCreate(
             title="Test Event",
             event_type_id="et-123",
-            start_datetime=datetime.now(timezone.utc),
+            start_datetime=datetime.now(UTC),
         )
         assert data.title == "Test Event"
 
@@ -106,8 +108,8 @@ class TestEventSchemas:
             EventCreate(
                 title="Bad Event",
                 event_type_id="et-123",
-                start_datetime=datetime(2025, 6, 1, 10, 0, tzinfo=timezone.utc),
-                end_datetime=datetime(2025, 6, 1, 9, 0, tzinfo=timezone.utc),
+                start_datetime=datetime(2025, 6, 1, 10, 0, tzinfo=UTC),
+                end_datetime=datetime(2025, 6, 1, 9, 0, tzinfo=UTC),
             )
 
     def test_event_create_valid_dates(self):
@@ -115,8 +117,8 @@ class TestEventSchemas:
         data = EventCreate(
             title="Good Event",
             event_type_id="et-123",
-            start_datetime=datetime(2025, 6, 1, 9, 0, tzinfo=timezone.utc),
-            end_datetime=datetime(2025, 6, 1, 10, 0, tzinfo=timezone.utc),
+            start_datetime=datetime(2025, 6, 1, 9, 0, tzinfo=UTC),
+            end_datetime=datetime(2025, 6, 1, 10, 0, tzinfo=UTC),
         )
         assert data.end_datetime is not None
 
@@ -201,7 +203,7 @@ class TestExamSchemas:
         data = ExamCreate(
             event_id="evt-1",
             belt_id="belt-1",
-            exam_date=datetime.now(timezone.utc),
+            exam_date=datetime.now(UTC),
         )
         assert data.event_id == "evt-1"
 

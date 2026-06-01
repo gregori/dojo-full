@@ -1,10 +1,11 @@
 """Unit tests for app.services.auth_service module."""
+
 import pytest
 from fastapi import HTTPException
 
 from app.core.security import get_password_hash
-from app.services.auth_service import AuthService, UserService
 from app.schemas import UserCreate, UserUpdate
+from app.services.auth_service import AuthService, UserService
 from tests.unit.conftest import make_user
 
 
@@ -48,6 +49,7 @@ class TestAuthServiceCreateToken:
     def test_create_token_for_user(self, db_session):
         """Should create a valid JWT token for a user."""
         from jose import jwt
+
         from app.core.config import get_settings
 
         user = make_user(db_session, role="admin")

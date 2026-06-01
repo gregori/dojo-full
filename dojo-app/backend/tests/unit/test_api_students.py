@@ -1,6 +1,8 @@
 """Integration tests for student API endpoints."""
-import os
+
 import itertools
+import os
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event
@@ -10,13 +12,20 @@ from sqlalchemy.pool import StaticPool
 # Force test database URL before any app imports
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 
-from app.models import (
-    Base, Organization, Dojo, User, Belt, Student,
-)
-from app.core.security import get_password_hash, create_access_token
 from app.core.database import get_db
-from app.dependencies.auth import get_current_user, get_current_admin, get_current_instructor_or_admin
+from app.core.security import create_access_token, get_password_hash
+from app.dependencies.auth import (
+    get_current_admin,
+    get_current_instructor_or_admin,
+    get_current_user,
+)
 from app.main import app
+from app.models import (
+    Base,
+    Belt,
+    Student,
+    User,
+)
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
 _counter = itertools.count(1)
@@ -147,6 +156,7 @@ def instructor_auth_headers(instructor_user):
 @pytest.fixture(scope="function")
 def client(db_session, admin_user):
     """TestClient with DB override and auth dependency override."""
+
     def override_get_db():
         try:
             yield db_session
@@ -166,6 +176,7 @@ def client(db_session, admin_user):
 @pytest.fixture(scope="function")
 def instructor_client(db_session, instructor_user):
     """TestClient with instructor auth."""
+
     def override_get_db():
         try:
             yield db_session
@@ -223,8 +234,6 @@ class TestGetStudent:
         data = response.json()
         assert data["id"] == student.id
         assert data["full_name"] == student.full_name
-
-    
 
 
 class TestCreateStudent:
