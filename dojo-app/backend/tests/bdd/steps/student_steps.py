@@ -15,6 +15,9 @@ def step_student_deactivated(context, name):
     assert student is not None, f"Student '{name}' not found in context"
     student.is_active = False
     db.commit()
+    # Update context so <student_id> resolves to this student
+    context.student_id = student.id
+    context.current_student = student
 
 
 @then('a resposta deve conter uma lista de alunos')
@@ -29,7 +32,7 @@ def step_list_contains_name(context, name):
     """Verify a name appears in the response list."""
     data = context.response.json()
     if isinstance(data, list):
-        names = [item.get('full_name', '') for item in data]
+        names = [item.get('full_name', item.get('title', '')) for item in data]
         assert name in names, f"Expected '{name}' in {names}"
     else:
         assert False, f"Expected a list, got {type(data)}"
@@ -40,7 +43,7 @@ def step_list_not_contains_name(context, name):
     """Verify a name does NOT appear in the response list."""
     data = context.response.json()
     if isinstance(data, list):
-        names = [item.get('full_name', '') for item in data]
+        names = [item.get('full_name', item.get('title', '')) for item in data]
         assert name not in names, f"Expected '{name}' NOT in {names}"
     else:
         assert False, f"Expected a list, got {type(data)}"

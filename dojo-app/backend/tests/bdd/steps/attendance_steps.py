@@ -26,6 +26,9 @@ def step_student_checked_in_event(context, name):
     )
     db.add(attendance)
     db.commit()
+    # Update context so <student_id> resolves to this student
+    context.student_id = student.id
+    context.current_student = student
 
 
 @given('o aluno "{name}" fez check-in no evento via "{method}"')
@@ -50,15 +53,24 @@ def step_student_checked_in_event_via(context, name, method):
     db.commit()
 
 
+@when('o aluno "{name}" faz check-in com:')
+def step_student_checks_in_by_name_colon(context, name):
+    """Student check-in by name - colon variant for data tables."""
+    data = {row['field']: row['value'] for row in context.table}
+    from steps.common_steps import _resolve_placeholders
+    data = _resolve_placeholders(context, data)
+    event_id = context.event_id if hasattr(context, 'event_id') else context.current_event.id
+    context.response = context.client.post(f"/api/v1/checkin/tablet/{event_id}", json=data)
+
+
 @when('o aluno "{name}" faz check-in com')
 def step_student_checks_in_by_name(context, name):
-    """Student check-in by name (Portuguese)."""
-    import requests
+    """Student check-in by name - no colon variant."""
     data = {row['field']: row['value'] for row in context.table}
-
+    from steps.common_steps import _resolve_placeholders
+    data = _resolve_placeholders(context, data)
     event_id = context.event_id if hasattr(context, 'event_id') else context.current_event.id
-    url = context.base_url + f"/api/v1/checkin/tablet/{event_id}"
-    context.response = requests.post(url, json=data)
+    context.response = context.client.post(f"/api/v1/checkin/tablet/{event_id}", json=data)
 
 
 @then('a resposta deve conter uma lista vazia de presenças')

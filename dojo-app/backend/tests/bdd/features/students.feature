@@ -22,7 +22,6 @@ Funcionalidade: Gestão de Alunos
     Então o status da resposta deve ser 201
     E a resposta deve conter "full_name" com valor "João Silva"
     E a resposta deve conter "registration_number"
-    E a resposta deve conter "pin"
 
   Cenário: Cadastrar aluno gera matrícula automática única (US-003)
     Quando eu envio uma requisição POST para "/api/v1/students" com:

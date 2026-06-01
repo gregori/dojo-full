@@ -85,6 +85,9 @@ def step_exam_participant_exists(context, role, name):
     db.commit()
     context.current_participant = participant
     context.participant_id = participant.id
+    # Update context so <student_id> resolves to this student
+    context.student_id = student.id
+    context.current_student = student
 
 
 @then('o exame deve ter {count:d} membros na banca')

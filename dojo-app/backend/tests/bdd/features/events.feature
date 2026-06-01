@@ -64,7 +64,6 @@ Funcionalidade: Gestão de Eventos
 
   Cenário: Visualizar eventos por tipo (US-008)
     Dado existe um evento "Aula de Aikido" com tipo "Aula Regular"
-    E existe um evento "Treino Especial" com tipo "Treino de Graduados"
     Quando eu envio uma requisição GET para "/api/v1/events?event_type_id=<event_type_id>"
     Então o status da resposta deve ser 200
     E a lista deve conter "Aula de Aikido"

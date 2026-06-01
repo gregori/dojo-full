@@ -1,18 +1,55 @@
+import os
+
+os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+
 from behave import use_fixture
 from behave.fixture import fixture
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
-from app.models import Base
+from fastapi.testclient import TestClient
+
+import app.core.config as _config
+
+class _TestConfig(_config.Settings):
+    database_url: str = "sqlite:///:memory:"
+    debug: bool = True
+    environment: str = "test"
+
+_config.get_settings = lambda: _TestConfig()
+
+from app.models import (
+    Base,
+    User, Student, Belt, BeltRequirement, BeltPromotion,
+    EventType, Event, Attendance,
+    Exam, ExamParticipant, ExamBoardMember,
+    Organization, Dojo,
+)
+from app.core.database import get_db, engine
+from app.main import app
+
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
 
 
 @fixture
 def test_database(context):
-    """Create a fresh in-memory database for each test."""
-    engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False})
+    """Create a fresh in-memory database for each test and override the app's DB dependency."""
+    engine = create_engine(
+        TEST_DATABASE_URL,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+
+    # Enable foreign key support in SQLite
+    @event.listens_for(engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
     Base.metadata.create_all(bind=engine)
@@ -21,8 +58,22 @@ def test_database(context):
     context.db = db
     context.engine = engine
 
+    # Override the get_db dependency to use our test database
+    def override_get_db():
+        try:
+            yield db
+        finally:
+            pass  # Don't close here; we manage the session lifecycle
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    # Create TestClient with the overridden dependency
+    context.client = TestClient(app)
+
     yield db
 
+    # Cleanup
+    app.dependency_overrides.clear()
     db.close()
     Base.metadata.drop_all(bind=engine)
 
@@ -30,7 +81,6 @@ def test_database(context):
 def before_all(context):
     """Setup before all tests."""
     context.test_mode = True
-    context.base_url = "http://localhost:8000"
 
 
 def before_scenario(context, scenario):

@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 from behave import given, when, then
 
-from app.models import BeltRequirement, Attendance, Event, EventType
+from app.models import BeltRequirement, Attendance, Event, EventType, Belt
 
 
 @given('o requisito de "{event_type_name}" para faixa "{belt_name}" é {count:d}')

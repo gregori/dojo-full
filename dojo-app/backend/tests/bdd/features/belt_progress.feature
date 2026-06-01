@@ -12,6 +12,8 @@ Funcionalidade: Progresso de Faixa
     E existe um tipo de evento "Aula Regular" com cor "#3498db"
     E existe um tipo de evento "Treino de Graduados" com cor "#2ecc71"
     E existe um tipo de evento "Limpeza" com cor "#f39c12"
+    E existe um usuário com email "admin@dojo.com" e senha "admin123" e papel "admin"
+    E estou autenticado como "admin@dojo.com" com senha "admin123"
     E existe um aluno "João Silva" com matrícula "2024001" e PIN "1234" e categoria "adult"
     E existe um evento "Aula de Aikido" com tipo "Aula Regular"
 
