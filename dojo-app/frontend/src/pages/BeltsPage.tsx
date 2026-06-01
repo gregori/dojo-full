@@ -73,7 +73,7 @@ export default function BeltsPage() {
     const data = {
       ...formData,
       organization_id: formData.organization_id || undefined,
-    }
+    } as { name: string; category: 'child' | 'adult'; sort_order: number; organization_id?: string }
     if (editingBelt) {
       updateMutation.mutate({ id: editingBelt.id, data })
     } else {

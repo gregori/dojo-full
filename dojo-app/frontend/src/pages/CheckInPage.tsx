@@ -14,6 +14,7 @@ interface CheckInResult {
   student_name: string
   event_name: string
   checkin_time: string
+  message?: string
   progress?: {
     current_belt: string
     next_belt?: string
