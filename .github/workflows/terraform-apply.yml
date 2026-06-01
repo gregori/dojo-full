@@ -1,15 +1,17 @@
 name: Terraform Apply
 
 on:
+  workflow_dispatch:
   push:
     branches: [master]
     paths:
       - 'dojo-infra/terraform/**'
-      - '.github/workflows/terraform-apply.yml'
+      - 'dojo-infra/.github/workflows/terraform-apply.yml'
   pull_request:
     branches: [master]
     paths:
       - 'dojo-infra/terraform/**'
+      - '.github/workflows/terraform-apply.yml'
 
 jobs:
   terraform:
