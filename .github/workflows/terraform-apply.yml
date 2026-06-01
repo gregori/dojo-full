@@ -12,10 +12,6 @@ on:
     paths:
       - 'dojo-infra/terraform/**'
       - '.github/workflows/terraform-apply.yml'
-  pull_request:
-    branches: [master]
-    paths:
-      - 'dojo-infra/terraform/**'
 
 jobs:
   terraform:
