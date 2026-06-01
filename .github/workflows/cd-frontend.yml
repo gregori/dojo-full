@@ -53,44 +53,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install OCI CLI
+      - name: Notify build complete
         run: |
-          mkdir -p /home/runner/.oci
-          echo "${{ secrets.OCI_PRIVATE_KEY }}" > /home/runner/.oci/oci_api_key.pem
-          chmod 600 /home/runner/.oci/oci_api_key.pem
-
-          curl -L -O https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh
-          bash install.sh --accept-all-defaults
-          echo "$HOME/bin" >> $GITHUB_PATH
-
-      - name: Configure Kubectl
-        run: |
-          oci ce cluster create-kubeconfig \
-            --cluster-id ${{ secrets.OCI_CLUSTER_ID }} \
-            --file $HOME/.kube/config \
-            --region ${{ env.OCI_REGION }} \
-            --token-version 2.0.0
-        env:
-          OCI_CLI_USER: ${{ secrets.OCI_USER_OCID }}
-          OCI_CLI_TENANCY: ${{ secrets.OCI_TENANCY_OCID }}
-          OCI_CLI_FINGERPRINT: ${{ secrets.OCI_FINGERPRINT }}
-          OCI_CLI_KEY_FILE: /home/runner/.oci/oci_api_key.pem
-          OCI_CLI_REGION: ${{ env.OCI_REGION }}
-
-      - name: Update deployment image
-        run: |
-          kubectl set image deployment/dojo-frontend \
-            frontend=${{ secrets.OCI_REGISTRY }}/${{ secrets.OCI_TENANCY_NAMESPACE }}/dojo-frontend:${{ github.sha }} \
-            -n dojo
-
-      - name: Wait for rollout
-        run: |
-          kubectl rollout status deployment/dojo-frontend -n dojo --timeout=300s
-
-      - name: Verify deployment
-        run: |
-          kubectl get pods -n dojo -l app=dojo-frontend
-          kubectl get svc -n dojo dojo-frontend
+          echo "Image built and pushed: ${{ secrets.OCI_REGISTRY }}/${{ secrets.OCI_TENANCY_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          echo "Deploy step skipped - manually run 'deploy-vm.yml' workflow to deploy to VM"
