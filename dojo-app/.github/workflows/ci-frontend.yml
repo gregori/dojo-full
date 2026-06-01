@@ -2,12 +2,12 @@ name: CI - Frontend
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - 'dojo-app/frontend/**'
       - 'dojo-app/.github/workflows/ci-frontend.yml'
   pull_request:
-    branches: [main]
+    branches: [master]
     paths:
       - 'dojo-app/frontend/**'
       - 'dojo-app/.github/workflows/ci-frontend.yml'

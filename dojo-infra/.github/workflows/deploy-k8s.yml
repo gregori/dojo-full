@@ -3,7 +3,7 @@ name: Deploy to Kubernetes
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - 'dojo-infra/k8s/**'
 
