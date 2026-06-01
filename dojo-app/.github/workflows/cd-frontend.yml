@@ -2,7 +2,7 @@ name: CD - Deploy Frontend
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - 'dojo-app/frontend/**'
       - 'dojo-app/.github/workflows/cd-frontend.yml'
