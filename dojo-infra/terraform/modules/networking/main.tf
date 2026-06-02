@@ -139,6 +139,26 @@ resource "oci_core_security_list" "public_sl" {
     }
   }
 
+  # Allow Traefik HTTP NodePort
+  ingress_security_rules {
+    protocol  = "6" # TCP
+    source    = "0.0.0.0/0"
+    tcp_options {
+      min = 30737
+      max = 30737
+    }
+  }
+
+  # Allow Traefik HTTPS NodePort
+  ingress_security_rules {
+    protocol  = "6" # TCP
+    source    = "0.0.0.0/0"
+    tcp_options {
+      min = 30874
+      max = 30874
+    }
+  }
+
   # Allow all outbound
   egress_security_rules {
     protocol    = "all"
