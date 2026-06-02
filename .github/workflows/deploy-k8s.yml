@@ -45,7 +45,7 @@ jobs:
           target: /tmp/dojo-manifests
           strip_components: 0
 
-      - name: Substitute Placeholders and Apply via SSH
+      - name: Render, Substitute and Apply via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
@@ -54,10 +54,10 @@ jobs:
           script: |
             REGISTRY=${{ secrets.OCI_REGION }}.ocir.io
             NAMESPACE=${{ secrets.OCI_TENANCY_NAMESPACE }}
-            find /tmp/dojo-manifests/dojo-infra/k8s/ -name '*.yaml' -exec sed -i \
-              -e "s|<region>|$REGISTRY|g" \
-              -e "s|<tenancy>|$NAMESPACE|g" {} +
-            sudo k3s kubectl apply -k /tmp/dojo-manifests/dojo-infra/k8s/
+            # Render kustomize output, replace placeholders in single stream, then apply
+            sudo k3s kubectl kustomize /tmp/dojo-manifests/dojo-infra/k8s/ | \
+              sed -e "s|<region>\.ocir\.io/<tenancy>|$REGISTRY/$NAMESPACE|g" | \
+              sudo k3s kubectl apply -f -
 
       - name: Wait for Rollout via SSH
         uses: appleboy/ssh-action@v1.0.3
