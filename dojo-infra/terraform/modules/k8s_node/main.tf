@@ -32,7 +32,7 @@ resource "oci_core_instance" "k8s_node" {
 
   metadata = {
     ssh_authorized_keys = file(var.ssh_public_key_path)
-    user_data           = base64encode(templatefile("${path.module}/user_data.sh", {}))
+    user_data           = base64encode(file("${path.module}/user_data.sh"))
   }
 
   preserve_boot_volume = false
