@@ -53,45 +53,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Kubectl
-        uses: azure/setup-kubectl@v3
+      - name: Deploy Frontend via SSH
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          version: 'v1.29.0'
+          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          script: |
+            sudo k3s kubectl set image deployment/dojo-frontend -n dojo \
+              dojo-frontend=${{ secrets.OCI_REGISTRY }}/${{ secrets.OCI_TENANCY_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
-      - name: Configure OCI CLI
-        run: |
-          mkdir -p /home/runner/.oci
-          echo "${{ secrets.OCI_PRIVATE_KEY }}" > /home/runner/.oci/oci_api_key.pem
-          chmod 600 /home/runner/.oci/oci_api_key.pem
-
-      - name: Install OCI CLI
-        run: |
-          curl -L -O https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh
-          bash install.sh --accept-all-defaults
-          echo "$HOME/bin" >> $GITHUB_PATH
-
-      - name: Configure Kubeconfig
-        run: |
-          oci ce cluster create-kubeconfig \
-            --cluster-id ${{ secrets.OCI_CLUSTER_ID }} \
-            --file $HOME/.kube/config \
-            --region ${{ secrets.OCI_REGION }} \
-            --token-version 2.0.0
-        env:
-          OCI_CLI_USER: ${{ secrets.OCI_USER_OCID }}
-          OCI_CLI_TENANCY: ${{ secrets.OCI_TENANCY_OCID }}
-          OCI_CLI_FINGERPRINT: ${{ secrets.OCI_FINGERPRINT }}
-          OCI_CLI_KEY_FILE: /home/runner/.oci/oci_api_key.pem
-          OCI_CLI_REGION: ${{ secrets.OCI_REGION }}
-
-      - name: Deploy Frontend Image
-        run: |
-          kubectl set image deployment/dojo-frontend -n dojo \
-            dojo-frontend=${{ secrets.OCI_REGISTRY }}/${{ secrets.OCI_TENANCY_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-
-      - name: Wait for Rollout
-        run: |
-          kubectl rollout status deployment/dojo-frontend -n dojo --timeout=300s
+      - name: Wait for Rollout via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          script: |
+            sudo k3s kubectl rollout status deployment/dojo-frontend -n dojo --timeout=300s

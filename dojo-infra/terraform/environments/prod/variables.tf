@@ -40,4 +40,9 @@ variable "bucket_namespace" {
   type        = string
 }
 
+variable "ssh_public_key_path" {
+  description = "Path to SSH public key file for node access"
+  type        = string
+  default     = "~/.ssh/id_rsa.pub"
+}
 

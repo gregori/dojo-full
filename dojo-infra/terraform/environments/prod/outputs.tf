@@ -6,16 +6,16 @@ output "public_subnet_id" {
   value = module.networking.public_subnet_id
 }
 
-output "cluster_id" {
-  value = module.oke.cluster_id
+output "k8s_node_id" {
+  value = module.k8s_node.instance_id
 }
 
-output "cluster_endpoint" {
-  value = module.oke.cluster_endpoint
+output "k8s_node_public_ip" {
+  value = module.k8s_node.public_ip
 }
 
-output "node_pool_id" {
-  value = module.oke.node_pool_id
+output "k8s_node_private_ip" {
+  value = module.k8s_node.private_ip
 }
 
 output "repository_urls" {

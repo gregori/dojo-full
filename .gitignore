@@ -18,6 +18,10 @@ dist/
 *.swo
 
 # OS
+
+# Coverage & test artifacts
+.coverage
+test.db
 .DS_Store
 Thumbs.db
 
