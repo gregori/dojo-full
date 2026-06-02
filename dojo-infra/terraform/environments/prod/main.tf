@@ -47,15 +47,15 @@ module "registry" {
   repository_names = ["dojo-backend", "dojo-frontend"]
 }
 
-# Kubernetes Node (Compute Instance - manual kubeadm setup)
+# Kubernetes Node (kubeadm single-node cluster)
 module "k8s_node" {
   source = "../../modules/k8s_node"
 
   compartment_id       = var.compartment_id
-  subnet_id           = module.networking.public_subnet_id
+  subnet_id            = module.networking.public_subnet_id
   availability_domain  = local.ad_name
-  node_shape          = "VM.Standard.A1.Flex"
-  node_ocpus          = 4
-  node_memory         = 24
-  ssh_public_key_path = var.ssh_public_key_path
+  node_shape           = "VM.Standard.A1.Flex"
+  node_ocpus           = 4
+  node_memory          = 24
+  ssh_public_key_path  = var.ssh_public_key_path
 }

@@ -41,6 +41,8 @@ variable "bucket_namespace" {
 }
 
 variable "ssh_public_key_path" {
-  description = "Path to SSH public key for compute instance access"
+  description = "Path to SSH public key file for node access"
   type        = string
+  default     = "~/.ssh/id_rsa.pub"
 }
+

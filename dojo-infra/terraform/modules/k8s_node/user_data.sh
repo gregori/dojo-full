@@ -16,33 +16,24 @@ sysctl --system
 swapoff -a
 sed -i '/ swap /d' /etc/fstab || true
 
-# Install containerd
-dnf install -y dnf-utils device-mapper-persistent-data lvm2
-yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-dnf install -y containerd.io
+# Get public IP from OCI metadata
+PUBLIC_IP=$(curl -s -H 'Authorization: Bearer Oracle' http://169.254.169.254/opc/v1/instance/ | grep -o '"publicIp":"[^"]*"' | cut -d'"' -f4 || echo "")
+if [ -z "$PUBLIC_IP" ]; then
+  PUBLIC_IP=""
+fi
 
-# Configure containerd
-mkdir -p /etc/containerd
-containerd config default > /etc/containerd/config.toml
-sed -i 's/SystemdCgroup = .*/SystemdCgroup = true/' /etc/containerd/config.toml
-systemctl enable --now containerd
+# Remove broken Kubernetes repo (pkgs.k8s.io returns 403 for ARM)
+rm -f /etc/yum.repos.d/kubernetes.repo || true
 
-# Add Kubernetes repo
-cat >> /etc/yum.repos.d/kubernetes.repo <<EOF
-[kubernetes]
-name=Kubernetes
-baseurl=https://pkgs.k8s.io/core:/stable:/v1.34:/rpm/
-enabled=1
-gpgcheck=1
-gpgkey=https://pkgs.k8s.io/core:/stable:/v1.34:/rpm/repodata/repomd.xml.key
-exclude=kubelet kubeadm kubectl cri-tools
-EOF
-
-# Install kubeadm, kubelet, kubectl
-dnf install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
-systemctl enable kubelet
-
-# Pull kubeadm images
-kubeadm config images pull
+# Install k3s (lightweight Kubernetes, bundles containerd + CNI + kubelet)
+# Using v1.29.x (last version that fully supports cgroup v1 on Oracle Linux 8)
+curl -sfL https://get.k3s.io | \
+  INSTALL_K3S_VERSION="v1.29.14+k3s1" \
+  K3S_KUBECONFIG_MODE="644" \
+  INSTALL_K3S_SKIP_SELINUX_RPM=true \
+  sh -s - \
+    --flannel-backend=host-gw \
+    --write-kubeconfig-mode=644 \
+    ${PUBLIC_IP:+--tls-san=$PUBLIC_IP}
 
 touch /home/opc/.k8s_provisioned

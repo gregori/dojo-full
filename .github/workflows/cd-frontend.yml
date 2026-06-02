@@ -53,7 +53,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Notify build complete
-        run: |
-          echo "Image built and pushed: ${{ secrets.OCI_REGISTRY }}/${{ secrets.OCI_TENANCY_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
-          echo "Deploy step skipped - manually run 'deploy-vm.yml' workflow to deploy to VM"
+      - name: Deploy Frontend via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          script: |
+            sudo k3s kubectl set image deployment/dojo-frontend -n dojo \
+              dojo-frontend=${{ secrets.OCI_REGISTRY }}/${{ secrets.OCI_TENANCY_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Wait for Rollout via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          script: |
+            sudo k3s kubectl rollout status deployment/dojo-frontend -n dojo --timeout=300s

@@ -44,7 +44,7 @@ variable "node_pool_name" {
 variable "node_count" {
   description = "Number of nodes"
   type        = number
-  default     = 1
+  default     = 2
 }
 
 variable "node_shape" {
@@ -56,13 +56,25 @@ variable "node_shape" {
 variable "node_ocpus" {
   description = "OCPUs per node"
   type        = number
-  default     = 4
+  default     = 2
 }
 
 variable "node_memory" {
   description = "Memory per node (GB)"
   type        = number
-  default     = 24
+  default     = 12
+}
+
+variable "boot_volume_size" {
+  description = "Boot volume size per node (GB)"
+  type        = number
+  default     = 100
+}
+
+variable "ssh_public_key" {
+  description = "SSH public key for node access"
+  type        = string
+  default     = ""
 }
 
 output "cluster_id" {

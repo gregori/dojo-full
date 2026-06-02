@@ -19,54 +19,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Run database migration via k3s
+        uses: appleboy/ssh-action@v1
         with:
-          python-version: '3.13'
-
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-
-      - name: Install dependencies
-        working-directory: dojo-app/backend
-        run: poetry install
-
-      - name: Install OCI CLI
-        run: |
-          mkdir -p /home/runner/.oci
-          echo "${{ secrets.OCI_PRIVATE_KEY }}" > /home/runner/.oci/oci_api_key.pem
-          chmod 600 /home/runner/.oci/oci_api_key.pem
-
-          curl -L -O https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh
-          bash install.sh --accept-all-defaults
-          echo "$HOME/bin" >> $GITHUB_PATH
-
-      - name: Configure Kubectl
-        run: |
-          oci ce cluster create-kubeconfig \
-            --cluster-id ${{ secrets.OCI_CLUSTER_ID }} \
-            --file $HOME/.kube/config \
-            --region sa-saopaulo-1 \
-            --token-version 2.0.0
-        env:
-          OCI_CLI_USER: ${{ secrets.OCI_USER_OCID }}
-          OCI_CLI_TENANCY: ${{ secrets.OCI_TENANCY_OCID }}
-          OCI_CLI_FINGERPRINT: ${{ secrets.OCI_FINGERPRINT }}
-          OCI_CLI_KEY_FILE: /home/runner/.oci/oci_api_key.pem
-          OCI_CLI_REGION: sa-saopaulo-1
-
-      - name: Run migration
-        working-directory: dojo-app/backend
-        run: |
-          # Port-forward MySQL
-          kubectl port-forward svc/mysql -n dojo 3306:3306 &
-          sleep 5
-          
-          # Set database URL for local connection
-          export DATABASE_URL="mysql+pymysql://dojo_user:${{ secrets.MYSQL_PASSWORD }}@localhost:3306/dojo_db"
-          
-          # Run alembic command
-          poetry run alembic ${{ github.event.inputs.migration_command }}
+          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          script: |
+            sudo k3s kubectl -n dojo exec deploy/dojo-backend -- alembic ${{ github.event.inputs.migration_command }}

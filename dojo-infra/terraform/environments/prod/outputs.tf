@@ -6,7 +6,7 @@ output "public_subnet_id" {
   value = module.networking.public_subnet_id
 }
 
-output "k8s_node_instance_id" {
+output "k8s_node_id" {
   value = module.k8s_node.instance_id
 }
 

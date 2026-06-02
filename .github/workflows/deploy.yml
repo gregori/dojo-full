@@ -57,50 +57,69 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:${{ github.sha }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:latest
 
-  deploy-to-k8s:
-    name: Deploy to OKE
+  deploy-to-k3s:
+    name: Deploy to K3s
     runs-on: ubuntu-latest
     needs: push-to-ocir
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up kubectl
-        uses: azure/setup-kubectl@v4
+      - name: Sync manifests and deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          script: |
+            # Clone/pull repo on the VM
+            if [ -d /tmp/dojo-repo ]; then
+              cd /tmp/dojo-repo && git pull
+            else
+              git clone --depth 1 https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} /tmp/dojo-repo
+            fi
 
-      - name: Configure kubeconfig
-        run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
-          chmod 600 ~/.kube/config
+            # Update image tags in manifests
+            cd /tmp/dojo-repo
+            sed -i "s|<ocir-namespace>/dojo-backend:latest|${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}|g" k8s/backend-deployment.yaml
+            sed -i "s|<ocir-namespace>/dojo-backend:latest|${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}|g" k8s/backend-migration-job.yaml
+            sed -i "s|<ocir-namespace>/dojo-frontend:latest|${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:${{ github.sha }}|g" k8s/frontend-deployment.yaml
 
-      - name: Update image tags in manifests
-        run: |
-          sed -i "s|<ocir-namespace>/dojo-backend:latest|${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}|g" k8s/backend-deployment.yaml
-          sed -i "s|<ocir-namespace>/dojo-backend:latest|${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}|g" k8s/backend-migration-job.yaml
-          sed -i "s|<ocir-namespace>/dojo-frontend:latest|${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:${{ github.sha }}|g" k8s/frontend-deployment.yaml
-
-      - name: Apply Kubernetes manifests
-        run: |
-          kubectl apply -f k8s/namespace.yaml
-          kubectl apply -f k8s/mysql-deployment.yaml
-          kubectl apply -f k8s/mysql-backup-cronjob.yaml
-          kubectl apply -f k8s/backend-migration-job.yaml
-          kubectl apply -f k8s/backend-deployment.yaml
-          kubectl apply -f k8s/frontend-deployment.yaml
-          kubectl apply -f k8s/ingress.yaml
-          kubectl apply -f k8s/cert-manager-issuer.yaml
+            # Apply manifests
+            sudo k3s kubectl apply -f k8s/namespace.yaml
+            sudo k3s kubectl apply -f k8s/mysql-deployment.yaml
+            sudo k3s kubectl apply -f k8s/mysql-backup-cronjob.yaml
+            sudo k3s kubectl apply -f k8s/backend-migration-job.yaml
+            sudo k3s kubectl apply -f k8s/backend-deployment.yaml
+            sudo k3s kubectl apply -f k8s/frontend-deployment.yaml
+            sudo k3s kubectl apply -f k8s/ingress.yaml
+            sudo k3s kubectl apply -f k8s/cert-manager-issuer.yaml
 
       - name: Wait for backend rollout
-        run: |
-          kubectl rollout status deployment/backend -n dojo --timeout=300s
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          script: |
+            sudo k3s kubectl rollout status deployment/backend -n dojo --timeout=300s
 
       - name: Wait for frontend rollout
-        run: |
-          kubectl rollout status deployment/frontend -n dojo --timeout=300s
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          script: |
+            sudo k3s kubectl rollout status deployment/frontend -n dojo --timeout=300s
 
       - name: Verify deployment
-        run: |
-          kubectl get pods -n dojo
-          kubectl get services -n dojo
-          kubectl get ingress -n dojo
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          script: |
+            sudo k3s kubectl get pods -n dojo
+            sudo k3s kubectl get services -n dojo
+            sudo k3s kubectl get ingress -n dojo
