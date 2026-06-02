@@ -36,4 +36,8 @@ curl -sfL https://get.k3s.io | \
     --write-kubeconfig-mode=644 \
     ${PUBLIC_IP:+--tls-san=$PUBLIC_IP}
 
+# Fix SELinux context: cloud-init places files with cloud_init_tmp_t label,
+# which systemd refuses to execute. restorecon fixes this.
+restorecon -R /usr/local/bin/
+
 touch /home/opc/.k8s_provisioned
