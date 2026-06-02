@@ -40,4 +40,8 @@ curl -sfL https://get.k3s.io | \
 # which systemd refuses to execute. restorecon fixes this.
 restorecon -R /usr/local/bin/
 
+# Ensure k3s is in sudo's secure_path (/usr/bin)
+ln -sf /usr/local/bin/k3s /usr/bin/k3s
+ln -sf /usr/local/bin/kubectl /usr/bin/kubectl
+
 touch /home/opc/.k8s_provisioned
