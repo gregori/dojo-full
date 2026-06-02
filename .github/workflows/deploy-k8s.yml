@@ -15,7 +15,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Create K8s Secrets and Apply Manifests via SSH
+      - name: Create K8s Secrets via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
@@ -29,6 +29,11 @@ jobs:
               --from-literal=secret-key="${{ secrets.SECRET_KEY }}" \
               --from-literal=database-url="mysql+pymysql://dojo_user:${{ secrets.MYSQL_PASSWORD }}@mysql:3306/dojo_db" \
               --dry-run=client -o yaml | sudo k3s kubectl apply -f -
+            sudo k3s kubectl create secret docker-registry ocir-secret -n dojo \
+              --docker-server=${{ secrets.OCI_REGION }}.ocir.io \
+              --docker-username="${{ secrets.OCI_REGISTRY_USERNAME }}" \
+              --docker-password="${{ secrets.OCI_REGISTRY_PASSWORD }}" \
+              --dry-run=client -o yaml | sudo k3s kubectl apply -f -
 
       - name: Sync K8s Manifests via SCP
         uses: appleboy/scp-action@v0.1.7
@@ -40,13 +45,18 @@ jobs:
           target: /tmp/dojo-manifests
           strip_components: 0
 
-      - name: Apply Kubernetes Manifests via SSH
+      - name: Substitute Placeholders and Apply via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
           username: opc
           key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
           script: |
+            REGISTRY=${{ secrets.OCI_REGION }}.ocir.io
+            NAMESPACE=${{ secrets.OCI_TENANCY_NAMESPACE }}
+            find /tmp/dojo-manifests/dojo-infra/k8s/ -name '*.yaml' -exec sed -i \
+              -e "s|<region>|$REGISTRY|g" \
+              -e "s|<tenancy>|$NAMESPACE|g" {} +
             sudo k3s kubectl apply -k /tmp/dojo-manifests/dojo-infra/k8s/
 
       - name: Wait for Rollout via SSH
