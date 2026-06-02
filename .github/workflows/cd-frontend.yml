@@ -61,7 +61,7 @@ jobs:
           key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
           script: |
             sudo k3s kubectl set image deployment/dojo-frontend -n dojo \
-              dojo-frontend=${{ secrets.OCI_REGISTRY }}/${{ secrets.OCI_TENANCY_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+              frontend=${{ secrets.OCI_REGISTRY }}/${{ secrets.OCI_TENANCY_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
       - name: Wait for Rollout via SSH
         uses: appleboy/ssh-action@v1.0.3
