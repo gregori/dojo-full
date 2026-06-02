@@ -13,3 +13,9 @@ resources:
   - frontend/deployment.yaml
   - frontend/service.yaml
   - ingress.yaml
+
+images:
+  - name: backend
+    newName: <region>.ocir.io/<tenancy>/dojo-backend
+  - name: frontend
+    newName: <region>.ocir.io/<tenancy>/dojo-frontend
