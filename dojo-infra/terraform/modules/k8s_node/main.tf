@@ -36,4 +36,10 @@ resource "oci_core_instance" "k8s_node" {
   }
 
   preserve_boot_volume = false
+
+  lifecycle {
+    ignore_changes = [
+      metadata,
+    ]
+  }
 }
