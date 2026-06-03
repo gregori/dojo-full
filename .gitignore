@@ -40,3 +40,6 @@ uv.lock
 *.pem
 *.key
 *.p12
+
+# OpenCode runtime state
+.omo/
