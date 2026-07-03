@@ -5,7 +5,7 @@
 A web application for managing an Aikido dojo, building on the completed MVP (Epic 1) which handles student lifecycle, belt system, classes, attendance, events, exams, and promotions.
 
 **Epic 2 adds:**
-- Pre-checkin system for classes (QR code or manual)
+- Pré-checkin: aluno confirma presença antecipada para aula agendada, permitindo ao instrutor ver quantos estarão presentes e decidir se cancela ou mantém o treino
 - Medical exam tracking with 1-year validity and document upload
 - Report generation and contract management
 - Financial management (monthly fees, payment tracking, overdue alerts)
@@ -34,7 +34,7 @@ A web application for managing an Aikido dojo, building on the completed MVP (Ep
 | Medical exams valid for 1 year | Standard practice in martial arts | Track expiry date, alert when expiring |
 | Contracts generated at enrollment | Legal requirement | PDF generation + upload/scan storage |
 | Financial based on training frequency | Fair pricing model | Calculate fees from weekly attendance |
-| Pre-checkin via QR code | Reduce front-desk friction | Generate QR, scan at arrival |
+| Pré-checkin como confirmação antecipada | Instrutor precisa saber quantos alunos virão | Aluno confirma presença antes da aula; instrutor vê lista e decide se mantém/cancela treino |
 
 ## Requirements
 

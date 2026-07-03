@@ -3,11 +3,11 @@
 ## v1 Requirements
 
 ### Pré-Checkin
-- [ ] **PRE-01**: Aluno pode fazer pré-checkin para uma aula agendada
-- [ ] **PRE-02**: Sistema gera QR code único para pré-checkin
-- [ ] **PRE-03**: Instrutor pode escanear QR code na chegada do aluno
-- [ ] **PRE-04**: Sistema registra presença automaticamente após scan do QR code
-- [ ] **PRE-05**: Aluno recebe confirmação visual do pré-checkin realizado
+- [ ] **PRE-01**: Aluno pode confirmar presença antecipada para uma aula agendada
+- [ ] **PRE-02**: Aluno pode cancelar confirmação de presença antes da aula
+- [ ] **PRE-03**: Instrutor vê lista de alunos confirmados para cada aula
+- [ ] **PRE-04**: Instrutor pode decidir cancelar aula baseado no número de confirmações
+- [ ] **PRE-05**: Sistema registra presença automaticamente para alunos que confirmaram e compareceram
 
 ### Controle de Exames Médicos
 - [ ] **MED-01**: Sistema registra data do último exame médico de cada aluno
