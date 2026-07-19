@@ -152,3 +152,9 @@ Runs at the epic level, before technical planning begins.
 # Project Overview
 
 Project overview is stated in [Project Overview](./PROJECT_OVERVIEW.md).
+
+<!-- orchestrated-squad:codex:start -->
+## Orchestrated Squad
+
+Use the installed `squad-*` workflow commands. The root session owns orchestration and `.workflow/` is canonical state. Preserve instructions outside this managed block.
+<!-- orchestrated-squad:codex:end -->

@@ -106,3 +106,27 @@ The k3s node instance was recreated (old IP 136.248.122.244 → new IP 64.181.18
 ## Commits
 - `6b9ce88` — feat: expose Traefik NodePorts in security list and create Traefik ingress resources
 - `5af871d` — fix: sync Terraform state with actual instance and add lifecycle safeguard
+
+---
+
+# Squad Runtime Initialization — 2026-07-19
+
+## What Was Done
+- Ran `npx @gregori/orchestrated-squad@latest install --target codex --yes` from `D:\dojo-full`.
+- Updated Codex agent configuration under `.codex/agents/` and installed/updated the `squad-*` workflow skills under `.agents/skills/`.
+- Created/updated `.squad/config.yaml`; the default configuration has manual work-item publishing and confirmation enabled.
+
+## Verification
+- `npx @gregori/orchestrated-squad@latest doctor` passed all checks:
+  - Node `v24.1.0`
+  - Codex, Claude, OpenCode, Devin, and VS Code runtime assets
+  - Project root `D:\dojo-full`
+
+## Decisions
+- Initialization was performed idempotently over the existing `.workflow/epic-01` state; no epic or application code was changed.
+
+## Open Questions
+- None.
+
+## Next Action
+- Use the appropriate `squad-*` workflow skill for the next planned feature or review.

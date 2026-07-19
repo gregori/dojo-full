@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "files": {
+    ".codex/config.toml": {
+      "hash": "280fc36669322446d0ad08d1a8c58217a8d47530cad1b22ed5a4b684705ca60b",
+      "target": "codex"
+    },
+    ".codex/agents/bug-triager.toml": {
+      "hash": "dbd67eade301ed30d560efcdf353832ea297c3bb31828735452bc7d8282eb8c9",
+      "target": "codex"
+    },
+    ".codex/agents/doc-writer.toml": {
+      "hash": "053761de6720364eb2a5dc6e2bccd58966d8dc5634ecebe988dc80483b9d0a6a",
+      "target": "codex"
+    },
+    ".codex/agents/implementer.toml": {
+      "hash": "7ca8b96bc02010c87a78fe5a46de1205110a0989179af3c2a5f42fcf6dbca738",
+      "target": "codex"
+    },
+    ".codex/agents/product-manager.toml": {
+      "hash": "ed7efb3483df294460ea54bc44a3ac444653b0a5e297f59dc2a2698e3eff95e7",
+      "target": "codex"
+    },
+    ".codex/agents/requirements-reviewer.toml": {
+      "hash": "b99f2c3ba269d0b89bb1e8f0d194cc7514627e65b5dfec2c9027707d89669c56",
+      "target": "codex"
+    },
+    ".codex/agents/reviewer.toml": {
+      "hash": "1776e159eb618ff870eca51489c20d5698521e049d56da55369d6a5ad1555c00",
+      "target": "codex"
+    },
+    ".codex/agents/sre.toml": {
+      "hash": "af778cc8e9e021b502b980ade5272ccc75e105843ee5ae4cf2b5d9e1d630bcc4",
+      "target": "codex"
+    },
+    ".codex/agents/tech-analyst.toml": {
+      "hash": "3671d462f86b6ff2131aaecae460c6db0c02b5f82839c7665961140a6c25d48b",
+      "target": "codex"
+    },
+    ".codex/agents/test-author.toml": {
+      "hash": "e22010999cdfcd1e76c006011b7164a9ae754b0baf22cdab401a60f0136343cc",
+      "target": "codex"
+    },
+    ".agents/skills/squad-plan/SKILL.md": {
+      "hash": "d5f5f0a9bf550cd13b65b299727d9fc57ba2178a5285d68a6e5eb806fcf4e05a",
+      "target": "codex"
+    },
+    ".agents/skills/squad-feature/SKILL.md": {
+      "hash": "ad24d9f8d2cb86d5e878c9edc10ec0fc2f185ecb8bc2be336179da24567e7d93",
+      "target": "codex"
+    },
+    ".agents/skills/squad-execute/SKILL.md": {
+      "hash": "baac4e173b7efedf4eb20b33cf3af309c3420608705f4ad92273605bce0acca4",
+      "target": "codex"
+    },
+    ".agents/skills/squad-review/SKILL.md": {
+      "hash": "114d3979ec235df53d3be93394c078095fb4f8c056e074d10bbf2f587d51bfe8",
+      "target": "codex"
+    },
+    ".agents/skills/squad-test/SKILL.md": {
+      "hash": "314ee411131aa7a8e6067aed5eda002521c280897119cd196a6eea12db48a4f5",
+      "target": "codex"
+    },
+    ".squad/config.yaml": {
+      "hash": "48efe9ad9ac0ea7bf201e1e0bd7ae024c41a403a6ad68ad9ff04d903234552a0",
+      "target": "core"
+    },
+    ".agents/skills/squad-init/SKILL.md": {
+      "hash": "85042b047468e89f8186f89b21e61e025d3a3db75e20fe811f5e707681624447",
+      "target": "codex"
+    }
+  },
+  "blocks": {
+    "codex:AGENTS.md": {
+      "file": "AGENTS.md",
+      "start": "<!-- orchestrated-squad:codex:start -->",
+      "end": "<!-- orchestrated-squad:codex:end -->",
+      "hash": "5d036cb672bd82a94568fe71688142543f8ce160d621e9572b2a9668817bc125"
+    }
+  },
+  "package": "@gregori/orchestrated-squad",
+  "version": "0.6.6",
+  "targets": [
+    "codex"
+  ]
+}
