@@ -1,0 +1,4 @@
+Nome,Email,Telefone,Data_Nascimento,Categoria,Faixa,Matricula,PIN,Contratante,CPF_Contratante,Rua,Bairro,Cidade,CEP,Aulas_Semana,Dias_Aula
+João Silva,joao@email.com,11999990001,15/03/1990,adult,Branca,,1234,,,Rua A,Bairro X,São Paulo,01000-000,3,Seg Qua Sex
+Maria Santos,maria@email.com,11999990002,22/07/2008,child,Branca,,5678,José Santos,123.456.789-00,Rua B,Bairro Y,São Paulo,02000-000,2,Seg Qua
+Pedro Costa,pedro@email.com,11999990003,10/11/1985,adult,Azul,,9012,,,Rua C,Bairro Z,São Paulo,03000-000,2,Ter Qui

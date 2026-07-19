@@ -1,0 +1,83 @@
+name: Terraform Apply
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - 'dojo-infra/terraform/**'
+      - 'dojo-infra/.github/workflows/terraform-apply.yml'
+  pull_request:
+    branches: [master]
+    paths:
+      - 'dojo-infra/terraform/**'
+      - '.github/workflows/terraform-apply.yml'
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dojo-infra/terraform/environments/prod
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.0"
+
+      - name: Configure OCI API Key
+        run: |
+          mkdir -p /home/runner/.oci
+          echo "${{ secrets.OCI_PRIVATE_KEY }}" > /home/runner/.oci/oci_api_key.pem
+          chmod 600 /home/runner/.oci/oci_api_key.pem
+
+      - name: Configure SSH Public Key
+        run: |
+          mkdir -p /home/runner/.ssh
+          echo "${{ secrets.OCI_SSH_PUBLIC_KEY }}" > /home/runner/.ssh/dojo-k8s.pub
+          chmod 644 /home/runner/.ssh/dojo-k8s.pub
+
+      - name: Terraform Init
+        run: terraform init
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          OCI_TENANCY_OCID: ${{ secrets.OCI_TENANCY_OCID }}
+          OCI_USER_OCID: ${{ secrets.OCI_USER_OCID }}
+          OCI_FINGERPRINT: ${{ secrets.OCI_FINGERPRINT }}
+          OCI_PRIVATE_KEY: ${{ secrets.OCI_PRIVATE_KEY }}
+
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          TF_VAR_tenancy_ocid: ${{ secrets.OCI_TENANCY_OCID }}
+          TF_VAR_user_ocid: ${{ secrets.OCI_USER_OCID }}
+          TF_VAR_fingerprint: ${{ secrets.OCI_FINGERPRINT }}
+          TF_VAR_private_key_path: /home/runner/.oci/oci_api_key.pem
+          TF_VAR_compartment_id: ${{ secrets.OCI_COMPARTMENT_ID }}
+          TF_VAR_availability_domain: ${{ secrets.OCI_AVAILABILITY_DOMAIN }}
+          TF_VAR_bucket_namespace: ${{ secrets.OCI_BUCKET_NAMESPACE }}
+          TF_VAR_ssh_public_key_path: /home/runner/.ssh/dojo-k8s.pub
+          TF_VAR_region: sa-saopaulo-1
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/master'
+        run: terraform apply -auto-approve tfplan
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          TF_VAR_tenancy_ocid: ${{ secrets.OCI_TENANCY_OCID }}
+          TF_VAR_user_ocid: ${{ secrets.OCI_USER_OCID }}
+          TF_VAR_fingerprint: ${{ secrets.OCI_FINGERPRINT }}
+          TF_VAR_private_key_path: /home/runner/.oci/oci_api_key.pem
+          TF_VAR_compartment_id: ${{ secrets.OCI_COMPARTMENT_ID }}
+          TF_VAR_availability_domain: ${{ secrets.OCI_AVAILABILITY_DOMAIN }}
+          TF_VAR_bucket_namespace: ${{ secrets.OCI_BUCKET_NAMESPACE }}
+          TF_VAR_ssh_public_key_path: /home/runner/.ssh/dojo-k8s.pub
+          TF_VAR_region: sa-saopaulo-1

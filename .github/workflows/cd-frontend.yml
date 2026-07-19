@@ -1,0 +1,77 @@
+name: CD - Deploy Frontend
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'dojo-app/frontend/**'
+      - '.github/workflows/cd-frontend.yml'
+  workflow_dispatch:
+
+env:
+  OCI_REGION: sa-saopaulo-1
+  OCI_REGISTRY: ${{ secrets.OCI_REGISTRY }}
+  IMAGE_NAME: dojo-frontend
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dojo-app/frontend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up QEMU for multi-arch builds
+        uses: docker/setup-qemu-action@v3
+
+      - name: Login to OCIR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.OCI_REGISTRY }}
+          username: ${{ secrets.OCI_REGISTRY_USERNAME }}
+          password: ${{ secrets.OCI_REGISTRY_PASSWORD }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: ./dojo-app/frontend
+          file: ./dojo-app/frontend/Dockerfile.prod
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ secrets.OCI_REGISTRY }}/${{ secrets.OCI_TENANCY_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ secrets.OCI_REGISTRY }}/${{ secrets.OCI_TENANCY_NAMESPACE }}/${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VITE_API_URL=${{ secrets.VITE_API_URL }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy Frontend via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          script: |
+            sudo k3s kubectl set image deployment/dojo-frontend -n dojo \
+              frontend=${{ secrets.OCI_REGISTRY }}/${{ secrets.OCI_TENANCY_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Wait for Rollout via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          script: |
+            sudo k3s kubectl rollout status deployment/dojo-frontend -n dojo --timeout=300s

@@ -1,0 +1,8 @@
+# generated_from: squad/agents/registry.json
+name = "bug-triager"
+description = "Diagnoses reproducible bugs before repair."
+model = "terra"
+sandbox_mode = "read-only"
+developer_instructions = """
+Diagnose with reproduction evidence, hypotheses, and a bounded likely cause. In diagnose mode, do not edit files. Do not invoke subagents.
+"""

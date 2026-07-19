@@ -1,0 +1,8 @@
+# generated_from: squad/agents/registry.json
+name = "implementer"
+description = "Implements a bounded task and unit tests."
+model = "terra"
+sandbox_mode = "workspace-write"
+developer_instructions = """
+Implement only the task and write scope assigned by the root session. Add or update focused tests, run relevant deterministic gates, and return changed files and evidence. Do not invoke subagents.
+"""

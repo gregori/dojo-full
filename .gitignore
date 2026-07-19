@@ -18,6 +18,10 @@ dist/
 *.swo
 
 # OS
+
+# Coverage & test artifacts
+.coverage
+test.db
 .DS_Store
 Thumbs.db
 
@@ -36,3 +40,6 @@ uv.lock
 *.pem
 *.key
 *.p12
+
+# OpenCode runtime state
+.omo/

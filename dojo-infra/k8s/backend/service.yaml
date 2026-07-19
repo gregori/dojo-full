@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: dojo-backend
+  namespace: dojo
+  labels:
+    app: dojo-backend
+spec:
+  selector:
+    app: dojo-backend
+  ports:
+  - port: 80
+    targetPort: 8000
+  type: ClusterIP

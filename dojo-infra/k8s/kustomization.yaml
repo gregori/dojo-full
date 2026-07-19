@@ -1,0 +1,21 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: dojo
+
+resources:
+  - namespaces/dojo.yaml
+  - database/mysql-pvc.yaml
+  - database/mysql-deployment.yaml
+  - database/mysql-service.yaml
+  - backend/deployment.yaml
+  - backend/service.yaml
+  - frontend/deployment.yaml
+  - frontend/service.yaml
+  - ingress.yaml
+
+images:
+  - name: backend
+    newName: <region>.ocir.io/<tenancy>/dojo-backend
+  - name: frontend
+    newName: <region>.ocir.io/<tenancy>/dojo-frontend

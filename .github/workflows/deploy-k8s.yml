@@ -1,0 +1,70 @@
+name: Deploy to Kubernetes
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - 'dojo-infra/k8s/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create K8s Secrets via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          script: |
+            sudo k3s kubectl create namespace dojo --dry-run=client -o yaml | sudo k3s kubectl apply -f -
+            sudo k3s kubectl create secret generic dojo-secrets -n dojo \
+              --from-literal=mysql-root-password="${{ secrets.MYSQL_ROOT_PASSWORD }}" \
+              --from-literal=mysql-password="${{ secrets.MYSQL_PASSWORD }}" \
+              --from-literal=secret-key="${{ secrets.SECRET_KEY }}" \
+              --from-literal=database-url="mysql+pymysql://dojo_user:${{ secrets.MYSQL_PASSWORD }}@mysql:3306/dojo_db" \
+              --dry-run=client -o yaml | sudo k3s kubectl apply -f -
+            sudo k3s kubectl create secret docker-registry ocir-secret -n dojo \
+              --docker-server=${{ secrets.OCI_REGISTRY }} \
+              --docker-username="${{ secrets.OCI_REGISTRY_USERNAME }}" \
+              --docker-password="${{ secrets.OCI_REGISTRY_PASSWORD }}" \
+              --dry-run=client -o yaml | sudo k3s kubectl apply -f -
+
+      - name: Sync K8s Manifests via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          source: dojo-infra/k8s/
+          target: /tmp/dojo-manifests
+          strip_components: 0
+
+      - name: Render, Substitute and Apply via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          script: |
+            REGISTRY=${{ secrets.OCI_REGISTRY }}
+            NAMESPACE=${{ secrets.OCI_TENANCY_NAMESPACE }}
+            # Render kustomize output, replace placeholders in single stream, then apply
+            sudo k3s kubectl kustomize /tmp/dojo-manifests/dojo-infra/k8s/ | \
+              sed -e "s|<region>\.ocir\.io/<tenancy>|$REGISTRY/$NAMESPACE|g" | \
+              sudo k3s kubectl apply -f -
+
+      - name: Wait for Rollout via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          script: |
+            sudo k3s kubectl rollout status deployment/dojo-backend -n dojo --timeout=300s
+            sudo k3s kubectl rollout status deployment/dojo-frontend -n dojo --timeout=300s

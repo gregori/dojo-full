@@ -1,0 +1,52 @@
+name: Deploy to Kubernetes
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - 'dojo-infra/k8s/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create K8s Secrets via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          script: |
+            sudo k3s kubectl create namespace dojo --dry-run=client -o yaml | sudo k3s kubectl apply -f -
+            sudo k3s kubectl create secret generic dojo-secrets -n dojo \
+              --from-literal=mysql-root-password="${{ secrets.MYSQL_ROOT_PASSWORD }}" \
+              --from-literal=mysql-password="${{ secrets.MYSQL_PASSWORD }}" \
+              --from-literal=secret-key="${{ secrets.SECRET_KEY }}" \
+              --from-literal=database-url="mysql+pymysql://dojo_user:${{ secrets.MYSQL_PASSWORD }}@mysql:3306/dojo_db" \
+              --dry-run=client -o yaml | sudo k3s kubectl apply -f -
+
+      - name: Apply Kubernetes Manifests via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          script: |
+            cd /home/opc
+            git clone --depth 1 https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} /tmp/dojo-repo || (cd /tmp/dojo-repo && git pull)
+            sudo k3s kubectl apply -k /tmp/dojo-repo/dojo-infra/k8s/
+
+      - name: Wait for Rollout
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          script: |
+            sudo k3s kubectl rollout status deployment/dojo-backend -n dojo --timeout=300s
+            sudo k3s kubectl rollout status deployment/dojo-frontend -n dojo --timeout=300s

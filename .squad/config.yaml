@@ -1,0 +1,9 @@
+schema_version: 1.0
+discovery:
+  confidence: unknown
+  languages: []
+work_items:
+  provider: none
+  publish: manual
+  project: null
+  require_confirmation: true
