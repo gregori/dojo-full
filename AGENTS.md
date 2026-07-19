@@ -2,6 +2,21 @@
 
 This document provides essential information for AI coding agents working on this application.
 
+# Application Paths
+
+The runnable Dojo Admin application lives under `dojo-app/`; this is the only
+application source tree to inspect or modify.
+
+- Backend: `dojo-app/backend/`
+- Frontend: `dojo-app/frontend/`
+- Local service configuration: `docker-compose.yml` at the repository root,
+  which builds both services from `dojo-app/`
+
+The root-level `backend/` and `frontend/` directories were obsolete skeletons
+and have been removed. Do not recreate them or target them in code, tests,
+Docker commands, plans, or documentation. Repository-level workflow and
+documentation remain in `.workflow/` and `docs/`.
+
 # Team workflow rules
 
 All agents participate in one workflow.
