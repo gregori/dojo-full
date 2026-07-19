@@ -173,3 +173,9 @@ Project overview is stated in [Project Overview](./PROJECT_OVERVIEW.md).
 
 Use the installed `squad-*` workflow commands. The root session owns orchestration and `.workflow/` is canonical state. Preserve instructions outside this managed block.
 <!-- orchestrated-squad:codex:end -->
+
+<!-- orchestrated-squad:opencode:start -->
+## Orchestrated Squad
+
+Use the installed `squad-*` workflow commands. The root session owns orchestration and `.workflow/` is canonical state. Preserve instructions outside this managed block.
+<!-- orchestrated-squad:opencode:end -->
