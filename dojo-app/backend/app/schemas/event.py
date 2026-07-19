@@ -33,6 +33,7 @@ class EventBase(BaseModel):
     end_datetime: datetime | None = None
     location: str | None = None
     organization_id: str | None = None
+    minimum_belt_id: str | None = None
 
 
 class EventCreate(EventBase):
@@ -51,6 +52,7 @@ class EventUpdate(BaseModel):
     end_datetime: datetime | None = None
     location: str | None = None
     status: str | None = None
+    minimum_belt_id: str | None = None
 
 
 class EventResponse(EventBase):

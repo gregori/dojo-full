@@ -1,12 +1,14 @@
 from datetime import UTC, datetime
 
 from fastapi import HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.security import verify_password
 from app.models import Attendance, Student
 from app.schemas import AttendanceCreate, CheckInQRRequest, CheckInRequest
 from app.services.event_service import EventService
+from app.services.pre_checkin_service import PreCheckInService
 from app.services.student_service import StudentService
 
 
@@ -77,7 +79,12 @@ class AttendanceService:
             registered_by=registered_by,
         )
         db.add(attendance)
-        db.commit()
+        PreCheckInService.convert_for_attendance(db, event_id, student.id)
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Attendance already recorded")
         db.refresh(attendance)
         return attendance
 
@@ -130,7 +137,12 @@ class AttendanceService:
             registered_by=attendance_data.registered_by,
         )
         db.add(attendance)
-        db.commit()
+        PreCheckInService.convert_for_attendance(db, attendance_data.event_id, attendance_data.student_id)
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Attendance already recorded")
         db.refresh(attendance)
         return attendance
 

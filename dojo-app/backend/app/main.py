@@ -1,14 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth, belts, checkin, events, exams, organizations, students, users
+from app.api import auth, belts, checkin, events, exams, organizations, pre_checkins, students, users
 from app.core.config import get_settings
-from app.core.database import engine
-from app.models import Base
 
 settings = get_settings()
-
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Dojo Admin API",
@@ -30,6 +26,7 @@ app.include_router(belts.router)
 app.include_router(students.router)
 app.include_router(events.router)
 app.include_router(checkin.router)
+app.include_router(pre_checkins.router)
 app.include_router(exams.router)
 app.include_router(organizations.router)
 

@@ -1,0 +1,37 @@
+# Handoff — PR-1: Pré-Checkin
+
+## What Was Done
+
+- Created `feature/pre-checkin` tracking `origin/develop`.
+- Located the active application under `dojo-app/`; it already contains the
+  `Student`, `Event`, `Attendance`, physical check-in, `EventsPage` and
+  `CheckInPage` artifacts required as integration points.
+- Removed the obsolete root-level `backend/` and `frontend/` skeletons and
+  updated the root Docker Compose configuration to use `dojo-app/`.
+- Updated `AGENTS.md` to record `dojo-app/` as the only application source tree.
+
+## Decisions Made
+
+- Pré-Checkin must extend `dojo-app/`; it is not blocked by missing domain
+  dependencies on `origin/develop`.
+- Pré-Checkin remains distinct from physical attendance; physical check-in
+  converts an active confirmation without replacing the physical method.
+
+## Open Questions
+
+- Is PR-9 Eligibility a hard prerequisite or only a future compatibility concern?
+
+## Pending Artifacts
+
+- Backend: `PreCheckIn` model/table and migration, schemas, service, public
+  confirmation/cancellation endpoints, instructor roster/count endpoints, and
+  attendance-conversion integration.
+- Frontend: public `/precheckin` route/page plus confirmation count and roster
+  presentation in `EventsPage`.
+- Verification: unit/API/UI coverage, deterministic gates, independent review,
+  and updated workflow results.
+
+## Next Action
+
+- Implement the pending Pré-Checkin artifacts in `dojo-app/`, then run the
+  deterministic gates and review.

@@ -43,23 +43,23 @@
     },
     ".agents/skills/squad-plan/SKILL.md": {
       "hash": "d5f5f0a9bf550cd13b65b299727d9fc57ba2178a5285d68a6e5eb806fcf4e05a",
-      "target": "codex"
+      "target": "claude"
     },
     ".agents/skills/squad-feature/SKILL.md": {
       "hash": "ad24d9f8d2cb86d5e878c9edc10ec0fc2f185ecb8bc2be336179da24567e7d93",
-      "target": "codex"
+      "target": "claude"
     },
     ".agents/skills/squad-execute/SKILL.md": {
       "hash": "baac4e173b7efedf4eb20b33cf3af309c3420608705f4ad92273605bce0acca4",
-      "target": "codex"
+      "target": "claude"
     },
     ".agents/skills/squad-review/SKILL.md": {
       "hash": "114d3979ec235df53d3be93394c078095fb4f8c056e074d10bbf2f587d51bfe8",
-      "target": "codex"
+      "target": "claude"
     },
     ".agents/skills/squad-test/SKILL.md": {
       "hash": "314ee411131aa7a8e6067aed5eda002521c280897119cd196a6eea12db48a4f5",
-      "target": "codex"
+      "target": "claude"
     },
     ".squad/config.yaml": {
       "hash": "48efe9ad9ac0ea7bf201e1e0bd7ae024c41a403a6ad68ad9ff04d903234552a0",
@@ -67,7 +67,63 @@
     },
     ".agents/skills/squad-init/SKILL.md": {
       "hash": "85042b047468e89f8186f89b21e61e025d3a3db75e20fe811f5e707681624447",
-      "target": "codex"
+      "target": "claude"
+    },
+    ".claude/agents/bug-triager.md": {
+      "hash": "96d6b5a52ac1940016f436a11be6cd30c8a729e9139a6c30fb25f3d9153bd520",
+      "target": "claude"
+    },
+    ".claude/agents/doc-writer.md": {
+      "hash": "1c975b67f2440481570b098e381937b1207e098d4618dc9d9b09151bfce1b434",
+      "target": "claude"
+    },
+    ".claude/agents/finisher.md": {
+      "hash": "8635265e5580361fb644cffc08cf3d0cf7719a5515a42dcb98239696d2d5a666",
+      "target": "claude"
+    },
+    ".claude/agents/implementer.md": {
+      "hash": "65dd6281f58b2852ca02e502250d8b8300294269c5cd0e1f872081ddc4306c1c",
+      "target": "claude"
+    },
+    ".claude/agents/issue-creator.md": {
+      "hash": "52ccf8a0fe8008c2558fe994016daa1dd192435c0fe7c3a87ebdc75d58c6cf82",
+      "target": "claude"
+    },
+    ".claude/agents/linter.md": {
+      "hash": "cc812a4434ffdbe4bfb32f13dc4b7fec2d481260a457d4ad6d983a0b36ec7b57",
+      "target": "claude"
+    },
+    ".claude/agents/planner.md": {
+      "hash": "a8756ea133f4f77a0ebfea9064486498eb4a7d5c4d51b37479f79dad12a027bc",
+      "target": "claude"
+    },
+    ".claude/agents/product-manager.md": {
+      "hash": "9ecd0222ce027c0189e36bf1b073e09536be75db5cfccb264fc257827f49d45f",
+      "target": "claude"
+    },
+    ".claude/agents/requirements-reviewer.md": {
+      "hash": "1bed12fd99f0ed0aa4e4428ff358cc097aae27b1aaaea34be439e23197e9669a",
+      "target": "claude"
+    },
+    ".claude/agents/reviewer.md": {
+      "hash": "8caa2d4c5404bdd73511634e58d37fc08bf2439005a6e23bd01a56353a539480",
+      "target": "claude"
+    },
+    ".claude/agents/sre.md": {
+      "hash": "ee1cc223913dad1d56ca1ce31a3eb979dd06f9ba1e052e607a8b479e9aae0fc6",
+      "target": "claude"
+    },
+    ".claude/agents/tech-analyst.md": {
+      "hash": "9ad09163adbcfbbd90df99fa69305c4341146caeec7ef91ee973bbc908ce4273",
+      "target": "claude"
+    },
+    ".claude/agents/tester.md": {
+      "hash": "21aa922209b8a23a5e3671bd1511fa7eab14fabe5c37898829b487c9f363d22f",
+      "target": "claude"
+    },
+    ".claude/settings.json": {
+      "hash": "c59dd3a24518afd681a1599af0776fbe5645734bc0a5db05105470f5e930c301",
+      "target": "claude"
     }
   },
   "blocks": {
@@ -76,11 +132,18 @@
       "start": "<!-- orchestrated-squad:codex:start -->",
       "end": "<!-- orchestrated-squad:codex:end -->",
       "hash": "5d036cb672bd82a94568fe71688142543f8ce160d621e9572b2a9668817bc125"
+    },
+    "claude:CLAUDE.md": {
+      "file": "CLAUDE.md",
+      "start": "<!-- orchestrated-squad:claude:start -->",
+      "end": "<!-- orchestrated-squad:claude:end -->",
+      "hash": "91726064fa336c14defc7a06c622fbcd4a039b97c8800ca6cdc6b28f7b4dc293"
     }
   },
   "package": "@gregori/orchestrated-squad",
   "version": "0.6.6",
   "targets": [
-    "codex"
+    "codex",
+    "claude"
   ]
 }

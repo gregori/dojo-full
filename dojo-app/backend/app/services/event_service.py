@@ -1,9 +1,9 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.models import Event, EventType
+from app.models import Event, EventType, PreCheckIn
 from app.schemas import EventCreate, EventTypeCreate, EventTypeUpdate, EventUpdate
 
 
@@ -88,6 +88,19 @@ class EventService:
         update_data = event_data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(event, field, value)
+
+        # A reschedule into the one-hour cutoff invalidates existing intent;
+        # attendees must explicitly confirm again once the event is reopened.
+        if "start_datetime" in update_data:
+            start_datetime = event.start_datetime
+            if start_datetime.tzinfo is None:
+                start_datetime = start_datetime.replace(tzinfo=UTC)
+            if start_datetime <= datetime.now(UTC) + timedelta(hours=1):
+                for pre_checkin in (
+                    db.query(PreCheckIn).filter(PreCheckIn.event_id == event_id, PreCheckIn.status == "confirmed").all()
+                ):
+                    pre_checkin.status = "cancelled"
+                    pre_checkin.cancelled_at = datetime.now(UTC)
 
         event.updated_at = datetime.now(UTC)
         db.commit()

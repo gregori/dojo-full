@@ -468,13 +468,14 @@ class TestExamServiceEligibility:
         make_belt_promotion(db_session, student_id=student.id, belt_id=belt1.id)
         db_session.commit()
 
-        # Create attendance
+        # Create attendance at two separate events
         user = make_user(db_session)
-        event = make_event(db_session, event_type_id=et.id, created_by=user.id)
+        event1 = make_event(db_session, event_type_id=et.id, created_by=user.id)
+        event2 = make_event(db_session, event_type_id=et.id, created_by=user.id)
         db_session.commit()
 
-        make_attendance(db_session, event_id=event.id, student_id=student.id)
-        make_attendance(db_session, event_id=event.id, student_id=student.id)
+        make_attendance(db_session, event_id=event1.id, student_id=student.id)
+        make_attendance(db_session, event_id=event2.id, student_id=student.id)
         db_session.commit()
 
         is_eligible, reasons = ExamService._check_eligibility(db_session, student.id, belt2.id)
