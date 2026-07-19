@@ -2,7 +2,7 @@
 
 ## Status
 
-Planned with decision gates. The work is sequenced, but implementation must begin with Phase 1 only after the listed Phase 1 decisions are accepted.
+Phase 1 (Pré-Checkin) shipped as `da5bd69`. Phase 2 (Exames Médicos + document foundation) is planned and decision-gated to completion; ready for `squad-feature`. Phases 3–5 have their policy decisions resolved but no detailed implementation plan yet.
 
 ## Scope and Outcome
 
@@ -69,29 +69,80 @@ This changes the previous order so financial reporting follows financial data, a
 - Confirm public-endpoint controls: rate limit by client and registration attempt, generic invalid-credential errors, and no list access until successful credential validation.
 - Confirm that `Event` is the canonical scheduled-class entity for pre-checkin.
 
+## Phase 2 Implementation Plan — Exames Médicos + Document Foundation
+
+### Requirements review
+
+Structured review completed on 2026-07-19; full findings in [review-phase2.md](review-phase2.md). Two items required a decision before this plan could be written; both are now resolved (see "Required decisions" below). Also flagged and resolved: the existing `Exam`/`ExamParticipant`/`ExamBoardMember` tables model **belt-promotion** exams and must not be reused or extended for medical documents — Phase 2 introduces its own, unrelated model.
+
+### Required decisions before Phase 2 build — resolved 2026-07-19
+
+- **MED-05 actor (product decision, overrides prior policy):** student self-service upload **is** in scope, via a public registration-number+PIN endpoint, in addition to instructor/admin upload on the student's behalf. This reverses the Phase 1-era blanket "no student self-service" document-access note recorded below; that note now applies only to other future document types (e.g., contracts) unless separately revisited. `review-phase2.md` had recommended instructor/admin-only as the practical default — the user explicitly chose the broader option, so the public upload path must be built with the same rate-limiting and credential-privacy discipline as the Phase 1 public pre-checkin endpoints.
+- **MED-04 scope (product decision):** Phase 2 only computes and exposes the medical-exam status (`valido` / `vencendo` / `vencido` / `sem_registro`) per student. No enrollment/reactivation action is blocked in this phase — there is no existing "matrícula renewal" entity or endpoint in the schema today (`Student` only has `is_active` plus create/update/deactivate). Blocking enforcement is deferred to Phase 3 (Financial foundation), which will define the renewal/billing action that consults this status.
+- **MED-03 alert:** visual/dashboard status flag only, no email/push (consistent with epic Non-Goals; notifications are Epic 3 territory).
+- **MED-01/02 data shape:** one structured field (exam date) plus one opaque attached document; no other medical fields modeled.
+- **Document policy (carried over, Phase 1-era, 2026-07-19):** storage in OCI Object Storage reusing `dojo-infra/terraform/modules/storage/` (confirmed present in the repo); backend persists metadata and object key only, never file bytes; uploads limited to PDF/JPEG/PNG up to 10MB; soft delete with audit trail (actor, timestamp) on expiry, supersession, or student removal — no automatic hard delete.
+
+### Intended design
+
+- Add a generic `documents` table (reusable by Phase 4 Contracts later): owner (`student_id`), `document_type` (`medical_exam`, `contract`, ...), `storage_key`, `mime_type`, `size_bytes`, uploader (`uploaded_by_user_id` nullable, `uploaded_by_student_self` boolean), `status` (`active`/`superseded`/`deleted`), soft-delete audit fields (`deleted_at`, `deleted_by`).
+- Add a domain `medical_exams` table: `student_id`, `exam_date`, `expires_at` (stored, computed as `exam_date + 365 days` at write time), `document_id` (nullable FK to `documents`), `status` (`active`/`superseded`). Append-only history: a new submission supersedes the previous active row rather than overwriting it, matching the retention policy. Exactly one `active` row per student is enforced at the service layer (transactional, same pattern used for `PreCheckIn` conversion in Phase 1), not a hard DB constraint, since history must be preserved.
+- Status computation is a service-layer function, not a stored per-request value: `valido` if today is more than 30 days before `expires_at`; `vencendo` in the last 30 days before `expires_at`; `vencido` once past `expires_at`; `sem_registro` if the student has no active record.
+- Public self-service upload mirrors the Phase 1 pre-checkin pattern exactly: registration number + PIN, IP + registration rate limiting, generic non-disclosing responses regardless of credential validity.
+
+### Planned touch points
+
+| Layer | Primary files/modules |
+|---|---|
+| ORM and migration | `dojo-app/backend/app/models/__init__.py` (new `Document`, `MedicalExam`), new Alembic revision on top of `b39e1a4c7d20` |
+| API schemas | `dojo-app/backend/app/schemas/` (new `document.py` / `medical_exam.py`) |
+| API routes | New `dojo-app/backend/app/api/medical_exams.py` (instructor/admin CRUD + status/dashboard) and a public router (registration+PIN upload), mirroring `pre_checkins.py` |
+| Domain services | New `medical_exam_service.py` (status computation, supersession transaction, rate-limited public submission) |
+| Storage integration | New thin client wrapping OCI Object Storage upload/delete, reusing `dojo-infra/terraform/modules/storage/` |
+| Instructor UI | `dojo-app/frontend/src/pages/StudentsPage.tsx` (status badge, upload form, history), new dashboard "exames vencendo" list |
+| Public UI | New `dojo-app/frontend/src/pages/MedicalExamPage.tsx`, reusing the public Axios client from `services/api.ts` |
+| Tests | Backend unit/API tests for status computation, supersession, rate limiting, and public/instructor upload paths |
+
+### Phase 2 acceptance criteria
+
+1. Instructor/admin can record a medical exam (date + optional PDF/JPEG/PNG ≤10MB) for any student; a new record supersedes the prior one, preserving history.
+2. A student can self-submit their medical exam (date + file) via a public endpoint authenticated by registration number + PIN, rate-limited by IP and registration number, with generic responses that don't disclose credential validity.
+3. The system computes and exposes a per-student status (`valido` / `vencendo` / `vencido` / `sem_registro`) — visual/dashboard only, no email/push.
+4. Instructors can see a dashboard list of students whose exam is `vencendo` or `vencido`.
+5. Uploaded files are stored in OCI Object Storage; the database persists only metadata and the storage key; only PDF/JPEG/PNG up to 10MB are accepted.
+6. Medical exam records form an append-only history per student with exactly one active record at a time; a superseded or soft-deleted record retains actor/timestamp audit metadata and is never hard-deleted automatically.
+7. MED-04 (blocking matrícula renewal) is out of scope for Phase 2; item 3's status is the interface Phase 3 will consume once a renewal/billing action exists. No existing student action is blocked by this phase.
+8. The new `documents`/`medical_exams` tables are unrelated to, and do not modify, the existing `exams`/`exam_participants`/`exam_board_members` (belt-promotion) tables.
+
 ## Later Phase Contracts
 
-### Documents (Phase 2)
-
-Define one reusable document abstraction before contracts: ownership, document type, storage key, MIME/size validation, access permissions, retention/deletion, and audit metadata. Medical expiry is one year; visual alert begins 30 days before expiry.
-
-### Finance (Phase 3)
+### Finance (Phase 3) — policy resolved 2026-07-19
 
 Define plan/catalog ownership, billing cycle, due dates, pricing by weekly class frequency, partial/overpayment behavior, discounts, and overdue calculation. These policies become the source for both contracts and finance reports.
 
-### Contracts (Phase 4)
+- **Pricing:** fixed plan catalog tiered by weekly class frequency (not a per-class dynamic rate).
+- **Billing cycle:** monthly, single standardized due date for all students (e.g. day 5), proportional charge in the enrollment month.
+- **Overdue:** flag-only in reports/dashboards; no automatic check-in or access block in this epic.
+- **Partial/overpayment:** accepted; tracked as a residual balance (owed or credit) applied to the next charge.
+
+### Contracts (Phase 4) — policy resolved 2026-07-19
 
 Generate versioned PDFs at enrollment from the financial plan. Store both generated and signed copies with the shared document policy. Legal text/template approval is a product/legal input, not an implementation assumption.
 
-### Reports (Phase 5)
+- **Template versioning:** the legal template is versioned; each generated contract records the template version and the financial plan/version it used.
+- **Signature capture:** dual path — on-screen/touch signature embedded into the generated PDF (tablet flow), or upload of an externally-signed PDF via the Phase 2 document policy. Operator chooses per contract.
+
+### Reports (Phase 5) — policy resolved 2026-07-19
 
 Supply parameterized PDF/CSV exports for belt exams, individual/class attendance, and finance. Define financial projections (time horizon and formula) before building REP-04.
+
+- **REP-04 projection:** expected revenue over the next N months (default 3) = sum of currently active plans; no adjustment for historical delinquency/cancellation.
 
 ## Migration Strategy
 
 - One backwards-compatible Alembic revision per phase, with explicit downgrade coverage.
 - Phase 1 introduces `pre_checkins` with foreign keys to `events` and `students`, timestamps/status, and a uniqueness constraint appropriate to the chosen history model.
-- Phase 2 owns document-storage schema; later phases reuse it rather than adding independent file columns.
+- Phase 2 introduces the generic `documents` table and the domain `medical_exams` table (append-only history, service-layer-enforced single active row); later phases reuse `documents` rather than adding independent file columns.
 - Phase 3 owns financial plan/payment tables; Phase 4 references its approved plan/version; Phase 5 remains read-oriented.
 
 ## Verification Strategy
@@ -110,4 +161,4 @@ Supply parameterized PDF/CSV exports for belt exams, individual/class attendance
 
 ## Next Action
 
-Accept or revise the four Phase 1 decisions, then use `squad-feature` to prepare the scoped Phase 1 implementation work.
+Phase 1 (Pré-Checkin) shipped as `da5bd69`. Phase 2 (Exames Médicos + document foundation) decisions are resolved and the implementation plan above is ready; use `squad-feature` to build PR-2 against the acceptance criteria in "Phase 2 Implementation Plan".

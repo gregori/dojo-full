@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "run_id": "epic-02-plan",
+  "updated_at": "2026-07-19",
+  "gate_types": [
+    "policy",
+    "lint",
+    "test",
+    "independent_review",
+    "security_review"
+  ],
+  "phases": [
+    {
+      "phase": 1,
+      "name": "Pre-Checkin",
+      "pr": "PR-1",
+      "requirements": "PRE-01–PRE-05",
+      "status": "complete",
+      "commit": "da5bd69",
+      "gates": {
+        "policy": {
+          "status": "passed",
+          "note": "Event-state matrix, eligibility, public-endpoint security, and conversion behavior resolved.",
+          "evidence": ".workflow/epic-02/handoff.md"
+        },
+        "lint": {
+          "status": "passed",
+          "evidence": ".workflow/epic-02/pr-1-precheckin/lint-results.md",
+          "note": "Frontend Prettier full check fails on 19 pre-existing files; tracked as baseline formatting debt, not blocking."
+        },
+        "test": {
+          "status": "passed",
+          "evidence": ".workflow/epic-02/pr-1-precheckin/test-results.md",
+          "note": "Migration smoke test against a representative initialized database remains outstanding follow-up."
+        },
+        "independent_review": {
+          "status": "passed",
+          "evidence": ".workflow/epic-02/pr-1-precheckin/review.md"
+        },
+        "security_review": {
+          "status": "passed",
+          "evidence": ".workflow/epic-02/pr-1-precheckin/security.md"
+        }
+      }
+    },
+    {
+      "phase": 2,
+      "name": "Exames Medicos + document foundation",
+      "pr": "PR-2",
+      "requirements": "MED-01–MED-06",
+      "status": "planned",
+      "commit": null,
+      "gates": {
+        "policy": {
+          "status": "passed",
+          "note": "Storage backend (OCI Object Storage), access model, MIME/size limits, retention policy resolved. MED-05: student self-service upload IS in scope (overrides prior instructor/admin-only default) via a public registration+PIN endpoint. MED-04: Phase 2 exposes status only (valido/vencendo/vencido/sem_registro); blocking enforcement deferred to Phase 3.",
+          "evidence": ".workflow/runs/epic-02-plan/review-phase2.md, .workflow/runs/epic-02-plan/plan.md"
+        },
+        "lint": { "status": "pending" },
+        "test": { "status": "pending" },
+        "independent_review": { "status": "pending" },
+        "security_review": { "status": "pending" }
+      }
+    },
+    {
+      "phase": 3,
+      "name": "Financial foundation",
+      "pr": "PR-3",
+      "requirements": "FIN-01–FIN-07",
+      "status": "pending",
+      "commit": null,
+      "gates": {
+        "policy": {
+          "status": "passed",
+          "note": "Pricing tiers, billing cycle/due date, overdue handling, and partial/overpayment behavior resolved.",
+          "evidence": ".workflow/epic-02/handoff.md"
+        },
+        "lint": { "status": "pending" },
+        "test": { "status": "pending" },
+        "independent_review": { "status": "pending" },
+        "security_review": { "status": "pending" }
+      }
+    },
+    {
+      "phase": 4,
+      "name": "Contracts",
+      "pr": "PR-4",
+      "requirements": "CON-01–CON-04",
+      "status": "pending",
+      "commit": null,
+      "gates": {
+        "policy": {
+          "status": "passed",
+          "note": "Template versioning and dual signature-capture path resolved. Legal wording itself is still a product/legal input, not a scoping blocker.",
+          "evidence": ".workflow/epic-02/handoff.md"
+        },
+        "lint": { "status": "pending" },
+        "test": { "status": "pending" },
+        "independent_review": { "status": "pending" },
+        "security_review": { "status": "pending" }
+      }
+    },
+    {
+      "phase": 5,
+      "name": "Reports",
+      "pr": "PR-5",
+      "requirements": "REP-01–REP-05",
+      "status": "pending",
+      "commit": null,
+      "gates": {
+        "policy": {
+          "status": "passed",
+          "note": "REP-04 financial projection formula and default horizon resolved.",
+          "evidence": ".workflow/epic-02/handoff.md"
+        },
+        "lint": { "status": "pending" },
+        "test": { "status": "pending" },
+        "independent_review": { "status": "pending" },
+        "security_review": { "status": "pending" }
+      }
+    }
+  ]
+}
