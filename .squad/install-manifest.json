@@ -43,23 +43,23 @@
     },
     ".agents/skills/squad-plan/SKILL.md": {
       "hash": "d5f5f0a9bf550cd13b65b299727d9fc57ba2178a5285d68a6e5eb806fcf4e05a",
-      "target": "claude"
+      "target": "opencode"
     },
     ".agents/skills/squad-feature/SKILL.md": {
       "hash": "ad24d9f8d2cb86d5e878c9edc10ec0fc2f185ecb8bc2be336179da24567e7d93",
-      "target": "claude"
+      "target": "opencode"
     },
     ".agents/skills/squad-execute/SKILL.md": {
       "hash": "baac4e173b7efedf4eb20b33cf3af309c3420608705f4ad92273605bce0acca4",
-      "target": "claude"
+      "target": "opencode"
     },
     ".agents/skills/squad-review/SKILL.md": {
       "hash": "114d3979ec235df53d3be93394c078095fb4f8c056e074d10bbf2f587d51bfe8",
-      "target": "claude"
+      "target": "opencode"
     },
     ".agents/skills/squad-test/SKILL.md": {
       "hash": "314ee411131aa7a8e6067aed5eda002521c280897119cd196a6eea12db48a4f5",
-      "target": "claude"
+      "target": "opencode"
     },
     ".squad/config.yaml": {
       "hash": "48efe9ad9ac0ea7bf201e1e0bd7ae024c41a403a6ad68ad9ff04d903234552a0",
@@ -67,7 +67,7 @@
     },
     ".agents/skills/squad-init/SKILL.md": {
       "hash": "85042b047468e89f8186f89b21e61e025d3a3db75e20fe811f5e707681624447",
-      "target": "claude"
+      "target": "opencode"
     },
     ".claude/agents/bug-triager.md": {
       "hash": "96d6b5a52ac1940016f436a11be6cd30c8a729e9139a6c30fb25f3d9153bd520",
@@ -124,6 +124,158 @@
     ".claude/settings.json": {
       "hash": "c59dd3a24518afd681a1599af0776fbe5645734bc0a5db05105470f5e930c301",
       "target": "claude"
+    },
+    ".claude/skills/squad-debug/SKILL.md": {
+      "hash": "1b581aec78956408f8090d5ce19b97ef6fe9aa9ea9d84a859bb4d9b2297eb698",
+      "target": "claude"
+    },
+    ".claude/skills/squad-execute/SKILL.md": {
+      "hash": "baac4e173b7efedf4eb20b33cf3af309c3420608705f4ad92273605bce0acca4",
+      "target": "claude"
+    },
+    ".claude/skills/squad-feature/SKILL.md": {
+      "hash": "ad24d9f8d2cb86d5e878c9edc10ec0fc2f185ecb8bc2be336179da24567e7d93",
+      "target": "claude"
+    },
+    ".claude/skills/squad-finish/SKILL.md": {
+      "hash": "f3f7a4ec214b2f1c959d54dda662d1913334ddd3ec1f28e1460035a95bac5c46",
+      "target": "claude"
+    },
+    ".claude/skills/squad-init/SKILL.md": {
+      "hash": "85042b047468e89f8186f89b21e61e025d3a3db75e20fe811f5e707681624447",
+      "target": "claude"
+    },
+    ".claude/skills/squad-next/SKILL.md": {
+      "hash": "0314d1cc2eac80c9d58525f7224928b1546ded7fc0ca05078e844a7e304b1e56",
+      "target": "claude"
+    },
+    ".claude/skills/squad-plan/SKILL.md": {
+      "hash": "d5f5f0a9bf550cd13b65b299727d9fc57ba2178a5285d68a6e5eb806fcf4e05a",
+      "target": "claude"
+    },
+    ".claude/skills/squad-resume/SKILL.md": {
+      "hash": "38bb92c74d107f35166d06cfa1acd9fadfca9dd9aac1060ec5f86d7fa2421fbd",
+      "target": "claude"
+    },
+    ".claude/skills/squad-review/SKILL.md": {
+      "hash": "114d3979ec235df53d3be93394c078095fb4f8c056e074d10bbf2f587d51bfe8",
+      "target": "claude"
+    },
+    ".claude/skills/squad-status/SKILL.md": {
+      "hash": "4a33ab91fd27c6913a4322e24ef03db32c785872fb8837010bec84cbf850f785",
+      "target": "claude"
+    },
+    ".claude/skills/squad-test/SKILL.md": {
+      "hash": "314ee411131aa7a8e6067aed5eda002521c280897119cd196a6eea12db48a4f5",
+      "target": "claude"
+    },
+    ".claude/skills/squad-yolo/SKILL.md": {
+      "hash": "aad4605be61c0cf4edd95f67435f9c112c26ccd3784058442930c7d6d999ab03",
+      "target": "claude"
+    },
+    ".opencode/agents/bug-triager.md": {
+      "hash": "2c38d7c3d7aafca777071d6471a5de9594c3cc30679c006ab8b7d72be7b95549",
+      "target": "opencode"
+    },
+    ".opencode/agents/finisher.md": {
+      "hash": "f990e9085246dd23d77f3fcd0fc16d948da06a57dc9a500d25079c12213ef29e",
+      "target": "opencode"
+    },
+    ".opencode/agents/implementer.md": {
+      "hash": "64ce8e8ae4161e71a27c4235598aed0baf1c77893f2193cea1d710dfcd938491",
+      "target": "opencode"
+    },
+    ".opencode/agents/issue-creator.md": {
+      "hash": "70858311cc198a1ce70923022b22887143e5c9cc037b51d85e6c5302c690f421",
+      "target": "opencode"
+    },
+    ".opencode/agents/sre.md": {
+      "hash": "b13242e9a92fee0c8f177f0d9865e36732af07cfc97b9039975f983cab5436b6",
+      "target": "opencode"
+    },
+    ".opencode/commands/squad-debug.md": {
+      "hash": "d2cea6bcbd9cdf6d13f17c85155a6cb34c79460b3a8a72874017f6056871b3db",
+      "target": "opencode"
+    },
+    ".opencode/commands/squad-execute.md": {
+      "hash": "ef16b1735d180a3ab21cd684366048a4208d383023189f33a5ec574933b37d93",
+      "target": "opencode"
+    },
+    ".opencode/commands/squad-feature.md": {
+      "hash": "b63b2464340050e1723a276fb74b44caa44c52310a2d0ac3d61d3ad86fd86ba2",
+      "target": "opencode"
+    },
+    ".opencode/commands/squad-finish.md": {
+      "hash": "3af53165e416801537f4c6fba7b23e2025e13d06e75f7cf8b8e1a38d49f1320c",
+      "target": "opencode"
+    },
+    ".opencode/commands/squad-init.md": {
+      "hash": "c72ee4f0dc5c8df39f51d3d354b82ac84d13e09d698f69053a0efec15c3f8060",
+      "target": "opencode"
+    },
+    ".opencode/commands/squad-next.md": {
+      "hash": "0cdcebda79ac2648848da52d39ee5372a336e0c710503c901f8684f5ae1d7fca",
+      "target": "opencode"
+    },
+    ".opencode/commands/squad-plan.md": {
+      "hash": "9f5aa69fda0c8e05df4014aaac5a027570a5e1739c3f2a27c9a0fe537f012714",
+      "target": "opencode"
+    },
+    ".opencode/commands/squad-resume.md": {
+      "hash": "480c7ba2937bcaa9de577d8c5509bd6888609a10a1c149106f9763dc18096ea2",
+      "target": "opencode"
+    },
+    ".opencode/commands/squad-review.md": {
+      "hash": "ddf7052786551f2bcc6c168402d993d735095a0bc76a6eccabacceed6edb8d85",
+      "target": "opencode"
+    },
+    ".opencode/commands/squad-status.md": {
+      "hash": "594b4aeab6b1e273a9bffeabbdb93e764914157656f251d94c34ea3bb81e13ab",
+      "target": "opencode"
+    },
+    ".opencode/commands/squad-test.md": {
+      "hash": "9c4478195f86f23f24de15aa2dcefa4b7f0c9328aa82a5175299ec276ae7b02d",
+      "target": "opencode"
+    },
+    ".opencode/commands/squad-yolo.md": {
+      "hash": "84e346834eab3c37e98439eb944b38f350a7b473272b7615a52af3aea70d35e0",
+      "target": "opencode"
+    },
+    "opencode.json": {
+      "hash": "1cbcf07ed5de5c35fdf2fe027ffbd6e7a2f8f2d2b42d9276eda969bdb1fc4d32",
+      "target": "opencode"
+    },
+    ".agents/skills/constitution-generator/SKILL.md": {
+      "hash": "ad194581b0349aa3142c15dba83cfe6075f2b1d5de536db2a8c1bd680589c77d",
+      "target": "opencode"
+    },
+    ".agents/skills/handoff/SKILL.md": {
+      "hash": "d215dd8f2a19bf85fdaf67a3cdb5077641f6b4108f229ba79579414793d7b0a3",
+      "target": "opencode"
+    },
+    ".agents/skills/squad-debug/SKILL.md": {
+      "hash": "1b581aec78956408f8090d5ce19b97ef6fe9aa9ea9d84a859bb4d9b2297eb698",
+      "target": "opencode"
+    },
+    ".agents/skills/squad-finish/SKILL.md": {
+      "hash": "f3f7a4ec214b2f1c959d54dda662d1913334ddd3ec1f28e1460035a95bac5c46",
+      "target": "opencode"
+    },
+    ".agents/skills/squad-next/SKILL.md": {
+      "hash": "0314d1cc2eac80c9d58525f7224928b1546ded7fc0ca05078e844a7e304b1e56",
+      "target": "opencode"
+    },
+    ".agents/skills/squad-resume/SKILL.md": {
+      "hash": "38bb92c74d107f35166d06cfa1acd9fadfca9dd9aac1060ec5f86d7fa2421fbd",
+      "target": "opencode"
+    },
+    ".agents/skills/squad-status/SKILL.md": {
+      "hash": "4a33ab91fd27c6913a4322e24ef03db32c785872fb8837010bec84cbf850f785",
+      "target": "opencode"
+    },
+    ".agents/skills/squad-yolo/SKILL.md": {
+      "hash": "aad4605be61c0cf4edd95f67435f9c112c26ccd3784058442930c7d6d999ab03",
+      "target": "opencode"
     }
   },
   "blocks": {
@@ -138,12 +290,19 @@
       "start": "<!-- orchestrated-squad:claude:start -->",
       "end": "<!-- orchestrated-squad:claude:end -->",
       "hash": "91726064fa336c14defc7a06c622fbcd4a039b97c8800ca6cdc6b28f7b4dc293"
+    },
+    "opencode:AGENTS.md": {
+      "file": "AGENTS.md",
+      "start": "<!-- orchestrated-squad:opencode:start -->",
+      "end": "<!-- orchestrated-squad:opencode:end -->",
+      "hash": "8071ebbf9ebfcaec64c1f492dcade53b26493b0dbdd9db7db4c7a36a1afdfd36"
     }
   },
   "package": "@gregori/orchestrated-squad",
-  "version": "0.6.6",
+  "version": "0.7.0",
   "targets": [
     "codex",
-    "claude"
+    "claude",
+    "opencode"
   ]
 }
