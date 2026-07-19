@@ -53,7 +53,11 @@ function PreCheckInCountBadge({ eventId }: { eventId: string }) {
 }
 
 function PreCheckInRosterPanel({ event, onClose }: { event: Event; onClose: () => void }) {
-  const { data: students = [], isLoading, isError } = useQuery<PreCheckInStudent[]>({
+  const {
+    data: students = [],
+    isLoading,
+    isError,
+  } = useQuery<PreCheckInStudent[]>({
     queryKey: ['events', event.id, 'precheckins', 'roster'],
     queryFn: async () => (await api.get(`/api/v1/pre-checkins/events/${event.id}`)).data,
   })
@@ -77,7 +81,9 @@ function PreCheckInRosterPanel({ event, onClose }: { event: Event; onClose: () =
       {isLoading ? (
         <p className="mt-4 text-sm text-slate-600">Carregando confirmados...</p>
       ) : isError ? (
-        <p className="mt-4 text-sm text-rose-700">Não foi possível carregar a lista de confirmados.</p>
+        <p className="mt-4 text-sm text-rose-700">
+          Não foi possível carregar a lista de confirmados.
+        </p>
       ) : students.length === 0 ? (
         <p className="mt-4 text-sm text-slate-600">Ainda não há pré-check-ins confirmados.</p>
       ) : (
@@ -87,8 +93,12 @@ function PreCheckInRosterPanel({ event, onClose }: { event: Event; onClose: () =
               key={student.id ?? student.student_id ?? student.registration_number}
               className="flex items-center justify-between gap-4 px-4 py-3 text-sm"
             >
-              <span className="font-medium text-slate-800">{student.name ?? student.student_name}</span>
-              <span className="font-mono text-xs text-slate-500">{student.registration_number}</span>
+              <span className="font-medium text-slate-800">
+                {student.name ?? student.student_name}
+              </span>
+              <span className="font-mono text-xs text-slate-500">
+                {student.registration_number}
+              </span>
             </li>
           ))}
         </ul>
@@ -325,7 +335,9 @@ export default function EventsPage() {
         </div>
       )}
 
-      {rosterEvent && <PreCheckInRosterPanel event={rosterEvent} onClose={() => setRosterEvent(null)} />}
+      {rosterEvent && (
+        <PreCheckInRosterPanel event={rosterEvent} onClose={() => setRosterEvent(null)} />
+      )}
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="w-full">
