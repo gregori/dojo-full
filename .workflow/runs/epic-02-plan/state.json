@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "run_id": "epic-02-plan",
+  "work_item": "Epic 2 — Financeiro, Pré-Checkin e Relatórios",
+  "status": "planned_with_gates",
+  "created_at": "2026-07-19",
+  "updated_at": "2026-07-19",
+  "requirements_review": "completed",
+  "plan_path": ".workflow/runs/epic-02-plan/plan.md",
+  "handoff_path": ".workflow/epic-02/handoff.md",
+  "next_action": "Resolve Phase 1 decisions, then create its implementation PR plan."
+}
