@@ -4,12 +4,14 @@ from typing import List, Optional
 
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     DateTime,
     Enum,
     ForeignKey,
     Integer,
     String,
     Text,
+    UniqueConstraint,
     create_engine,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -156,6 +158,7 @@ class Student(UUIDMixin, TimestampMixin, Base):
     current_belt: Mapped[Belt] = relationship(back_populates="students")
     dojo: Mapped[Dojo | None] = relationship(back_populates="students")
     attendances: Mapped[list["Attendance"]] = relationship(back_populates="student")
+    pre_checkins: Mapped[list["PreCheckIn"]] = relationship(back_populates="student")
     exam_participations: Mapped[list["ExamParticipant"]] = relationship(back_populates="student")
     belt_promotions: Mapped[list["BeltPromotion"]] = relationship(back_populates="student")
 
@@ -178,11 +181,14 @@ class Event(UUIDMixin, TimestampMixin, Base):
         Enum("scheduled", "in_progress", "finished", "cancelled", name="event_status"),
         default="scheduled",
     )
+    minimum_belt_id: Mapped[str | None] = mapped_column(ForeignKey("belts.id"), nullable=True)
 
     # Relationships
     event_type: Mapped[EventType] = relationship(back_populates="events")
     organization: Mapped[Organization | None] = relationship(back_populates="events")
     attendances: Mapped[list["Attendance"]] = relationship(back_populates="event")
+    pre_checkins: Mapped[list["PreCheckIn"]] = relationship(back_populates="event")
+    minimum_belt: Mapped[Belt | None] = relationship(foreign_keys=[minimum_belt_id])
     exam: Mapped[Optional["Exam"]] = relationship(back_populates="event")
 
 
@@ -190,6 +196,7 @@ class Attendance(UUIDMixin, TimestampMixin, Base):
     """Student attendance records."""
 
     __tablename__ = "attendances"
+    __table_args__ = (UniqueConstraint("event_id", "student_id", name="uq_attendances_event_student"),)
 
     event_id: Mapped[str] = mapped_column(ForeignKey("events.id"), nullable=False)
     student_id: Mapped[str] = mapped_column(ForeignKey("students.id"), nullable=False)
@@ -202,6 +209,28 @@ class Attendance(UUIDMixin, TimestampMixin, Base):
     # Relationships
     event: Mapped[Event] = relationship(back_populates="attendances")
     student: Mapped[Student] = relationship(back_populates="attendances")
+
+
+class PreCheckIn(UUIDMixin, TimestampMixin, Base):
+    """A student's pre-check-in intention for a scheduled event, distinct from attendance."""
+
+    __tablename__ = "pre_checkins"
+    __table_args__ = (
+        UniqueConstraint("event_id", "student_id", name="uq_pre_checkins_event_student"),
+        CheckConstraint("status IN ('confirmed', 'cancelled', 'converted')", name="ck_pre_checkins_status"),
+    )
+
+    event_id: Mapped[str] = mapped_column(ForeignKey("events.id"), nullable=False)
+    student_id: Mapped[str] = mapped_column(ForeignKey("students.id"), nullable=False)
+    status: Mapped[str] = mapped_column(
+        Enum("confirmed", "cancelled", "converted", name="pre_checkin_status"), default="confirmed", nullable=False
+    )
+    confirmed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    converted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    event: Mapped[Event] = relationship(back_populates="pre_checkins")
+    student: Mapped[Student] = relationship(back_populates="pre_checkins")
 
 
 class Exam(UUIDMixin, TimestampMixin, Base):

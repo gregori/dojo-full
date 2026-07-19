@@ -7,6 +7,16 @@ const api = axios.create({
   },
 })
 
+// Public flows must not inherit the authenticated client's 401 redirect.
+// In particular, an invalid pre-check-in credential is an expected outcome,
+// not a reason to interrupt the visitor with the staff login page.
+export const publicApi = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+})
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token')
   if (token) {

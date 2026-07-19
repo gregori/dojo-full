@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Edit, Trash2, QrCode } from 'lucide-react'
+import { Plus, Edit, Trash2, QrCode, Users, X } from 'lucide-react'
 import api from '../services/api'
 
 interface EventType {
@@ -22,10 +22,86 @@ interface Event {
   check_in_token: string
 }
 
+interface PreCheckInCount {
+  confirmed_count?: number
+  count?: number
+}
+
+interface PreCheckInStudent {
+  id?: string
+  student_id?: string
+  name?: string
+  student_name?: string
+  registration_number: string
+  confirmed_at?: string
+}
+
+function PreCheckInCountBadge({ eventId }: { eventId: string }) {
+  const { data, isLoading } = useQuery<PreCheckInCount>({
+    queryKey: ['events', eventId, 'precheckins', 'count'],
+    queryFn: async () => (await api.get(`/api/v1/pre-checkins/events/${eventId}/count`)).data,
+    staleTime: 30_000,
+  })
+
+  const count = data?.confirmed_count ?? data?.count ?? 0
+
+  return (
+    <span className="inline-flex min-w-8 items-center justify-center rounded-full bg-cyan-100 px-2 py-1 text-xs font-semibold text-cyan-800">
+      {isLoading ? '…' : count}
+    </span>
+  )
+}
+
+function PreCheckInRosterPanel({ event, onClose }: { event: Event; onClose: () => void }) {
+  const { data: students = [], isLoading, isError } = useQuery<PreCheckInStudent[]>({
+    queryKey: ['events', event.id, 'precheckins', 'roster'],
+    queryFn: async () => (await api.get(`/api/v1/pre-checkins/events/${event.id}`)).data,
+  })
+
+  return (
+    <div className="mb-6 rounded-lg border border-cyan-100 bg-cyan-50 p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-bold tracking-wide text-cyan-800 uppercase">Pré-check-in</p>
+          <h3 className="mt-1 text-lg font-semibold text-slate-800">Confirmados — {event.title}</h3>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded p-1 text-slate-500 hover:bg-cyan-100 hover:text-slate-800"
+          aria-label="Fechar lista de confirmados"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+      {isLoading ? (
+        <p className="mt-4 text-sm text-slate-600">Carregando confirmados...</p>
+      ) : isError ? (
+        <p className="mt-4 text-sm text-rose-700">Não foi possível carregar a lista de confirmados.</p>
+      ) : students.length === 0 ? (
+        <p className="mt-4 text-sm text-slate-600">Ainda não há pré-check-ins confirmados.</p>
+      ) : (
+        <ul className="mt-4 divide-y divide-cyan-100 rounded-md bg-white">
+          {students.map((student) => (
+            <li
+              key={student.id ?? student.student_id ?? student.registration_number}
+              className="flex items-center justify-between gap-4 px-4 py-3 text-sm"
+            >
+              <span className="font-medium text-slate-800">{student.name ?? student.student_name}</span>
+              <span className="font-mono text-xs text-slate-500">{student.registration_number}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 export default function EventsPage() {
   const queryClient = useQueryClient()
   const [showForm, setShowForm] = useState(false)
   const [editingEvent, setEditingEvent] = useState<Event | null>(null)
+  const [rosterEvent, setRosterEvent] = useState<Event | null>(null)
   const [formData, setFormData] = useState({
     title: '',
     event_type_id: '',
@@ -249,6 +325,8 @@ export default function EventsPage() {
         </div>
       )}
 
+      {rosterEvent && <PreCheckInRosterPanel event={rosterEvent} onClose={() => setRosterEvent(null)} />}
+
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="w-full">
           <thead className="bg-gray-50">
@@ -264,6 +342,9 @@ export default function EventsPage() {
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 Status
+              </th>
+              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                Pré-check-ins
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 Ações
@@ -303,6 +384,9 @@ export default function EventsPage() {
                             : event.status}
                   </span>
                 </td>
+                <td className="px-6 py-4 text-center">
+                  <PreCheckInCountBadge eventId={event.id} />
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <button
                     onClick={() => handleEdit(event)}
@@ -325,6 +409,15 @@ export default function EventsPage() {
                   >
                     <QrCode className="w-4 h-4" />
                   </a>
+                  <button
+                    type="button"
+                    onClick={() => setRosterEvent(event)}
+                    className="ml-3 text-cyan-700 hover:text-cyan-900"
+                    title="Ver pré-check-ins confirmados"
+                    aria-label={`Ver pré-check-ins confirmados de ${event.title}`}
+                  >
+                    <Users className="w-4 h-4" />
+                  </button>
                 </td>
               </tr>
             ))}

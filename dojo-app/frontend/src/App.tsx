@@ -6,6 +6,7 @@ import DashboardPage from './pages/DashboardPage'
 import StudentsPage from './pages/StudentsPage'
 import EventsPage from './pages/EventsPage'
 import CheckInPage from './pages/CheckInPage'
+import PreCheckInPage from './pages/PreCheckInPage'
 import ExamsPage from './pages/ExamsPage'
 import BeltRequirementsPage from './pages/BeltRequirementsPage'
 import BeltsPage from './pages/BeltsPage'
@@ -37,6 +38,7 @@ function App() {
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/checkin" element={<CheckInPage />} />
+            <Route path="/precheckin" element={<PreCheckInPage />} />
             <Route
               path="/"
               element={

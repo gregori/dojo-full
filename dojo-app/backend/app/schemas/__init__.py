@@ -44,5 +44,13 @@ from app.schemas.organization import (
     OrganizationResponse,
     OrganizationUpdate,
 )
+from app.schemas.pre_checkin import (
+    PreCheckInCount,
+    PreCheckInPublicResponse,
+    PreCheckInRequest,
+    PreCheckInResponse,
+    PreCheckInRosterItem,
+    PublicPreCheckInEvent,
+)
 from app.schemas.student import StudentCreate, StudentResponse, StudentUpdate, StudentWithBelt
 from app.schemas.user import Token, UserCreate, UserLogin, UserResponse, UserUpdate
