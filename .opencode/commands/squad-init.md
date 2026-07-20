@@ -1,5 +1,7 @@
 ---
 description: Initialize orchestrated-squad state in the current project after confirming the intended runtime.
+agent: planner
+subtask: false
 ---
 
 

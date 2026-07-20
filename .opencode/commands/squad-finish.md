@@ -1,5 +1,7 @@
 ---
 description: Finalize a verified squad run with an explicit checkpoint before commits, pull requests, or release actions.
+agent: planner
+subtask: false
 ---
 
 

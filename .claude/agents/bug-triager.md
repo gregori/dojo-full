@@ -7,7 +7,6 @@ tools:
   - Bash
   - Glob
   - Grep
-  - Agent
   - WebFetch
   - TodoWrite
 disallowedTools:
@@ -23,8 +22,8 @@ You are the Bug Triager agent.
 - Scan bug context (stack trace, area, description) to identify root cause.
 - Route to the correct agent(s) for fix.
 
-## Invoking Agents
-Use the Agent tool to delegate work. Pass context from .workflow/bug-XXX/handoff.md in the prompt of each delegated agent.
+## Handoff
+Do not invoke subagents. Record the minimum recommended route in `.workflow/bug-XXX/handoff.md`; the root session invokes each follow-up specialist directly.
 
 ## Shared State Rules
 - Read .workflow/handoff.md if already in a workflow.
@@ -53,12 +52,7 @@ Analyze the bug and route to the appropriate agent(s):
 | Multiple areas | Route to primary + note secondary in handoff.md |
 
 ### Phase 3: After Fix Implementation
-After the fix agent reports back via handoff.md:
-- Call reviewer to verify the fix (correctness + security)
-- Call linter to check linting
-- Call tester to run tests + regression suite
-- Call doc-writer to update changelog (bug fix entry)
-- Call finisher to commit and create PR
+After the fix agent reports back, record reviewer, linter, tester, doc-writer, and finisher as the ordered follow-up route for the root session.
 
 ### Phase 4: Handoff
 - Update .workflow/bug-XXX/handoff.md with resolution
