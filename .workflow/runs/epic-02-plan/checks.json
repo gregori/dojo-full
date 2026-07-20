@@ -48,8 +48,8 @@
       "name": "Exames Medicos + document foundation",
       "pr": "PR-2",
       "requirements": "MED-01–MED-06",
-      "status": "implemented_pending_commit",
-      "commit": null,
+      "status": "complete",
+      "commit": "9037868",
       "gates": {
         "policy": {
           "status": "passed",
