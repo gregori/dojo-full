@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "run_id": "epic-02-plan",
+  "updated_at": "2026-07-19",
+  "gate_types": [
+    "policy",
+    "lint",
+    "test",
+    "independent_review",
+    "security_review"
+  ],
+  "phases": [
+    {
+      "phase": 1,
+      "name": "Pre-Checkin",
+      "pr": "PR-1",
+      "requirements": "PRE-01–PRE-05",
+      "status": "complete",
+      "commit": "da5bd69",
+      "gates": {
+        "policy": {
+          "status": "passed",
+          "note": "Event-state matrix, eligibility, public-endpoint security, and conversion behavior resolved.",
+          "evidence": ".workflow/epic-02/handoff.md"
+        },
+        "lint": {
+          "status": "passed",
+          "evidence": ".workflow/epic-02/pr-1-precheckin/lint-results.md",
+          "note": "Frontend Prettier full check fails on 19 pre-existing files; tracked as baseline formatting debt, not blocking."
+        },
+        "test": {
+          "status": "passed",
+          "evidence": ".workflow/epic-02/pr-1-precheckin/test-results.md",
+          "note": "Migration smoke test against a representative initialized database remains outstanding follow-up."
+        },
+        "independent_review": {
+          "status": "passed",
+          "evidence": ".workflow/epic-02/pr-1-precheckin/review.md"
+        },
+        "security_review": {
+          "status": "passed",
+          "evidence": ".workflow/epic-02/pr-1-precheckin/security.md"
+        }
+      }
+    },
+    {
+      "phase": 2,
+      "name": "Exames Medicos + document foundation",
+      "pr": "PR-2",
+      "requirements": "MED-01–MED-06",
+      "status": "complete",
+      "commit": "9037868",
+      "gates": {
+        "policy": {
+          "status": "passed",
+          "note": "Storage backend (OCI Object Storage), access model, MIME/size limits, retention policy resolved. MED-05: student self-service upload IS in scope (overrides prior instructor/admin-only default) via a public registration+PIN endpoint. MED-04: Phase 2 exposes status only (valido/vencendo/vencido/sem_registro); blocking enforcement deferred to Phase 3.",
+          "evidence": ".workflow/runs/epic-02-plan/review-phase2.md, .workflow/runs/epic-02-plan/plan.md"
+        },
+        "lint": {
+          "status": "passed",
+          "evidence": ".workflow/epic-02/pr-2-medical-exams/lint-results.md",
+          "note": "Backend: ruff check + ruff format --check clean. Frontend: eslint --max-warnings 0 clean, tsc+vite build clean. Frontend prettier format:check flags 15 pre-existing files unrelated to this PR (verified via git stash: same files were already flagged before this change, CRLF/LF Windows-local artifact); none of the 5 new/changed PR-2 files are in that list."
+        },
+        "test": {
+          "status": "passed",
+          "evidence": ".workflow/epic-02/pr-2-medical-exams/test-results.md",
+          "note": "Backend: 244 passed, 0 failed after fix pass (24 new tests total). Alembic upgrade/downgrade/upgrade verified against real MySQL 8.0. Frontend: no existing Jest specs in repo (none added, no established pattern); no Cypress spec added for the new public page, consistent with Phase 1 precedent (PreCheckInPage.tsx also has none)."
+        },
+        "independent_review": {
+          "status": "passed",
+          "evidence": ".workflow/epic-02/pr-2-medical-exams/review.md",
+          "note": "First pass found 2 HIGH (boundary-less multipart Content-Type breaking real-browser uploads; file-type validated only via spoofable client header) and 2 MEDIUM (unbounded in-memory read before size check; unlocked supersession race) findings. All 4 fixed and re-verified against the diff; verdict APPROVED. One narrow non-blocking residual noted: first-ever-submission race for a student with no prior active record relies on unverified InnoDB gap-locking; suggested optional follow-up is an unconditional Student-row lock in record_exam."
+        },
+        "security_review": {
+          "status": "passed",
+          "evidence": ".workflow/epic-02/pr-2-medical-exams/review.md",
+          "note": "Dual-checklist review (reviewer agent) covered security explicitly: public-endpoint rate limiting (IP+registration), generic non-disclosing responses matching pre_checkins.py, constant-time PIN comparison, instructor/admin authz, no raw SQL, OCI credentials never logged/returned, UUID-based non-predictable storage keys, and the file-content-spoofing/DoS findings above (now fixed)."
+        }
+      }
+    },
+    {
+      "phase": 3,
+      "name": "Financial foundation",
+      "pr": "PR-3",
+      "requirements": "FIN-01–FIN-07",
+      "status": "pending",
+      "commit": null,
+      "gates": {
+        "policy": {
+          "status": "passed",
+          "note": "Pricing tiers, billing cycle/due date, overdue handling, and partial/overpayment behavior resolved.",
+          "evidence": ".workflow/epic-02/handoff.md"
+        },
+        "lint": { "status": "pending" },
+        "test": { "status": "pending" },
+        "independent_review": { "status": "pending" },
+        "security_review": { "status": "pending" }
+      }
+    },
+    {
+      "phase": 4,
+      "name": "Contracts",
+      "pr": "PR-4",
+      "requirements": "CON-01–CON-04",
+      "status": "pending",
+      "commit": null,
+      "gates": {
+        "policy": {
+          "status": "passed",
+          "note": "Template versioning and dual signature-capture path resolved. Legal wording itself is still a product/legal input, not a scoping blocker.",
+          "evidence": ".workflow/epic-02/handoff.md"
+        },
+        "lint": { "status": "pending" },
+        "test": { "status": "pending" },
+        "independent_review": { "status": "pending" },
+        "security_review": { "status": "pending" }
+      }
+    },
+    {
+      "phase": 5,
+      "name": "Reports",
+      "pr": "PR-5",
+      "requirements": "REP-01–REP-05",
+      "status": "pending",
+      "commit": null,
+      "gates": {
+        "policy": {
+          "status": "passed",
+          "note": "REP-04 financial projection formula and default horizon resolved.",
+          "evidence": ".workflow/epic-02/handoff.md"
+        },
+        "lint": { "status": "pending" },
+        "test": { "status": "pending" },
+        "independent_review": { "status": "pending" },
+        "security_review": { "status": "pending" }
+      }
+    }
+  ]
+}

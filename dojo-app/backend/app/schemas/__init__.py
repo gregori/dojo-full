@@ -15,6 +15,7 @@ from app.schemas.belt import (
     BeltWithRequirements,
 )
 from app.schemas.belt_promotion import BeltPromotionCreate, BeltPromotionResponse
+from app.schemas.document import DocumentResponse
 from app.schemas.event import (
     EventCreate,
     EventResponse,
@@ -34,6 +35,12 @@ from app.schemas.exam import (
     ExamResponse,
     ExamUpdate,
     ExamWithDetails,
+)
+from app.schemas.medical_exam import (
+    MedicalExamDashboardItem,
+    MedicalExamPublicResponse,
+    MedicalExamResponse,
+    MedicalExamStatus,
 )
 from app.schemas.organization import (
     DojoCreate,

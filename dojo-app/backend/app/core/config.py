@@ -18,6 +18,15 @@ class Settings(BaseSettings):
     debug: bool = False
     environment: str = "development"
 
+    # Object storage (OCI Object Storage, used for document metadata-only persistence)
+    documents_bucket_name: str = "dojo-documents"
+    oci_bucket_namespace: str = ""
+    oci_tenancy_ocid: str = ""
+    oci_user_ocid: str = ""
+    oci_fingerprint: str = ""
+    oci_private_key: str = ""
+    oci_region: str = "sa-saopaulo-1"
+
     class Config:
         env_file = ".env"
         case_sensitive = False
