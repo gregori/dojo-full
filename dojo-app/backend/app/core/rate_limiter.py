@@ -50,3 +50,4 @@ class RateLimiter:
 # Global rate limiter instance
 checkin_rate_limiter = RateLimiter()
 precheckin_rate_limiter = RateLimiter()
+medical_exam_rate_limiter = RateLimiter()

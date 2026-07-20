@@ -161,6 +161,8 @@ class Student(UUIDMixin, TimestampMixin, Base):
     pre_checkins: Mapped[list["PreCheckIn"]] = relationship(back_populates="student")
     exam_participations: Mapped[list["ExamParticipant"]] = relationship(back_populates="student")
     belt_promotions: Mapped[list["BeltPromotion"]] = relationship(back_populates="student")
+    documents: Mapped[list["Document"]] = relationship(back_populates="student")
+    medical_exams: Mapped[list["MedicalExam"]] = relationship(back_populates="student")
 
 
 class Event(UUIDMixin, TimestampMixin, Base):
@@ -231,6 +233,58 @@ class PreCheckIn(UUIDMixin, TimestampMixin, Base):
 
     event: Mapped[Event] = relationship(back_populates="pre_checkins")
     student: Mapped[Student] = relationship(back_populates="pre_checkins")
+
+
+class Document(UUIDMixin, TimestampMixin, Base):
+    """Generic stored-file metadata, reused by medical exams and future document types.
+
+    The application never persists file bytes; only the storage key and
+    descriptive metadata are kept here. ``deleted_at``/``deleted_by`` record
+    when and by whom a document left the ``active`` state, whether by
+    supersession or an explicit soft delete.
+    """
+
+    __tablename__ = "documents"
+    __table_args__ = (CheckConstraint("status IN ('active', 'superseded', 'deleted')", name="ck_documents_status"),)
+
+    student_id: Mapped[str] = mapped_column(ForeignKey("students.id"), nullable=False)
+    document_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    storage_key: Mapped[str] = mapped_column(String(500), unique=True, nullable=False)
+    mime_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    uploaded_by_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    uploaded_by_student_self: Mapped[bool] = mapped_column(Boolean, default=False)
+    status: Mapped[str] = mapped_column(
+        Enum("active", "superseded", "deleted", name="document_status"), default="active", nullable=False
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    deleted_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    student: Mapped[Student] = relationship(back_populates="documents")
+    uploaded_by: Mapped[User | None] = relationship(foreign_keys=[uploaded_by_user_id])
+
+
+class MedicalExam(UUIDMixin, TimestampMixin, Base):
+    """A student's medical exam record.
+
+    Append-only history: a new submission supersedes the previous active
+    record instead of overwriting it. Exactly one ``active`` record per
+    student is enforced at the service layer, not by a database constraint.
+    """
+
+    __tablename__ = "medical_exams"
+    __table_args__ = (CheckConstraint("status IN ('active', 'superseded')", name="ck_medical_exams_status"),)
+
+    student_id: Mapped[str] = mapped_column(ForeignKey("students.id"), nullable=False)
+    exam_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    document_id: Mapped[str | None] = mapped_column(ForeignKey("documents.id"), nullable=True)
+    status: Mapped[str] = mapped_column(
+        Enum("active", "superseded", name="medical_exam_status"), default="active", nullable=False
+    )
+
+    student: Mapped[Student] = relationship(back_populates="medical_exams")
+    document: Mapped[Document | None] = relationship()
 
 
 class Exam(UUIDMixin, TimestampMixin, Base):

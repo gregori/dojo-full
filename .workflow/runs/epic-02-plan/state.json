@@ -2,12 +2,12 @@
   "schema_version": 1,
   "run_id": "epic-02-plan",
   "work_item": "Epic 2 — Financeiro, Pré-Checkin e Relatórios",
-  "status": "phase_2_planned",
+  "status": "phase_2_implemented_pending_commit",
   "created_at": "2026-07-19",
   "updated_at": "2026-07-19",
   "requirements_review": "completed",
   "plan_path": ".workflow/runs/epic-02-plan/plan.md",
   "handoff_path": ".workflow/epic-02/handoff.md",
-  "next_action": "Phase 2 decisions resolved and implementation plan written (documents + medical_exams tables, public student self-service upload, status-only MED-04). Use squad-feature to build PR-2 against plan.md's Phase 2 acceptance criteria.",
+  "next_action": "Phase 2 (Exames Medicos + document foundation) is implemented, all deterministic gates pass, and independent+security review is APPROVED (2 HIGH + 2 MEDIUM findings fixed and re-verified). Changes are uncommitted in the working tree. Needs explicit user go-ahead to commit, push a feature branch, and open PR-2 against develop (mirroring PR-1's da5bd69 flow) before Phase 3 (Financial foundation) can start.",
   "checks_path": ".workflow/runs/epic-02-plan/checks.json"
 }

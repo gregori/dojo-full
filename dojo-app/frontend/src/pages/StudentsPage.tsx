@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient, useQueries } from '@tanstack/react-query'
-import { Plus, Edit, Trash2, Search, TrendingUp } from 'lucide-react'
+import { Plus, Edit, Trash2, Search, TrendingUp, Stethoscope, X } from 'lucide-react'
 import api from '../services/api'
 import { useAuth } from '../hooks/useAuth'
+import MedicalExamBadge, { type MedicalExamStatusValue } from '../components/MedicalExamBadge'
 
 interface Belt {
   id: string
@@ -48,6 +49,31 @@ interface StudentProgress {
     percentage: number
   }
   last_promotion_date: string | null
+}
+
+interface MedicalExamStatus {
+  student_id: string
+  status: MedicalExamStatusValue
+  exam_date: string | null
+  expires_at: string | null
+}
+
+interface MedicalExamDocument {
+  id: string
+  mime_type: string
+  size_bytes: number
+  status: string
+  created_at: string
+}
+
+interface MedicalExamRecord {
+  id: string
+  student_id: string
+  exam_date: string
+  expires_at: string
+  status: string
+  document: MedicalExamDocument | null
+  created_at: string
 }
 
 export default function StudentsPage() {
@@ -109,6 +135,25 @@ export default function StudentsPage() {
     }
   })
 
+  const medicalExamStatusQueries = useQueries({
+    queries: (students || []).map((student) => ({
+      queryKey: ['medical-exam-status', student.id],
+      queryFn: async () => {
+        const response = await api.get(`/api/v1/medical-exams/students/${student.id}/status`)
+        return { studentId: student.id, status: response.data as MedicalExamStatus }
+      },
+      enabled: !!students,
+      staleTime: 30000,
+    })),
+  })
+
+  const medicalExamStatusMap: Record<string, MedicalExamStatus> = {}
+  medicalExamStatusQueries.forEach((q) => {
+    if (q.data) {
+      medicalExamStatusMap[q.data.studentId] = q.data.status
+    }
+  })
+
   const createMutation = useMutation({
     mutationFn: (data: typeof formData) => api.post('/api/v1/students', data),
     onSuccess: () => {
@@ -138,6 +183,60 @@ export default function StudentsPage() {
       queryClient.invalidateQueries({ queryKey: ['student-progress'] })
     },
   })
+
+  const [medicalExamStudent, setMedicalExamStudent] = useState<Student | null>(null)
+  const [medicalExamForm, setMedicalExamForm] = useState<{ exam_date: string; file: File | null }>({
+    exam_date: '',
+    file: null,
+  })
+
+  const { data: medicalExamHistory } = useQuery<MedicalExamRecord[]>({
+    queryKey: ['medical-exam-history', medicalExamStudent?.id],
+    queryFn: async () => {
+      const response = await api.get(`/api/v1/medical-exams/students/${medicalExamStudent!.id}`)
+      return response.data
+    },
+    enabled: !!medicalExamStudent,
+  })
+
+  const recordMedicalExamMutation = useMutation({
+    mutationFn: ({
+      studentId,
+      examDate,
+      file,
+    }: {
+      studentId: string
+      examDate: string
+      file: File | null
+    }) => {
+      const body = new FormData()
+      body.append('exam_date', examDate)
+      if (file) body.append('file', file)
+      // The `api` instance defaults to Content-Type: application/json, which would make
+      // axios serialize this FormData as JSON instead of a real multipart body. Clearing
+      // the header (rather than setting a static string) lets axios/the browser compute
+      // the correct `multipart/form-data; boundary=...` value itself.
+      return api.post(`/api/v1/medical-exams/students/${studentId}`, body, {
+        headers: { 'Content-Type': undefined },
+      })
+    },
+    onSuccess: (_response, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['medical-exam-status', variables.studentId] })
+      queryClient.invalidateQueries({ queryKey: ['medical-exam-history', variables.studentId] })
+      queryClient.invalidateQueries({ queryKey: ['medical-exam-dashboard'] })
+      setMedicalExamForm({ exam_date: '', file: null })
+    },
+  })
+
+  const handleMedicalExamSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!medicalExamStudent) return
+    recordMedicalExamMutation.mutate({
+      studentId: medicalExamStudent.id,
+      examDate: medicalExamForm.exam_date,
+      file: medicalExamForm.file,
+    })
+  }
 
   const resetForm = () => {
     setFormData({
@@ -456,6 +555,9 @@ export default function StudentsPage() {
                 Aulas
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                Exame Médico
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 Status
               </th>
               {isAdmin && (
@@ -521,6 +623,21 @@ export default function StudentsPage() {
                     {student.classes_per_week || '-'}/sem{' '}
                     {student.class_days ? `(${student.class_days})` : ''}
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <div className="flex items-center gap-2">
+                      <MedicalExamBadge status={medicalExamStatusMap[student.id]?.status} />
+                      <button
+                        onClick={() => {
+                          setMedicalExamStudent(student)
+                          setMedicalExamForm({ exam_date: '', file: null })
+                        }}
+                        title="Exame médico"
+                        className="text-gray-500 hover:text-blue-600"
+                      >
+                        <Stethoscope className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`inline-flex px-2 text-xs leading-5 font-semibold rounded-full ${
@@ -554,6 +671,121 @@ export default function StudentsPage() {
           </tbody>
         </table>
       </div>
+
+      {medicalExamStudent && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-40 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">
+                Exame Médico — {medicalExamStudent.full_name}
+              </h3>
+              <button
+                onClick={() => setMedicalExamStudent(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="mb-4 flex items-center gap-2">
+              <span className="text-sm text-gray-600">Status atual:</span>
+              <MedicalExamBadge status={medicalExamStatusMap[medicalExamStudent.id]?.status} />
+            </div>
+
+            <form onSubmit={handleMedicalExamSubmit} className="grid grid-cols-2 gap-4 mb-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Data do Exame
+                </label>
+                <input
+                  type="date"
+                  value={medicalExamForm.exam_date}
+                  onChange={(e) =>
+                    setMedicalExamForm({ ...medicalExamForm, exam_date: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border rounded-md"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Arquivo (PDF, JPEG ou PNG, até 10MB)
+                </label>
+                <input
+                  type="file"
+                  accept="application/pdf,image/jpeg,image/png"
+                  onChange={(e) =>
+                    setMedicalExamForm({
+                      ...medicalExamForm,
+                      file: e.target.files?.[0] || null,
+                    })
+                  }
+                  className="w-full text-sm"
+                />
+              </div>
+              <div className="col-span-2 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={recordMedicalExamMutation.isPending}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-60"
+                >
+                  {recordMedicalExamMutation.isPending ? 'Enviando...' : 'Registrar'}
+                </button>
+              </div>
+            </form>
+
+            <h4 className="text-sm font-semibold text-gray-700 mb-2">Histórico</h4>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      Data do Exame
+                    </th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      Validade
+                    </th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      Situação
+                    </th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      Documento
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {medicalExamHistory?.length ? (
+                    medicalExamHistory.map((record) => (
+                      <tr key={record.id}>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          {new Date(record.exam_date).toLocaleDateString('pt-BR')}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          {new Date(record.expires_at).toLocaleDateString('pt-BR')}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          {record.status === 'active' ? 'Ativo' : 'Substituído'}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-gray-500">
+                          {record.document
+                            ? `${record.document.mime_type} (${Math.round(record.document.size_bytes / 1024)} KB)`
+                            : '-'}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={4} className="px-3 py-4 text-center text-gray-400">
+                        Nenhum registro encontrado.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
