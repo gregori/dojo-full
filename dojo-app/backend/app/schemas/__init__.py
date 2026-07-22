@@ -42,6 +42,13 @@ from app.schemas.medical_exam import (
     MedicalExamResponse,
     MedicalExamStatus,
 )
+from app.schemas.mensalidade import (
+    BalanceResponse,
+    GenerateChargesRequest,
+    GenerateChargesResponse,
+    MensalidadeResponse,
+    OverdueDashboardItem,
+)
 from app.schemas.organization import (
     DojoCreate,
     DojoResponse,
@@ -50,6 +57,14 @@ from app.schemas.organization import (
     OrganizationCreate,
     OrganizationResponse,
     OrganizationUpdate,
+)
+from app.schemas.payment import PaymentCreate, PaymentResponse
+from app.schemas.plan import (
+    PlanPriceUpdate,
+    PlanTierCreate,
+    PlanTierResponse,
+    PlanVersionResponse,
+    StudentPlanResponse,
 )
 from app.schemas.pre_checkin import (
     PreCheckInCount,

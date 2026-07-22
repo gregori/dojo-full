@@ -2,12 +2,12 @@
   "schema_version": 1,
   "run_id": "epic-02-plan",
   "work_item": "Epic 2 — Financeiro, Pré-Checkin e Relatórios",
-  "status": "phase_2_complete",
+  "status": "phase_3_implemented_pending_commit",
   "created_at": "2026-07-19",
-  "updated_at": "2026-07-19",
+  "updated_at": "2026-07-20",
   "requirements_review": "completed",
   "plan_path": ".workflow/runs/epic-02-plan/plan.md",
   "handoff_path": ".workflow/epic-02/handoff.md",
-  "next_action": "Phase 2 (Exames Medicos + document foundation) shipped as commit 9037868 on branch feature/medical-exams; PR #25 opened against develop, not yet merged. Once merged, start Phase 3 (Financial foundation, PR-3) per plan.md's Later Phase Contracts section.",
+  "next_action": "Phase 3 (Financial foundation, PR-3) is implemented and reviewed: models/migration/services/API/frontend built by implementer, deterministic gates pass (283/283 pytest, ruff, eslint, build), independent+security review APPROVED after fixing 2 Medium findings (see .workflow/epic-02/pr-3-financial-foundation/review.md). Working tree uncommitted. Awaiting explicit user go-ahead to commit/push/open PR before this phase is fully closed.",
   "checks_path": ".workflow/runs/epic-02-plan/checks.json"
 }

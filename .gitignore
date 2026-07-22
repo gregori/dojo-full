@@ -22,6 +22,7 @@ dist/
 # Coverage & test artifacts
 .coverage
 test.db
+local_storage/
 .DS_Store
 Thumbs.db
 

@@ -43,33 +43,39 @@ Cypress.Commands.add('createStudent', (data: {
   full_name: string
   birth_date?: string
   category?: string
-  belt_id?: number
+  belt_id?: string
 }) => {
   const adminToken = Cypress.env('adminToken') || localStorage.getItem('token')
+  // Generate a random PIN (4 digits)
+  const randomPin = Math.floor(Math.random() * 10000).toString().padStart(4, '0')
 
-  cy.request({
-    method: 'POST',
-    url: `${Cypress.env('VITE_API_URL') || 'http://localhost:8000'}/api/v1/students`,
-    body: {
-      full_name: data.full_name,
-      birth_date: data.birth_date || '1990-01-01',
-      category: data.category || 'adult',
-      belt_id: data.belt_id || 1,
-    },
-    headers: { Authorization: `Bearer ${adminToken}` },
-    failOnStatusCode: false,
-  }).then((response) => {
-    if (response.status !== 201) {
-      cy.log(`Student creation warning: ${response.status} - ${response.body?.detail}`)
-    }
-    return cy.wrap(response.body)
+  cy.getBeltId().then((beltId: any) => {
+    cy.request({
+      method: 'POST',
+      url: `${Cypress.env('VITE_API_URL') || 'http://localhost:8000'}/api/v1/students`,
+      body: {
+        full_name: data.full_name,
+        birth_date: data.birth_date || '1990-01-01',
+        category: data.category || 'adult',
+        current_belt_id: data.belt_id || beltId,
+        pin: randomPin,
+      },
+      headers: { Authorization: `Bearer ${adminToken}` },
+      failOnStatusCode: false,
+    }).then((response) => {
+      if (response.status !== 201) {
+        cy.log(`Student creation warning: ${response.status} - ${JSON.stringify(response.body)}`)
+      }
+      // Return the response body with the PIN included (API doesn't echo PIN back for security)
+      return cy.wrap({ ...response.body, pin: randomPin })
+    })
   })
 })
 
 // Seed an event via API
 Cypress.Commands.add('createEvent', (data: {
   title: string
-  event_type_id: number
+  event_type_id?: string
   start_datetime: string
   end_datetime?: string
   description?: string
@@ -77,23 +83,25 @@ Cypress.Commands.add('createEvent', (data: {
   const adminToken = Cypress.env('adminToken') || localStorage.getItem('token')
   const apiUrl = Cypress.env('VITE_API_URL') || 'http://localhost:8000'
 
-  cy.request({
-    method: 'POST',
-    url: `${apiUrl}/api/v1/events`,
-    body: {
-      title: data.title,
-      event_type_id: data.event_type_id,
-      start_datetime: data.start_datetime,
-      end_datetime: data.end_datetime || data.start_datetime,
-      description: data.description || '',
-    },
-    headers: { Authorization: `Bearer ${adminToken}` },
-    failOnStatusCode: false,
-  }).then((response) => {
-    if (response.status !== 201) {
-      cy.log(`Event creation warning: ${response.status} - ${JSON.stringify(response.body)}`)
-    }
-    return cy.wrap(response.body)
+  cy.getEventTypeId().then((eventTypeId: any) => {
+    cy.request({
+      method: 'POST',
+      url: `${apiUrl}/api/v1/events`,
+      body: {
+        title: data.title,
+        event_type_id: data.event_type_id || eventTypeId,
+        start_datetime: data.start_datetime,
+        end_datetime: data.end_datetime || data.start_datetime,
+        description: data.description || '',
+      },
+      headers: { Authorization: `Bearer ${adminToken}` },
+      failOnStatusCode: false,
+    }).then((response) => {
+      if (response.status !== 201) {
+        cy.log(`Event creation warning: ${response.status} - ${JSON.stringify(response.body)}`)
+      }
+      return cy.wrap(response.body)
+    })
   })
 })
 
@@ -266,6 +274,7 @@ Cypress.Commands.add('getAuthToken', (email: string, password: string) => {
   cy.request({
     method: 'POST',
     url: `${apiUrl}/api/v1/auth/login`,
+    form: true,
     body: {
       username: email,
       password: password,
@@ -278,6 +287,44 @@ Cypress.Commands.add('getAuthToken', (email: string, password: string) => {
       localStorage.setItem('token', token)
       return cy.wrap(token)
     }
+    return cy.wrap(null)
+  })
+})
+
+// Get first event type UUID (for creating events)
+Cypress.Commands.add('getEventTypeId', () => {
+  const adminToken = Cypress.env('adminToken') || localStorage.getItem('token')
+  const apiUrl = Cypress.env('VITE_API_URL') || 'http://localhost:8000'
+
+  cy.request({
+    method: 'GET',
+    url: `${apiUrl}/api/v1/events/types`,
+    headers: { Authorization: `Bearer ${adminToken}` },
+    failOnStatusCode: false,
+  }).then((response) => {
+    if (response.status === 200 && response.body.length > 0) {
+      return cy.wrap(response.body[0].id)
+    }
+    cy.log('Warning: Could not fetch event types')
+    return cy.wrap(null)
+  })
+})
+
+// Get first belt UUID (for creating students)
+Cypress.Commands.add('getBeltId', () => {
+  const adminToken = Cypress.env('adminToken') || localStorage.getItem('token')
+  const apiUrl = Cypress.env('VITE_API_URL') || 'http://localhost:8000'
+
+  cy.request({
+    method: 'GET',
+    url: `${apiUrl}/api/v1/belts`,
+    headers: { Authorization: `Bearer ${adminToken}` },
+    failOnStatusCode: false,
+  }).then((response) => {
+    if (response.status === 200 && response.body.length > 0) {
+      return cy.wrap(response.body[0].id)
+    }
+    cy.log('Warning: Could not fetch belts')
     return cy.wrap(null)
   })
 })
@@ -296,4 +343,95 @@ Cypress.Commands.add('clearDatabase', () => {
   // This would typically call a test utilities endpoint
   // For now, we rely on test isolation via unique data
   cy.log('Database clear requested - using test isolation pattern')
+})
+
+// ============================================
+// FINANCIAL COMMANDS
+// ============================================
+
+// Create a plan tier via API
+Cypress.Commands.add('createPlanTier', (data: {
+  weekly_frequency: number
+  name: string
+  price: string
+}) => {
+  const adminToken = Cypress.env('adminToken') || localStorage.getItem('token')
+  const apiUrl = Cypress.env('VITE_API_URL') || 'http://localhost:8000'
+
+  cy.request({
+    method: 'POST',
+    url: `${apiUrl}/api/v1/plans`,
+    body: {
+      weekly_frequency: data.weekly_frequency,
+      name: data.name,
+      price: data.price,
+    },
+    headers: { Authorization: `Bearer ${adminToken}` },
+    failOnStatusCode: false,
+  }).then((response) => {
+    if (response.status !== 201) {
+      cy.log(`Plan tier creation warning: ${response.status} - ${JSON.stringify(response.body)}`)
+    }
+    return cy.wrap(response.body)
+  })
+})
+
+// Assign a student to a plan via API
+Cypress.Commands.add('assignStudentPlan', (studentId: string) => {
+  const adminToken = Cypress.env('adminToken') || localStorage.getItem('token')
+  const apiUrl = Cypress.env('VITE_API_URL') || 'http://localhost:8000'
+
+  cy.request({
+    method: 'POST',
+    url: `${apiUrl}/api/v1/students/${studentId}/plan`,
+    headers: { Authorization: `Bearer ${adminToken}` },
+    failOnStatusCode: false,
+  }).then((response) => {
+    if (response.status !== 201 && response.status !== 200) {
+      cy.log(`Plan assignment warning: ${response.status} - ${JSON.stringify(response.body)}`)
+    }
+    return cy.wrap(response.body)
+  })
+})
+
+// Generate monthly charges via API
+Cypress.Commands.add('generateMensalidades', () => {
+  const adminToken = Cypress.env('adminToken') || localStorage.getItem('token')
+  const apiUrl = Cypress.env('VITE_API_URL') || 'http://localhost:8000'
+
+  cy.request({
+    method: 'POST',
+    url: `${apiUrl}/api/v1/mensalidades/generate`,
+    headers: { Authorization: `Bearer ${adminToken}` },
+    failOnStatusCode: false,
+  }).then((response) => {
+    if (response.status !== 201 && response.status !== 200) {
+      cy.log(`Mensalidade generation warning: ${response.status} - ${JSON.stringify(response.body)}`)
+    }
+    return cy.wrap(response.body)
+  })
+})
+
+// Record a payment via API
+Cypress.Commands.add('recordPayment', (data: {
+  student_id: string
+  amount: string
+  payment_date: string
+  method: string
+}) => {
+  const adminToken = Cypress.env('adminToken') || localStorage.getItem('token')
+  const apiUrl = Cypress.env('VITE_API_URL') || 'http://localhost:8000'
+
+  cy.request({
+    method: 'POST',
+    url: `${apiUrl}/api/v1/payments`,
+    body: data,
+    headers: { Authorization: `Bearer ${adminToken}` },
+    failOnStatusCode: false,
+  }).then((response) => {
+    if (response.status !== 201) {
+      cy.log(`Payment recording warning: ${response.status} - ${JSON.stringify(response.body)}`)
+    }
+    return cy.wrap(response.body)
+  })
 })

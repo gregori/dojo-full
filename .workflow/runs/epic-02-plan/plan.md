@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 1 (Pré-Checkin) shipped as `da5bd69`. Phase 2 (Exames Médicos + document foundation) is planned and decision-gated to completion; ready for `squad-feature`. Phases 3–5 have their policy decisions resolved but no detailed implementation plan yet.
+Phase 1 (Pré-Checkin) shipped as `da5bd69`. Phase 2 (Exames Médicos + document foundation) ready for `squad-feature`. Phase 3 (Financial foundation) plan complete and decisions signed off (2026-07-20); ready for `squad-feature`. Phases 4–5 policies defined but need implementation planning.
 
 ## Scope and Outcome
 
@@ -162,3 +162,101 @@ Supply parameterized PDF/CSV exports for belt exams, individual/class attendance
 ## Next Action
 
 Phase 1 (Pré-Checkin) shipped as `da5bd69`. Phase 2 (Exames Médicos + document foundation) decisions are resolved and the implementation plan above is ready; use `squad-feature` to build PR-2 against the acceptance criteria in "Phase 2 Implementation Plan".
+
+## Phase 3 Implementation Plan — Financial Foundation
+
+### Requirements review
+
+Structured review completed 2026-07-20; full findings in [review-phase3.md](review-phase3.md). **APPROVED for tech-analyst**, with four items — D1, D3, D10, D11 — explicitly flagged as needing the user's sign-off before final schema commitment, even though each already has a sound, epic-consistent recommended default. This plan is designed against those defaults (per the review's own instruction: not blocking analysis, but tech-analyst must still route them back to the user rather than treat them as settled). D2, D4–D9 are treated as settled working defaults and are not re-gated here.
+
+Ground-truth re-confirmed while designing (2026-07-20): `Student.classes_per_week`/`class_days` exist exactly as described and are staff-editable via `StudentsPage.tsx`; no `Plan`/`Payment`/`Invoice` table exists anywhere (greenfield); `MedicalExamService.compute_status`/`get_dashboard` compute status on read from an `active` record, the exact precedent this plan reuses for mensalidade status (D4) and for the overdue dashboard (D3); `Document`'s soft-delete/audit fields (`status`, `deleted_at`, `deleted_by`) are the exact precedent reused for voiding a payment. The existing belt-promotion `exams`/`exam_participants`/`exam_board_members` tables are unrelated to this phase's financial model and are not touched, extended, or referenced — Phase 3 introduces its own, fully independent tables, exactly as Phase 2 did for `documents`/`medical_exams`.
+
+### Required decisions before Phase 3 build — resolved 2026-07-20
+
+These four decisions were confirmed by explicit user sign-off on 2026-07-20. The design below proceeds against each as confirmed below.
+
+- **D1 (frequency source):** `Student.classes_per_week` is the sole input to plan-tier lookup. FIN-06 is "read this field," not a new computation. No attendance-derived frequency metric is introduced.
+- **D3 (medical-exam status in Phase 3):** Display-only on the overdue dashboard (reusing `MedicalExamService.get_status`); does not gate mensalidade generation, payment recording, or balance computation. This confirms and narrows the Phase 2 handoff's original language ("renewal/billing action that consults status") to clarify that status informs dashboards, not blocking logic, in this phase.
+- **D10 (discounts/scholarships):** None modeled. The plan catalog is fixed-price only; no per-student override or discount field exists in the schema.
+- **D11 (price-locking and annual renewal):** Each student's mensalidade locks to the `PlanVersion` active at assignment (the "grandfathered" design). Editing a tier's price creates a new `PlanVersion` and never reprices existing students. A student's price changes only via an explicit reassignment action — in practice, this occurs annually during contract renewal (Phase 4 responsibility). See the Phase 3 design breadcrumb below for how Phase 4 will integrate this pattern.
+
+D2 (merge FIN-02/FIN-07 into one "price-for-tier" capability), D4 (computed-on-read status), D5 (no student self-service), D6 (daily pro-rata proration), D7 (FIFO payment allocation), D8 (no grace period), D9 (single global catalog) are adopted as-is per the requirements/review defaults and are reflected directly in the design below without a separate gate.
+
+### Intended design
+
+**Data model** — two new versioned-history pairs, following the `Document`/`MedicalExam` append-only-supersession precedent from Phase 2 rather than a stored state machine:
+
+- `PlanTier` — stable identity for a weekly-frequency tier: `id`, `weekly_frequency` (`Integer`, unique), `name` (e.g. "2x por semana"), `is_active` (bool, for retiring a tier from future assignment without deleting history). Global/single catalog (D9), no organization scoping, consistent with the epic's multi-org non-goal.
+- `PlanVersion` — the priced, versioned history of a tier: `id`, `plan_tier_id` FK, `price` (`Numeric(10, 2)` — this phase's first monetary column; no existing precedent in the schema, but the standard, correct type to avoid float rounding), `status` (`active`/`superseded`), `effective_from`, `created_by` (user). Editing a tier's price creates a new `active` `PlanVersion` and supersedes the previous one (service-layer-enforced exactly one active version per tier, same transactional pattern as `MedicalExamService.record_exam`'s supersession, not a DB constraint, since history must be kept). `PlanVersion.id` is the stable identifier Phase 4 records against a signed contract — resolves the "migration/backward-compatibility" requirement directly.
+- `StudentPlan` — a student's assignment to a locked `PlanVersion`: `id`, `student_id` FK, `plan_version_id` FK, `status` (`active`/`superseded`), `started_at`, `ended_at` (nullable). Assigning or changing a student's plan creates a new `active` row and supersedes the prior one (same single-active-row service pattern); the price is locked at assignment time (D11) and is never silently repriced by a later catalog edit. This is also the natural place for Phase 5's REP-04 projection to read "this student's current price" without needing a mensalidade record to exist yet (closing the gap the review flagged in its §3.3) — expose it as a standalone query, not one coupled to billing-row existence.
+- `Mensalidade` — one row per active student per billing month: `id`, `student_id` FK, `plan_version_id` FK (the price snapshot used — directly satisfies "each mensalidade records which plan/version it used"), `reference_month` (first-of-month date), `due_date`, `amount` (`Numeric(10, 2)`, computed and frozen at generation time, including any proration — never mutated afterward, per FIN-01's "no editing a mensalidade's historical amount" non-goal). `UniqueConstraint(student_id, reference_month)` makes monthly generation idempotent and race-safe, mirroring `Attendance`'s `uq_attendances_event_student` pattern. No stored status column (D4) — status is computed on read.
+- `Payment` — `id`, `student_id` FK (not tied to a specific mensalidade by FK), `amount` (`Numeric(10, 2)`), `payment_date`, `method` (nullable string, informational only), `recorded_by` (user), `status` (`active`/`voided`), `voided_at`, `voided_by` — reusing `Document`'s soft-correction/audit pattern for the minor open item ("can a payment be corrected after entry") the requirements doc flagged as non-blocking.
+
+**Why no allocation/ledger table:** per D7 and D4, a student's balance and each mensalidade's status are computed on read by walking that student's `active` mensalidades (ascending `due_date`) and `active` payments (ascending `payment_date`) and greedily applying payment amounts oldest-mensalidade-first (FIFO); any amount left over after all open mensalidades are covered is the student's credit, which the same walk applies to the next mensalidade once it exists — so credit never needs a separate stored balance field. This mirrors the Phase 2 "computed, not stored" precedent exactly and avoids a reconciliation table that could drift out of sync with payments.
+
+**Status computation** (service-layer function, priority-ordered, same style as `MedicalExamService.compute_status`):
+```
+paid            if paid_amount >= mensalidade.amount
+overdue         elif today > due_date                 (D8: no grace period)
+partial         elif paid_amount > 0
+open            otherwise
+```
+
+**Proration (D6 working formula, unresolved beyond this default):** `plan_price * (days_remaining_in_month_including_effective_day / total_days_in_month)`, rounded to the cent. Applied to (a) a student's first mensalidade in their enrollment month, and (b) a mid-cycle `StudentPlan` change, for the remainder of the month starting the day of change — but only if that month's mensalidade has not yet been generated; if it has, the new price takes effect starting the next generation cycle rather than mutating an already-generated row (keeps FIN-01's "no historical edits" non-goal intact). This nuance should be confirmed alongside D6 during build, not assumed silently.
+
+**Generation trigger:** no scheduler/cron infrastructure exists anywhere in this codebase today, and adding one is out of scope for a billing-record-generation feature. `MensalidadeService.generate_monthly_charges(reference_month)` is an explicit, idempotent, instructor/admin-triggered action (safe to invoke repeatedly — the unique constraint skips students who already have a row for that month), not an automatic background job. It iterates `Student.is_active == True` only (mirrors `MedicalExamService.get_dashboard`'s active-student filter) — a deactivated student mid-cycle gets no new mensalidade, and existing unpaid ones are left as-is, per FIN-01's stated edge case.
+
+**D11 annual-renewal breadcrumb for Phase 4:** The design locks each student's price to their assigned `PlanVersion` via `StudentPlanService.assign`, and changes it only via explicit reassignment. User sign-off confirmed (2026-07-20) that this matches the real business practice: price changes occur annually when students sign new contracts. Phase 4's (Contracts) implementation plan must account for this by having its contract-generation/renewal workflow trigger `StudentPlanService.assign` with the current year's active tier version — this is noted here as a forward-looking integration point, not a Phase 3 responsibility. The service API requires no Phase 3 changes to support this pattern.
+
+**Plan-tier lookup gap (new edge case, not covered by the requirements doc):** if a student's `classes_per_week` has no matching `PlanTier`, plan assignment/generation must fail loudly (`HTTPException` naming the missing tier) rather than silently default to a price — the catalog must be kept complete for every `classes_per_week` value in active use. Flag this as an implementation note for build, not a new open decision.
+
+**Service layer:**
+
+- `PlanService` — CRUD `PlanTier`; `set_price(tier_id, price)` creates and activates a new `PlanVersion`, superseding the previous one.
+- `StudentPlanService` — `assign(student_id, tier_id)` looks up the tier's current active `PlanVersion` and creates a new active `StudentPlan`, superseding any prior one; exposes `get_current_price(student_id)` as a standalone query (for Phase 5's REP-04, independent of mensalidade existence).
+- `MensalidadeService` — `generate_monthly_charges(reference_month)`, proration calculation, `get_student_charges(student_id)`.
+- `PaymentService` — `record_payment(student_id, amount, date, method, recorded_by)`, `void_payment(payment_id, voided_by)` (soft, audit-trailed, not a hard delete).
+- `BalanceService` — `compute_status(mensalidade, student_payments)`, `get_balance(student_id)` (owed/credit), `get_overdue_dashboard()` — the FIN-05 list (student, amount owed, count of open/overdue mensalidades, days since oldest overdue due date), which also calls `MedicalExamService.get_status` per listed student and includes it as a display-only flag (D3), never a gate.
+
+**API layer** (instructor/admin only throughout, via `get_current_instructor_or_admin`; per D5's default, and confirmed against the requirements doc — no FIN-0X item requests student self-service, so unlike Phase 2's medical-exam public endpoint, **Phase 3 adds no public endpoint**):
+
+- `POST /api/v1/plans` / `GET /api/v1/plans` — create/list plan tiers (with each tier's current active price).
+- `PUT /api/v1/plans/{tier_id}/price` — set a new price (creates a new `PlanVersion`).
+- `POST /api/v1/students/{student_id}/plan` / `GET /api/v1/students/{student_id}/plan` — assign/reassign and view a student's plan history.
+- `POST /api/v1/mensalidades/generate` — generate the month's charges (idempotent; body optionally names `reference_month`, defaults to current month).
+- `GET /api/v1/students/{student_id}/mensalidades` — a student's charge history with computed status per row.
+- `POST /api/v1/payments` — record a payment against a student.
+- `POST /api/v1/payments/{payment_id}/void` — soft-void a mis-entered payment.
+- `GET /api/v1/students/{student_id}/balance` — current owed/credit summary.
+- `GET /api/v1/finance/overdue` — the FIN-05 inadimplentes dashboard list, including the D3 medical-exam status flag per row.
+
+**Frontend:**
+
+- New `PlansPage.tsx` (admin-only, mirrors `StudentsPage.tsx`'s form conventions) — plan tier catalog CRUD; editing a price shows an explicit confirmation that it creates a new version and does not reprice existing students (D11), consistent with the locked-pricing default.
+- `StudentsPage.tsx` extension — a per-student "Financeiro" action (mirrors the existing `Stethoscope`/medical-exam modal pattern): current plan assignment, mensalidade history with computed status badges, a record-payment form, and the computed balance.
+- `DashboardPage.tsx` extension — a new "Inadimplentes" table, structurally identical to the existing "Exames Médicos Vencendo/Vencidos" table, showing student, amount owed, days overdue, and the student's medical-exam status badge (reusing the existing `MedicalExamBadge` component) as the D3 flag-only column.
+
+**FIN-07 alternate reading (deferred, not discarded):** if D1 is later overridden toward attendance-derived frequency, FIN-07's "actual attendance vs. declared tier" reconciliation becomes a distinct, separately-scoped feature (its own attendance-frequency-window service) — it is not part of this design and would need its own decision gate (window length, informational-only vs. tier-mismatch flag) before being added.
+
+### Planned touch points
+
+| Layer | Primary files/modules |
+|---|---|
+| ORM and migration | `dojo-app/backend/app/models/__init__.py` (new `PlanTier`, `PlanVersion`, `StudentPlan`, `Mensalidade`, `Payment`), new Alembic revision on top of `ea64c8751ff2` (current head) |
+| API schemas | `dojo-app/backend/app/schemas/` (new `plan.py` / `mensalidade.py` / `payment.py`) |
+| API routes | New `dojo-app/backend/app/api/plans.py`, `mensalidades.py`, `payments.py` (all instructor/admin only, no public router) |
+| Domain services | New `plan_service.py`, `student_plan_service.py`, `mensalidade_service.py`, `payment_service.py`, `balance_service.py` |
+| Instructor UI | New `dojo-app/frontend/src/pages/PlansPage.tsx`; extend `StudentsPage.tsx` (financial modal) and `DashboardPage.tsx` (inadimplentes list) |
+| Tests | Backend unit tests for proration, FIFO allocation, status computation, idempotent generation; API tests for authorization and idempotency |
+
+### Phase 3 acceptance criteria
+
+1. Admin can define and version a plan catalog of weekly-frequency tiers with a price each (D9: single global catalog; D10: no discounts/overrides); each mensalidade records which `PlanVersion` it used.
+2. A student is assigned a locked `PlanVersion` at enrollment/plan-change (D11 confirmed); editing a tier's price never repriced an already-assigned student.
+3. `POST /api/v1/mensalidades/generate` idempotently creates one mensalidade per active student per reference month, with the amount computed from the student's assigned plan/version and prorated (D6 working formula) in the enrollment month or a mid-cycle plan-change month.
+4. Instructor/admin can record a payment (date, amount) against a student and soft-void a mis-entered one; overpayment becomes credit applied via FIFO to the next open mensalidade (D7), underpayment leaves a residual balance.
+5. The system computes, on read, whether each mensalidade is open/partial/paid/overdue (D4), with no stored status field, using the no-grace-period threshold (D8).
+6. Instructor/admin can view a list of students with overdue mensalidades (amount owed, days overdue); each row also shows the student's current medical-exam status as a display-only flag (D3 confirmed) that gates nothing.
+7. FIN-06's weekly-frequency value is `Student.classes_per_week` (D1 confirmed); no attendance-derived frequency metric exists in this phase.
+8. No public/self-service financial endpoint exists (D5); no online payment processing, discount modeling (D10 confirmed), or email/SMS/push notifications are introduced (carried-over Non-Goals).
+9. The new `PlanTier`/`PlanVersion`/`StudentPlan`/`Mensalidade`/`Payment` tables are unrelated to, and do not modify, the existing `exams`/`exam_participants`/`exam_board_members` (belt-promotion) tables.

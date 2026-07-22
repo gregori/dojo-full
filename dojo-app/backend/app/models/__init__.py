@@ -1,5 +1,6 @@
 import uuid
 from datetime import UTC, datetime, timezone
+from decimal import Decimal
 from typing import List, Optional
 
 from sqlalchemy import (
@@ -9,6 +10,7 @@ from sqlalchemy import (
     Enum,
     ForeignKey,
     Integer,
+    Numeric,
     String,
     Text,
     UniqueConstraint,
@@ -163,6 +165,9 @@ class Student(UUIDMixin, TimestampMixin, Base):
     belt_promotions: Mapped[list["BeltPromotion"]] = relationship(back_populates="student")
     documents: Mapped[list["Document"]] = relationship(back_populates="student")
     medical_exams: Mapped[list["MedicalExam"]] = relationship(back_populates="student")
+    student_plans: Mapped[list["StudentPlan"]] = relationship(back_populates="student")
+    mensalidades: Mapped[list["Mensalidade"]] = relationship(back_populates="student")
+    payments: Mapped[list["Payment"]] = relationship(back_populates="student")
 
 
 class Event(UUIDMixin, TimestampMixin, Base):
@@ -285,6 +290,120 @@ class MedicalExam(UUIDMixin, TimestampMixin, Base):
 
     student: Mapped[Student] = relationship(back_populates="medical_exams")
     document: Mapped[Document | None] = relationship()
+
+
+class PlanTier(UUIDMixin, TimestampMixin, Base):
+    """A stable weekly-frequency plan-tier identity (D9: a single global catalog).
+
+    ``is_active`` retires a tier from future assignment without deleting its
+    priced history or the mensalidades already generated against it.
+    """
+
+    __tablename__ = "plan_tiers"
+
+    weekly_frequency: Mapped[int] = mapped_column(Integer, unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    versions: Mapped[list["PlanVersion"]] = relationship(back_populates="plan_tier")
+
+
+class PlanVersion(UUIDMixin, TimestampMixin, Base):
+    """A priced, versioned snapshot of a plan tier.
+
+    Editing a tier's price creates a new active version and supersedes the
+    previous one (service-layer-enforced, the same append-only-supersession
+    pattern as ``MedicalExam``). ``StudentPlan`` locks to one of these, so a
+    later catalog edit never reprices an already-assigned student (D11).
+    """
+
+    __tablename__ = "plan_versions"
+    __table_args__ = (CheckConstraint("status IN ('active', 'superseded')", name="ck_plan_versions_status"),)
+
+    plan_tier_id: Mapped[str] = mapped_column(ForeignKey("plan_tiers.id"), nullable=False)
+    price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+    status: Mapped[str] = mapped_column(
+        Enum("active", "superseded", name="plan_version_status"), default="active", nullable=False
+    )
+    effective_from: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_by: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
+
+    plan_tier: Mapped[PlanTier] = relationship(back_populates="versions")
+    creator: Mapped["User"] = relationship(foreign_keys=[created_by])
+
+
+class StudentPlan(UUIDMixin, TimestampMixin, Base):
+    """A student's locked assignment to a ``PlanVersion``.
+
+    Assigning or changing a student's plan creates a new active row and
+    supersedes the prior one (single-active-row service pattern); the price
+    is locked at assignment time and only changes via explicit reassignment.
+    """
+
+    __tablename__ = "student_plans"
+    __table_args__ = (CheckConstraint("status IN ('active', 'superseded')", name="ck_student_plans_status"),)
+
+    student_id: Mapped[str] = mapped_column(ForeignKey("students.id"), nullable=False)
+    plan_version_id: Mapped[str] = mapped_column(ForeignKey("plan_versions.id"), nullable=False)
+    status: Mapped[str] = mapped_column(
+        Enum("active", "superseded", name="student_plan_status"), default="active", nullable=False
+    )
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    student: Mapped["Student"] = relationship(back_populates="student_plans")
+    plan_version: Mapped[PlanVersion] = relationship()
+
+
+class Mensalidade(UUIDMixin, TimestampMixin, Base):
+    """One monthly charge for an active student.
+
+    The amount (including any proration) is computed and frozen at
+    generation time and never mutated afterward. There is no stored status
+    column (D4): open/partial/paid/overdue is computed on read from a
+    student's payments.
+    """
+
+    __tablename__ = "mensalidades"
+    __table_args__ = (
+        UniqueConstraint("student_id", "reference_month", name="uq_mensalidades_student_reference_month"),
+    )
+
+    student_id: Mapped[str] = mapped_column(ForeignKey("students.id"), nullable=False)
+    plan_version_id: Mapped[str] = mapped_column(ForeignKey("plan_versions.id"), nullable=False)
+    reference_month: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    due_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+
+    student: Mapped["Student"] = relationship(back_populates="mensalidades")
+    plan_version: Mapped[PlanVersion] = relationship()
+
+
+class Payment(UUIDMixin, TimestampMixin, Base):
+    """A payment recorded against a student.
+
+    Not tied to a specific mensalidade by foreign key; allocation across a
+    student's open mensalidades is computed on read (FIFO, D7). Soft-voidable,
+    mirroring ``Document``'s audit-trailed correction pattern.
+    """
+
+    __tablename__ = "payments"
+    __table_args__ = (CheckConstraint("status IN ('active', 'voided')", name="ck_payments_status"),)
+
+    student_id: Mapped[str] = mapped_column(ForeignKey("students.id"), nullable=False)
+    amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+    payment_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    method: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    recorded_by: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
+    status: Mapped[str] = mapped_column(
+        Enum("active", "voided", name="payment_status"), default="active", nullable=False
+    )
+    voided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    voided_by: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+
+    student: Mapped["Student"] = relationship(back_populates="payments")
+    recorder: Mapped["User"] = relationship(foreign_keys=[recorded_by])
+    voider: Mapped[Optional["User"]] = relationship(foreign_keys=[voided_by])
 
 
 class Exam(UUIDMixin, TimestampMixin, Base):
