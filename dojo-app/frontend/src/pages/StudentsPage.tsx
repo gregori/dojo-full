@@ -945,14 +945,18 @@ export default function StudentsPage() {
               )}
               {assignPlanMutation.isError && (
                 <p className="text-sm text-red-600 mt-1">
-                  Não foi possível atribuir um plano (verifique se existe um plano para as aulas
-                  por semana deste aluno).
+                  Não foi possível atribuir um plano (verifique se existe um plano para as aulas por
+                  semana deste aluno).
                 </p>
               )}
               {balance && (
                 <p className="text-sm text-gray-700 mt-2">
                   Saldo:{' '}
-                  <span className={Number(balance.balance) > 0 ? 'text-red-600 font-semibold' : 'text-green-600'}>
+                  <span
+                    className={
+                      Number(balance.balance) > 0 ? 'text-red-600 font-semibold' : 'text-green-600'
+                    }
+                  >
                     R$ {balance.balance}
                   </span>{' '}
                   ({balance.overdue_count} vencida(s), {balance.open_count} em aberto)
@@ -979,9 +983,7 @@ export default function StudentsPage() {
                 <input
                   type="date"
                   value={paymentForm.payment_date}
-                  onChange={(e) =>
-                    setPaymentForm({ ...paymentForm, payment_date: e.target.value })
-                  }
+                  onChange={(e) => setPaymentForm({ ...paymentForm, payment_date: e.target.value })}
                   className="w-full px-3 py-2 border rounded-md"
                   required
                 />
@@ -1045,7 +1047,9 @@ export default function StudentsPage() {
                           {new Date(mensalidade.due_date).toLocaleDateString('pt-BR')}
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap">R$ {mensalidade.amount}</td>
-                        <td className="px-3 py-2 whitespace-nowrap">R$ {mensalidade.paid_amount}</td>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          R$ {mensalidade.paid_amount}
+                        </td>
                         <td className="px-3 py-2 whitespace-nowrap">
                           <MensalidadeBadge status={mensalidade.status} />
                         </td>

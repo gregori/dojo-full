@@ -175,9 +175,7 @@ export default function PlansPage() {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
                     className={`inline-flex px-2 text-xs leading-5 font-semibold rounded-full ${
-                      tier.is_active
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-gray-100 text-gray-600'
+                      tier.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
                     }`}
                   >
                     {tier.is_active ? 'Ativo' : 'Inativo'}
@@ -208,8 +206,8 @@ export default function PlansPage() {
               Alterar Preço — {priceEditTier.name}
             </h3>
             <p className="text-sm text-gray-500 mb-4">
-              Isso cria uma nova versão do plano. Alunos já matriculados mantêm o preço em que
-              foram matriculados; o novo valor só se aplica a novas matrículas ou reatribuições.
+              Isso cria uma nova versão do plano. Alunos já matriculados mantêm o preço em que foram
+              matriculados; o novo valor só se aplica a novas matrículas ou reatribuições.
             </p>
             <form onSubmit={handlePriceSubmit}>
               <label className="block text-sm font-medium text-gray-700 mb-1">
