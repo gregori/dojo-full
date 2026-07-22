@@ -72,13 +72,11 @@ describe('Exames Médicos', () => {
         mimeType: 'image/jpeg',
       })
 
-      cy.intercept('POST', '/api/v1/medical-exams/public/submit').as('submitExam')
-
+      // No cy.intercept() here: Cypress decodes/re-encodes intercepted request bodies as
+      // UTF-8 text, which corrupts binary multipart content (bytes that aren't valid UTF-8,
+      // like this JPEG's magic bytes, become replacement characters on the wire). We verify
+      // the outcome via the UI instead of inspecting the intercepted response.
       cy.contains(/Enviar exame/i).click()
-
-      cy.wait('@submitExam').then((interception) => {
-        expect(interception.response?.statusCode).to.eq(200)
-      })
 
       cy.contains(/sucesso|registrado/i).should('be.visible')
     })
@@ -99,13 +97,11 @@ describe('Exames Médicos', () => {
         mimeType: 'image/png',
       })
 
-      cy.intercept('POST', '/api/v1/medical-exams/public/submit').as('submitExam')
-
+      // No cy.intercept() here: Cypress decodes/re-encodes intercepted request bodies as
+      // UTF-8 text, which corrupts binary multipart content (bytes that aren't valid UTF-8,
+      // like this PNG's magic bytes, become replacement characters on the wire). We verify
+      // the outcome via the UI instead of inspecting the intercepted response.
       cy.contains(/Enviar exame/i).click()
-
-      cy.wait('@submitExam').then((interception) => {
-        expect(interception.response?.statusCode).to.eq(200)
-      })
 
       cy.contains(/sucesso|registrado/i).should('be.visible')
     })
@@ -120,11 +116,14 @@ describe('Exames Médicos', () => {
       // Try to select a non-allowed file type (text file)
       const fileName = 'invalid.txt'
       const txtContent = Cypress.Buffer.from('This is not a valid medical exam file')
-      cy.get('input#exam-file').selectFile({
-        contents: txtContent,
-        fileName: fileName,
-        mimeType: 'text/plain',
-      }, { force: true })
+      cy.get('input#exam-file').selectFile(
+        {
+          contents: txtContent,
+          fileName: fileName,
+          mimeType: 'text/plain',
+        },
+        { force: true }
+      )
 
       cy.intercept('POST', '/api/v1/medical-exams/public/submit').as('submitExam')
 
