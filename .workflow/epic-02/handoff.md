@@ -59,12 +59,22 @@ The user raised that Phases 1-3 shipped with zero e2e coverage, despite an estab
 
 **A real bug was found and fixed in the process:** `app/core/storage.py`'s dev/CI local-disk fallback (itself added during this pass, since OCI credentials are empty in dev/CI and the medical-exam public upload endpoint was throwing an unhandled 500) had a directory-creation bug — fixed and verified via direct `curl` testing (PDF/JPEG/PNG all return 200 end-to-end). This is the only genuine production-code defect found across all of Epic 2's e2e verification; every other test failure encountered was a test-authoring issue (stale hardcoded IDs, wrong response-shape assumptions, form-encoding mismatches), all fixed in the test files themselves.
 
-A final single clean 3-spec Cypress run could not complete in this session due to OS-level port contention in the sandbox (stale socket entries, not a code issue) — see test-results.md for exactly what was and wasn't independently re-verified after the last fix.
+A final single clean 3-spec Cypress run could not complete in this session due to OS-level port contention in the sandbox (stale socket entries, not a code issue); this was superseded the next day by the real CI result below.
+
+## CI results on PR #26 (2026-07-22) — 3 known e2e failures + Jest gap, next session to fix
+
+Pushed two follow-up commits after the initial PR-3 commit: `bccef30` (state tracking) and `bc892bc` (fixed Prettier formatting CI flagged on `PlansPage.tsx`/`StudentsPage.tsx` — the rest of the frontend's local Prettier drift is pre-existing/unrelated, per PR-2 precedent). Real CI then ran the new `e2e` job for the first time (run [29879985293](https://github.com/gregori/dojo-full/actions/runs/29879985293)):
+
+- **22/25 Cypress tests passing.** `precheckin.cy.ts` 5/5, `financial.cy.ts` 10/10, `medical-exam.cy.ts` 7/10.
+- **3 known failures, all in `medical-exam.cy.ts`'s public-upload tests** — full detail, exact error text, and root-cause hypotheses in `.workflow/epic-02/pr-3-financial-foundation/test-results.md` ("Real CI result" section): (1) PDF upload — API call succeeds (500 bug already fixed) but the UI never shows the expected success message; (2)+(3) JPEG/PNG uploads — get 400, backend confirmed correct via direct `curl` with equivalent files, so this is very likely a Cypress `selectFile()` multipart Content-Type quirk, not proven yet.
+- **Frontend Jest unit tests confirmed still entirely unwritten** (0% coverage, `--passWithNoTests` masking it) — pre-existing repo-wide gap, not new to this PR. Full detail in test-results.md.
 
 ## Next Action
 
-**Committed as `a92798f` (feature/financial-foundation); pushed and opened [PR #26](https://github.com/gregori/dojo-full/pull/26) against `develop`, 2026-07-21.** Phase 3 (Financial foundation), plus the retroactive e2e coverage for Phases 1-3, is fully shipped pending PR review/merge. Once merged, Phase 4 (Contracts) is next, using `PlanVersion.id` as the pricing source per the D11 breadcrumb.
+**PR #26 is open against `develop`, not yet merged** (`a92798f` + `bccef30` + `bc892bc` on `feature/financial-foundation`). Before merge, a follow-up session should: (1) fix the 3 known `medical-exam.cy.ts` e2e failures documented above (confirm the JPEG/PNG root cause with real evidence — e.g. captured request headers — before changing anything; investigate the PDF UI success-message timeout), re-run the `e2e` CI job to confirm 25/25; (2) write Jest unit tests for the frontend (component/page tests using the already-installed Testing Library stack — this is greenfield, no existing pattern to follow, establish one deliberately). Once PR #26 merges, Phase 4 (Contracts) is next, using `PlanVersion.id` as the pricing source per the D11 breadcrumb.
 
 ## Next Agent
+
+Next Agent: implementer (fix the 3 e2e failures) and tester (author Jest unit tests), both against `feature/financial-foundation` before Phase 4 planning begins.
 
 Next Agent: planner (Phase 4 — Contracts) once PR #26 merges.
