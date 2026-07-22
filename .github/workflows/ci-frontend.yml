@@ -61,13 +61,6 @@ jobs:
           cache: 'npm'
           cache-dependency-path: ./dojo-app/frontend/package-lock.json
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: ./dojo-app/backend/requirements.txt
-
       - name: Install frontend dependencies
         run: npm ci
         working-directory: dojo-app/frontend
