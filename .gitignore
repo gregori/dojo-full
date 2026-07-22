@@ -21,6 +21,7 @@ dist/
 
 # Coverage & test artifacts
 .coverage
+coverage/
 test.db
 local_storage/
 .DS_Store
