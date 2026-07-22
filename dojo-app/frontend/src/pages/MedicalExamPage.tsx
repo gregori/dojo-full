@@ -37,16 +37,15 @@ export default function MedicalExamPage() {
       // serialize this FormData as JSON instead of a real multipart body. Clearing the
       // header (rather than setting a static string) lets axios/the browser compute the
       // correct `multipart/form-data; boundary=...` value itself.
-      const response = await publicApi.post<MedicalExamPublicResponse>(
-        '/api/v1/medical-exams/public/submit',
-        body,
-        { headers: { 'Content-Type': undefined } }
-      )
+      await publicApi.post<MedicalExamPublicResponse>('/api/v1/medical-exams/public/submit', body, {
+        headers: { 'Content-Type': undefined },
+      })
+      // The backend always returns the same generic message regardless of whether the
+      // credentials were valid (security: don't disclose PIN validity), so it is not
+      // shown to the user here — this fixed message is what the user actually sees.
       setFeedback({
         kind: 'success',
-        message:
-          response.data.message ||
-          'Se os dados informados forem válidos, seu exame foi registrado com sucesso.',
+        message: 'Se os dados informados forem válidos, seu exame foi registrado com sucesso.',
       })
       setPin('')
       setExamDate('')

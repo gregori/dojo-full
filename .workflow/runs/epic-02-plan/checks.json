@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "run_id": "epic-02-plan",
-  "updated_at": "2026-07-19",
+  "updated_at": "2026-07-20",
   "gate_types": [
     "policy",
     "lint",
@@ -83,18 +83,34 @@
       "name": "Financial foundation",
       "pr": "PR-3",
       "requirements": "FIN-01–FIN-07",
-      "status": "pending",
-      "commit": null,
+      "status": "complete",
+      "commit": "a92798f",
       "gates": {
         "policy": {
           "status": "passed",
           "note": "Pricing tiers, billing cycle/due date, overdue handling, and partial/overpayment behavior resolved.",
           "evidence": ".workflow/epic-02/handoff.md"
         },
-        "lint": { "status": "pending" },
-        "test": { "status": "pending" },
-        "independent_review": { "status": "pending" },
-        "security_review": { "status": "pending" }
+        "lint": {
+          "status": "passed",
+          "evidence": ".workflow/epic-02/pr-3-financial-foundation/lint-results.md",
+          "note": "Backend: ruff check + ruff format --check clean. Frontend: eslint --max-warnings 0 clean, tsc+vite build clean."
+        },
+        "test": {
+          "status": "passed",
+          "evidence": ".workflow/epic-02/pr-3-financial-foundation/test-results.md",
+          "note": "Backend: 283 passed, 0 failed (39 new tests, incl. 2 added post-review). Alembic upgrade/downgrade/upgrade verified against real MySQL 8.0. E2E: 25 Cypress tests added retroactively for Phases 1-3 (precheckin.cy.ts, medical-exam.cy.ts, financial.cy.ts) plus a new CI e2e job; found and fixed one real bug (storage.py local-disk fallback directory creation) during verification. See test-results.md for full detail and what was/wasn't independently re-confirmed in a final clean run."
+        },
+        "independent_review": {
+          "status": "passed",
+          "evidence": ".workflow/epic-02/pr-3-financial-foundation/review.md",
+          "note": "Verdict APPROVED WITH FOLLOW-UPS. 2 Medium findings (missing positive-value validation on money fields; missing regression test for acceptance criterion 2 price-locking) both fixed and re-verified. No High-severity issues."
+        },
+        "security_review": {
+          "status": "passed",
+          "evidence": ".workflow/epic-02/pr-3-financial-foundation/review.md",
+          "note": "Dual-checklist review covered instructor/admin-only authorization on all new routes (no public finance endpoint, D5), no raw SQL, no sensitive data leakage. The one security-adjacent finding (unvalidated negative payment/price amounts reachable via direct API call, risking FIFO balance corruption) is fixed via Field(gt=0)/Field(ge=1) constraints."
+        }
       }
     },
     {

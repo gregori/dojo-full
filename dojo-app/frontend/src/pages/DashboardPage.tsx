@@ -12,6 +12,17 @@ interface MedicalExamDashboardItem {
   expires_at: string | null
 }
 
+interface OverdueDashboardItem {
+  student_id: string
+  student_name: string
+  registration_number: string
+  amount_owed: string
+  open_count: number
+  overdue_count: number
+  oldest_overdue_due_date: string | null
+  medical_exam_status: MedicalExamStatusValue
+}
+
 export default function DashboardPage() {
   const { data: stats } = useQuery({
     queryKey: ['dashboard-stats'],
@@ -36,6 +47,20 @@ export default function DashboardPage() {
       return response.data
     },
   })
+
+  const { data: overdueStudents } = useQuery<OverdueDashboardItem[]>({
+    queryKey: ['finance-overdue-dashboard'],
+    queryFn: async () => {
+      const response = await api.get('/api/v1/finance/overdue')
+      return response.data
+    },
+  })
+
+  const daysOverdue = (dueDate: string | null) => {
+    if (!dueDate) return '-'
+    const diffMs = Date.now() - new Date(dueDate).getTime()
+    return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)))
+  }
 
   const cards = [
     {
@@ -124,6 +149,54 @@ export default function DashboardPage() {
           <div className="text-gray-500 text-center py-8">
             Nenhum exame médico vencendo ou vencido.
           </div>
+        )}
+      </div>
+
+      <div className="bg-white rounded-lg shadow p-6 mb-8">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">Inadimplentes</h3>
+        {overdueStudents && overdueStudents.length > 0 ? (
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  Aluno
+                </th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  Matrícula
+                </th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  Valor Devido
+                </th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  Dias em Atraso
+                </th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  Exame Médico
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {overdueStudents.map((item) => (
+                <tr key={item.student_id}>
+                  <td className="px-4 py-2 whitespace-nowrap text-gray-900">{item.student_name}</td>
+                  <td className="px-4 py-2 whitespace-nowrap text-gray-500">
+                    {item.registration_number}
+                  </td>
+                  <td className="px-4 py-2 whitespace-nowrap text-red-600 font-semibold">
+                    R$ {item.amount_owed}
+                  </td>
+                  <td className="px-4 py-2 whitespace-nowrap text-gray-500">
+                    {daysOverdue(item.oldest_overdue_due_date)}
+                  </td>
+                  <td className="px-4 py-2 whitespace-nowrap">
+                    <MedicalExamBadge status={item.medical_exam_status} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className="text-gray-500 text-center py-8">Nenhum aluno inadimplente.</div>
         )}
       </div>
 

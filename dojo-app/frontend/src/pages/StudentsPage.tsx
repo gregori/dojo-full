@@ -1,9 +1,29 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient, useQueries } from '@tanstack/react-query'
-import { Plus, Edit, Trash2, Search, TrendingUp, Stethoscope, X } from 'lucide-react'
+import { Plus, Edit, Trash2, Search, TrendingUp, Stethoscope, Wallet, X } from 'lucide-react'
 import api from '../services/api'
 import { useAuth } from '../hooks/useAuth'
 import MedicalExamBadge, { type MedicalExamStatusValue } from '../components/MedicalExamBadge'
+
+type MensalidadeStatusValue = 'open' | 'partial' | 'paid' | 'overdue'
+
+const MENSALIDADE_BADGE: Record<MensalidadeStatusValue, { label: string; className: string }> = {
+  open: { label: 'Em aberto', className: 'bg-gray-100 text-gray-700' },
+  partial: { label: 'Parcial', className: 'bg-yellow-100 text-yellow-800' },
+  paid: { label: 'Pago', className: 'bg-green-100 text-green-800' },
+  overdue: { label: 'Vencido', className: 'bg-red-100 text-red-800' },
+}
+
+function MensalidadeBadge({ status }: { status: MensalidadeStatusValue }) {
+  const badge = MENSALIDADE_BADGE[status]
+  return (
+    <span
+      className={`inline-flex px-2 text-xs leading-5 font-semibold rounded-full ${badge.className}`}
+    >
+      {badge.label}
+    </span>
+  )
+}
 
 interface Belt {
   id: string
@@ -74,6 +94,38 @@ interface MedicalExamRecord {
   status: string
   document: MedicalExamDocument | null
   created_at: string
+}
+
+interface PlanVersion {
+  id: string
+  plan_tier_id: string
+  price: string
+  status: string
+  effective_from: string
+}
+
+interface StudentPlan {
+  id: string
+  student_id: string
+  status: string
+  started_at: string
+  plan_version: PlanVersion
+}
+
+interface Mensalidade {
+  id: string
+  reference_month: string
+  due_date: string
+  amount: string
+  paid_amount: string
+  status: MensalidadeStatusValue
+}
+
+interface Balance {
+  student_id: string
+  balance: string
+  open_count: number
+  overdue_count: number
 }
 
 export default function StudentsPage() {
@@ -237,6 +289,61 @@ export default function StudentsPage() {
       file: medicalExamForm.file,
     })
   }
+
+  const [financeStudent, setFinanceStudent] = useState<Student | null>(null)
+  const [paymentForm, setPaymentForm] = useState({ amount: '', payment_date: '', method: '' })
+
+  const { data: studentPlanHistory } = useQuery<StudentPlan[]>({
+    queryKey: ['student-plan', financeStudent?.id],
+    queryFn: async () => {
+      const response = await api.get(`/api/v1/students/${financeStudent!.id}/plan`)
+      return response.data
+    },
+    enabled: !!financeStudent,
+  })
+
+  const { data: mensalidades } = useQuery<Mensalidade[]>({
+    queryKey: ['student-mensalidades', financeStudent?.id],
+    queryFn: async () => {
+      const response = await api.get(`/api/v1/students/${financeStudent!.id}/mensalidades`)
+      return response.data
+    },
+    enabled: !!financeStudent,
+  })
+
+  const { data: balance } = useQuery<Balance>({
+    queryKey: ['student-balance', financeStudent?.id],
+    queryFn: async () => {
+      const response = await api.get(`/api/v1/students/${financeStudent!.id}/balance`)
+      return response.data
+    },
+    enabled: !!financeStudent,
+  })
+
+  const assignPlanMutation = useMutation({
+    mutationFn: (studentId: string) => api.post(`/api/v1/students/${studentId}/plan`),
+    onSuccess: (_response, studentId) => {
+      queryClient.invalidateQueries({ queryKey: ['student-plan', studentId] })
+    },
+  })
+
+  const recordPaymentMutation = useMutation({
+    mutationFn: ({ studentId, data }: { studentId: string; data: typeof paymentForm }) =>
+      api.post('/api/v1/payments', { student_id: studentId, ...data }),
+    onSuccess: (_response, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['student-mensalidades', variables.studentId] })
+      queryClient.invalidateQueries({ queryKey: ['student-balance', variables.studentId] })
+      setPaymentForm({ amount: '', payment_date: '', method: '' })
+    },
+  })
+
+  const handlePaymentSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!financeStudent) return
+    recordPaymentMutation.mutate({ studentId: financeStudent.id, data: paymentForm })
+  }
+
+  const currentStudentPlan = studentPlanHistory?.find((plan) => plan.status === 'active')
 
   const resetForm = () => {
     setFormData({
@@ -558,6 +665,9 @@ export default function StudentsPage() {
                 Exame Médico
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                Financeiro
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 Status
               </th>
               {isAdmin && (
@@ -637,6 +747,18 @@ export default function StudentsPage() {
                         <Stethoscope className="w-4 h-4" />
                       </button>
                     </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <button
+                      onClick={() => {
+                        setFinanceStudent(student)
+                        setPaymentForm({ amount: '', payment_date: '', method: '' })
+                      }}
+                      title="Financeiro"
+                      className="text-gray-500 hover:text-blue-600"
+                    >
+                      <Wallet className="w-4 h-4" />
+                    </button>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
@@ -777,6 +899,166 @@ export default function StudentsPage() {
                     <tr>
                       <td colSpan={4} className="px-3 py-4 text-center text-gray-400">
                         Nenhum registro encontrado.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {financeStudent && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-40 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">
+                Financeiro — {financeStudent.full_name}
+              </h3>
+              <button
+                onClick={() => setFinanceStudent(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="mb-4 bg-gray-50 rounded-md p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-semibold text-gray-700">Plano Atual</span>
+                <button
+                  onClick={() => assignPlanMutation.mutate(financeStudent.id)}
+                  disabled={assignPlanMutation.isPending}
+                  className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-60"
+                >
+                  {currentStudentPlan ? 'Reatribuir Plano' : 'Atribuir Plano'}
+                </button>
+              </div>
+              {currentStudentPlan ? (
+                <p className="text-sm text-gray-600">
+                  R$ {currentStudentPlan.plan_version.price} desde{' '}
+                  {new Date(currentStudentPlan.started_at).toLocaleDateString('pt-BR')}
+                </p>
+              ) : (
+                <p className="text-sm text-gray-400">Nenhum plano atribuído.</p>
+              )}
+              {assignPlanMutation.isError && (
+                <p className="text-sm text-red-600 mt-1">
+                  Não foi possível atribuir um plano (verifique se existe um plano para as aulas por
+                  semana deste aluno).
+                </p>
+              )}
+              {balance && (
+                <p className="text-sm text-gray-700 mt-2">
+                  Saldo:{' '}
+                  <span
+                    className={
+                      Number(balance.balance) > 0 ? 'text-red-600 font-semibold' : 'text-green-600'
+                    }
+                  >
+                    R$ {balance.balance}
+                  </span>{' '}
+                  ({balance.overdue_count} vencida(s), {balance.open_count} em aberto)
+                </p>
+              )}
+            </div>
+
+            <h4 className="text-sm font-semibold text-gray-700 mb-2">Registrar Pagamento</h4>
+            <form onSubmit={handlePaymentSubmit} className="grid grid-cols-3 gap-4 mb-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Valor (R$)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={paymentForm.amount}
+                  onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-md"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Data</label>
+                <input
+                  type="date"
+                  value={paymentForm.payment_date}
+                  onChange={(e) => setPaymentForm({ ...paymentForm, payment_date: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-md"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Forma (opcional)
+                </label>
+                <input
+                  type="text"
+                  value={paymentForm.method}
+                  onChange={(e) => setPaymentForm({ ...paymentForm, method: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-md"
+                  placeholder="Ex: PIX, dinheiro"
+                />
+              </div>
+              <div className="col-span-3 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={recordPaymentMutation.isPending}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-60"
+                >
+                  {recordPaymentMutation.isPending ? 'Enviando...' : 'Registrar Pagamento'}
+                </button>
+              </div>
+            </form>
+
+            <h4 className="text-sm font-semibold text-gray-700 mb-2">Mensalidades</h4>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      Referência
+                    </th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      Vencimento
+                    </th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      Valor
+                    </th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      Pago
+                    </th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      Situação
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {mensalidades?.length ? (
+                    mensalidades.map((mensalidade) => (
+                      <tr key={mensalidade.id}>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          {new Date(mensalidade.reference_month).toLocaleDateString('pt-BR', {
+                            month: '2-digit',
+                            year: 'numeric',
+                          })}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          {new Date(mensalidade.due_date).toLocaleDateString('pt-BR')}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap">R$ {mensalidade.amount}</td>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          R$ {mensalidade.paid_amount}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          <MensalidadeBadge status={mensalidade.status} />
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={5} className="px-3 py-4 text-center text-gray-400">
+                        Nenhuma mensalidade encontrada.
                       </td>
                     </tr>
                   )}
