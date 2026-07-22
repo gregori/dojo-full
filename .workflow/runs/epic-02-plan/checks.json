@@ -83,8 +83,8 @@
       "name": "Financial foundation",
       "pr": "PR-3",
       "requirements": "FIN-01–FIN-07",
-      "status": "implemented_pending_commit",
-      "commit": null,
+      "status": "complete",
+      "commit": "a92798f",
       "gates": {
         "policy": {
           "status": "passed",

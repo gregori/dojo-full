@@ -2,12 +2,12 @@
   "schema_version": 1,
   "run_id": "epic-02-plan",
   "work_item": "Epic 2 — Financeiro, Pré-Checkin e Relatórios",
-  "status": "phase_3_implemented_pending_commit",
+  "status": "phase_3_complete",
   "created_at": "2026-07-19",
-  "updated_at": "2026-07-20",
+  "updated_at": "2026-07-21",
   "requirements_review": "completed",
   "plan_path": ".workflow/runs/epic-02-plan/plan.md",
   "handoff_path": ".workflow/epic-02/handoff.md",
-  "next_action": "Phase 3 (Financial foundation, PR-3) is implemented and reviewed: models/migration/services/API/frontend built by implementer, deterministic gates pass (283/283 pytest, ruff, eslint, build), independent+security review APPROVED after fixing 2 Medium findings (see .workflow/epic-02/pr-3-financial-foundation/review.md). Working tree uncommitted. Awaiting explicit user go-ahead to commit/push/open PR before this phase is fully closed.",
+  "next_action": "Phase 3 (Financial foundation, PR-3) shipped as a92798f, PR #26 against develop (2026-07-21). Also added retroactive Cypress e2e coverage for Phases 1-3 and fixed a real storage.py bug found in the process. Next: Phase 4 (Contracts) planning once PR #26 merges.",
   "checks_path": ".workflow/runs/epic-02-plan/checks.json"
 }

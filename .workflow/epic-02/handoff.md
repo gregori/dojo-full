@@ -63,8 +63,8 @@ A final single clean 3-spec Cypress run could not complete in this session due t
 
 ## Next Action
 
-Phase 3 (Financial foundation) is implemented, reviewed (APPROVED), and now has e2e coverage. Nothing has been committed yet. Remaining before this phase is fully shipped: commit, push a branch (`feature/financial-foundation`, following the PR-1/PR-2 branch-naming precedent, branched from `origin/develop` since the current local branch `feature/medical-exams` is already merged there with zero content drift), and open the PR against `develop` — awaiting explicit user go-ahead. Once shipped, Phase 4 (Contracts) is next, using `PlanVersion.id` as the pricing source per the D11 breadcrumb.
+**Committed as `a92798f` (feature/financial-foundation); pushed and opened [PR #26](https://github.com/gregori/dojo-full/pull/26) against `develop`, 2026-07-21.** Phase 3 (Financial foundation), plus the retroactive e2e coverage for Phases 1-3, is fully shipped pending PR review/merge. Once merged, Phase 4 (Contracts) is next, using `PlanVersion.id` as the pricing source per the D11 breadcrumb.
 
 ## Next Agent
 
-Next Agent: doc-writer (PR description) or finisher (commit/PR), pending user confirmation to proceed with commit/push.
+Next Agent: planner (Phase 4 — Contracts) once PR #26 merges.
