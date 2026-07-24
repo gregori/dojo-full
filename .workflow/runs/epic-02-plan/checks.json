@@ -118,8 +118,8 @@
       "name": "Contracts",
       "pr": "PR-4",
       "requirements": "CON-01–CON-04",
-      "status": "implemented_e2e_green_pending_commit",
-      "commit": null,
+      "status": "complete",
+      "commit": "02e0eccb",
       "gates": {
         "policy": {
           "status": "passed",

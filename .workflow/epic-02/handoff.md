@@ -94,10 +94,18 @@ Two real, separate issues surfaced and fixed along the way (both pre-existing, u
 
 **Bonus, unrelated to unit tests but found and fixed along the way:** `poetry.lock` was already committed (since PR-2) and correctly pins `greenlet` at a working version, but neither `Dockerfile.dev` nor `Dockerfile.prod` ever copied it into the build context — only `pyproject.toml` was. Every backend image build therefore silently re-resolved dependencies fresh against PyPI's live index instead of using the pinned lock. This caused a real, reproducible `e2e` CI failure (`greenlet` published a `3.5.4` release with no wheels yet for the build's Python/platform). Fixed by adding `poetry.lock` to both Dockerfiles' `COPY` line. Commit `4bc3f2f`. Confirmed both `CI - Frontend` and `CI - Backend` green after this fix, runs [29918206855](https://github.com/gregori/dojo-full/actions/runs/29918206855) / [29918206853](https://github.com/gregori/dojo-full/actions/runs/29918206853).
 
+## PR-3 and PR-4 merged (2026-07-24)
+
+PR #26 (Financial foundation) and **PR #27 (Contracts) are both merged to `develop`** (PR-4 merge commit `02e0eccb`). Phase 4 (Contracts) shipped: versioned legal contract templates, atomic plan-assignment + draft generation on matricula/renewal, dual signature capture (on-screen canvas or uploaded PDF/JPEG/PNG), draft regeneration preserving the locked plan/template version. Independent+security review APPROVED after fixing 2 HIGH/1 MEDIUM/1 LOW findings. Cypress e2e (`contracts.cy.ts`) is 6/6 green, confirmed via real CI.
+
+Two real bugs were found and fixed while getting the e2e suite green against a live stack (full root-cause detail in `.workflow/epic-02/pr-4-contracts/test-results.md`):
+- **Docker/Poetry infra bug**: Poetry 2.4.1 auto-creates an empty in-project `.venv` on `poetry run` even with `virtualenvs.create=false`, shadowing the correctly-populated global site-packages and hanging `entrypoint.sh`'s DB-readiness loop forever. Fixed by dropping `poetry run` from `entrypoint.sh` (deps are global per `Dockerfile.dev`'s own config) and removing the now-pointless anonymous `- /app/.venv` volume from `docker-compose.yml`.
+- **Frontend bug**: `StudentsPage.tsx`'s main students table used `overflow-hidden` instead of `overflow-x-auto` (unlike every other table in the file), clipping the rightmost per-row action buttons off-screen as columns accumulated across PR-2/3/4.
+
 ## Next Action
 
-**PR #26 is open against `develop`, not yet merged** (`a92798f` + `bccef30` + `bc892bc` + `6c0ca0e` + `a3ff305` + `0254e3c` + `38a8b79` + `4bc3f2f` on `feature/financial-foundation`), with both `CI - Frontend` (test + e2e) and `CI - Backend` fully green. The two follow-up items from the earlier handoff (fix the 3 e2e failures, write Jest unit tests) are both done. **This PR should be ready to review and merge.** Once it merges, Phase 4 (Contracts) is next, using `PlanVersion.id` as the pricing source per the D11 breadcrumb.
+Phase 4 is complete. **Phase 5 (Reports, PR-5) is next** — policy already resolved (REP-04's financial projection formula and default horizon, see plan.md's "Requirements Review — Phase 5" section), but implementation planning (data model, service layer, API, frontend touch points) has not yet been written into plan.md the way Phases 2/3/4 were.
 
 ## Next Agent
 
-Next Agent: planner (Phase 4 — Contracts) once PR #26 merges.
+Next Agent: tech-analyst (Phase 5 — Reports implementation planning), then requirements-reviewer, then squad-feature to build PR-5.

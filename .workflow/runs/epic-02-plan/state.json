@@ -2,12 +2,12 @@
   "schema_version": 1,
   "run_id": "epic-02-plan",
   "work_item": "Epic 2 — Financeiro, Pré-Checkin e Relatórios",
-  "status": "phase_4_gates_review_and_e2e_passed_pending_commit",
+  "status": "phase_4_complete_pending_phase_5",
   "created_at": "2026-07-19",
   "updated_at": "2026-07-24",
   "requirements_review": "completed",
   "plan_path": ".workflow/runs/epic-02-plan/plan.md",
   "handoff_path": ".workflow/epic-02/handoff.md",
-  "next_action": "PR-4 (Contracts) implemented, independently re-reviewed (APPROVED, 2026-07-23), and Cypress e2e (contracts.cy.ts) is now green 6/6 (2026-07-24, verified over 5 consecutive clean runs) after root-causing and fixing a real Docker/Poetry infra bug (stale anonymous .venv volume + Poetry 2.4.1 auto-creating an empty in-project venv on `poetry run`, breaking entrypoint.sh) and a real frontend bug (students table using overflow-hidden instead of overflow-x-auto, clipping the Contrato action button); remaining fixes were test-authoring issues in contracts.cy.ts. Full detail in .workflow/epic-02/pr-4-contracts/test-results.md. Working tree still uncommitted on feature/contracts. Next: commit and open PR-4 against develop.",
+  "next_action": "PR-4 (Contracts) merged to develop 2026-07-24 (merge commit 02e0eccb, PR #27 https://github.com/gregori/dojo-full/pull/27). Implemented, independently reviewed (APPROVED), Cypress e2e (contracts.cy.ts) green 6/6 verified over multiple clean runs, real CI green (backend test, frontend test, e2e all pass) after a Prettier-formatting fix-up commit. Root-caused and fixed two real bugs found while getting e2e green: a Docker/Poetry infra bug (stale anonymous .venv volume + Poetry 2.4.1 auto-creating an empty in-project venv on `poetry run`, breaking entrypoint.sh) and a frontend bug (students table using overflow-hidden instead of overflow-x-auto, clipping the Contrato action button). Full detail in .workflow/epic-02/pr-4-contracts/test-results.md. Phase 4 is complete. Next: Phase 5 (Reports, PR-5) per plan.md — policy already resolved (REP-04 financial projection formula and default horizon), implementation planning not yet started.",
   "checks_path": ".workflow/runs/epic-02-plan/checks.json"
 }
