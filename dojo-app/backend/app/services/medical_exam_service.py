@@ -4,26 +4,17 @@ import uuid
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
-from fastapi import HTTPException, UploadFile, status
+from fastapi import UploadFile
 from sqlalchemy.orm import Session
 
 from app.core.security import verify_password
 from app.core.storage import upload_document
+from app.core.uploads import read_bounded, validate_file
 from app.models import Document, MedicalExam, Student
 from app.services.student_service import StudentService
 
 EXAM_VALIDITY = timedelta(days=365)
 EXPIRY_WARNING_WINDOW = timedelta(days=30)
-MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024
-UPLOAD_CHUNK_SIZE = 1024 * 1024
-
-# Magic-byte signatures for the allowed MIME types, so validation checks actual
-# file content rather than the client-supplied (and fully spoofable) Content-Type header.
-MIME_SIGNATURES: dict[str, bytes] = {
-    "application/pdf": b"%PDF-",
-    "image/png": b"\x89PNG\r\n\x1a\n",
-    "image/jpeg": b"\xff\xd8\xff",
-}
 
 
 class MedicalExamService:
@@ -36,33 +27,6 @@ class MedicalExamService:
         if not student or not student.is_active or not verify_password(pin, student.pin):
             return None
         return student
-
-    @staticmethod
-    def _read_bounded(file: UploadFile) -> bytes:
-        """Read the upload in chunks, rejecting early once it exceeds the size limit.
-
-        Avoids buffering an unbounded request body into memory before the size
-        check runs, since the endpoint is reachable without full authentication.
-        """
-        chunks: list[bytes] = []
-        total = 0
-        while True:
-            chunk = file.file.read(UPLOAD_CHUNK_SIZE)
-            if not chunk:
-                break
-            total += len(chunk)
-            if total > MAX_FILE_SIZE_BYTES:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="File exceeds the 10MB limit")
-            chunks.append(chunk)
-        return b"".join(chunks)
-
-    @staticmethod
-    def _validate_file(file: UploadFile, content: bytes) -> None:
-        signature = MIME_SIGNATURES.get(file.content_type or "")
-        if signature is None or not content.startswith(signature):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Only PDF, JPEG, or PNG files are accepted"
-            )
 
     @staticmethod
     def _get_active_record(db: Session, student_id: str, *, for_update: bool = False) -> MedicalExam | None:
@@ -121,8 +85,8 @@ class MedicalExamService:
 
         document = None
         if file is not None:
-            content = MedicalExamService._read_bounded(file)
-            MedicalExamService._validate_file(file, content)
+            content = read_bounded(file)
+            validate_file(file, content)
             extension = Path(file.filename or "").suffix
             storage_key = f"medical-exams/{student.id}/{uuid.uuid4()}{extension}"
             upload_document(storage_key, content, file.content_type)

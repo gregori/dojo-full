@@ -49,8 +49,8 @@ Cypress.Commands.add('createStudent', (data: {
   // Generate a random PIN (4 digits)
   const randomPin = Math.floor(Math.random() * 10000).toString().padStart(4, '0')
 
-  cy.getBeltId().then((beltId: any) => {
-    cy.request({
+  return cy.getBeltId().then((beltId: any) => {
+    return cy.request({
       method: 'POST',
       url: `${Cypress.env('VITE_API_URL') || 'http://localhost:8000'}/api/v1/students`,
       body: {
@@ -371,6 +371,34 @@ Cypress.Commands.add('createPlanTier', (data: {
   }).then((response) => {
     if (response.status !== 201) {
       cy.log(`Plan tier creation warning: ${response.status} - ${JSON.stringify(response.body)}`)
+    }
+    return cy.wrap(response.body)
+  })
+})
+
+// Create a contract template via API
+Cypress.Commands.add('createContractTemplate', (data: {
+  body: string
+  effective_from?: string
+}) => {
+  const adminToken = Cypress.env('adminToken') || localStorage.getItem('token')
+  const apiUrl = Cypress.env('VITE_API_URL') || 'http://localhost:8000'
+
+  const now = new Date()
+  const effectiveFrom = data.effective_from || new Date(now.getTime() - 86400000).toISOString()
+
+  cy.request({
+    method: 'POST',
+    url: `${apiUrl}/api/v1/contract-templates`,
+    body: {
+      body: data.body,
+      effective_from: effectiveFrom,
+    },
+    headers: { Authorization: `Bearer ${adminToken}` },
+    failOnStatusCode: false,
+  }).then((response) => {
+    if (response.status !== 201) {
+      cy.log(`Contract template creation warning: ${response.status} - ${JSON.stringify(response.body)}`)
     }
     return cy.wrap(response.body)
   })

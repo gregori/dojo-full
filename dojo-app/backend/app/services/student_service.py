@@ -43,7 +43,7 @@ class StudentService:
             query = query.filter(Student.category == category)
         if is_active is not None:
             query = query.filter(Student.is_active == is_active)
-        return query.offset(skip).limit(limit).all()
+        return query.order_by(Student.created_at.desc()).offset(skip).limit(limit).all()
 
     @staticmethod
     def create_student(db: Session, student_data: StudentCreate, created_by: str | None = None) -> Student:

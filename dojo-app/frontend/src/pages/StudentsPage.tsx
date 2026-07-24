@@ -1,9 +1,40 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient, useQueries } from '@tanstack/react-query'
-import { Plus, Edit, Trash2, Search, TrendingUp, Stethoscope, Wallet, X } from 'lucide-react'
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Search,
+  TrendingUp,
+  Stethoscope,
+  Wallet,
+  FileSignature,
+  X,
+} from 'lucide-react'
 import api from '../services/api'
 import { useAuth } from '../hooks/useAuth'
 import MedicalExamBadge, { type MedicalExamStatusValue } from '../components/MedicalExamBadge'
+import SignaturePad, { type SignaturePadHandle } from '../components/SignaturePad'
+
+type ContractStatusValue = 'draft' | 'signed' | 'superseded'
+
+const CONTRACT_BADGE: Record<ContractStatusValue, { label: string; className: string }> = {
+  draft: { label: 'Rascunho', className: 'bg-yellow-100 text-yellow-800' },
+  signed: { label: 'Assinado', className: 'bg-green-100 text-green-800' },
+  superseded: { label: 'Substituído', className: 'bg-gray-100 text-gray-600' },
+}
+
+function ContractBadge({ status }: { status: ContractStatusValue | undefined }) {
+  if (!status) return <span className="text-xs text-gray-400">Sem contrato</span>
+  const badge = CONTRACT_BADGE[status]
+  return (
+    <span
+      className={`inline-flex px-2 text-xs leading-5 font-semibold rounded-full ${badge.className}`}
+    >
+      {badge.label}
+    </span>
+  )
+}
 
 type MensalidadeStatusValue = 'open' | 'partial' | 'paid' | 'overdue'
 
@@ -126,6 +157,24 @@ interface Balance {
   balance: string
   open_count: number
   overdue_count: number
+}
+
+interface ContractDocument {
+  id: string
+  mime_type: string
+  size_bytes: number
+  status: string
+  created_at: string
+}
+
+interface Contract {
+  id: string
+  student_id: string
+  status: ContractStatusValue
+  signature_method: 'on_screen' | 'uploaded' | null
+  signed_at: string | null
+  document: ContractDocument | null
+  created_at: string
 }
 
 export default function StudentsPage() {
@@ -320,10 +369,13 @@ export default function StudentsPage() {
     enabled: !!financeStudent,
   })
 
-  const assignPlanMutation = useMutation({
-    mutationFn: (studentId: string) => api.post(`/api/v1/students/${studentId}/plan`),
+  const matricularMutation = useMutation({
+    mutationFn: (studentId: string) =>
+      api.post(`/api/v1/students/${studentId}/contracts/matricular`),
     onSuccess: (_response, studentId) => {
       queryClient.invalidateQueries({ queryKey: ['student-plan', studentId] })
+      queryClient.invalidateQueries({ queryKey: ['contract-current', studentId] })
+      queryClient.invalidateQueries({ queryKey: ['contract-history', studentId] })
     },
   })
 
@@ -344,6 +396,93 @@ export default function StudentsPage() {
   }
 
   const currentStudentPlan = studentPlanHistory?.find((plan) => plan.status === 'active')
+
+  const [contractStudent, setContractStudent] = useState<Student | null>(null)
+  const signaturePadRef = useRef<SignaturePadHandle>(null)
+  const [uploadFile, setUploadFile] = useState<File | null>(null)
+
+  const { data: currentContract } = useQuery<Contract | null>({
+    queryKey: ['contract-current', contractStudent?.id],
+    queryFn: async () => {
+      try {
+        const response = await api.get(`/api/v1/students/${contractStudent!.id}/contracts/current`)
+        return response.data
+      } catch {
+        // No current draft/signed contract for this student yet.
+        return null
+      }
+    },
+    enabled: !!contractStudent,
+  })
+
+  const { data: contractHistory } = useQuery<Contract[]>({
+    queryKey: ['contract-history', contractStudent?.id],
+    queryFn: async () => {
+      const response = await api.get(`/api/v1/students/${contractStudent!.id}/contracts`)
+      return response.data
+    },
+    enabled: !!contractStudent,
+  })
+
+  const invalidateContractQueries = (studentId: string) => {
+    queryClient.invalidateQueries({ queryKey: ['contract-current', studentId] })
+    queryClient.invalidateQueries({ queryKey: ['contract-history', studentId] })
+  }
+
+  const regenerateDraftMutation = useMutation({
+    mutationFn: (contractId: string) => api.post(`/api/v1/contracts/${contractId}/regenerate`),
+    onSuccess: () => {
+      if (contractStudent) invalidateContractQueries(contractStudent.id)
+    },
+  })
+
+  const signOnScreenMutation = useMutation({
+    mutationFn: ({ contractId, signaturePng }: { contractId: string; signaturePng: string }) =>
+      api.post(`/api/v1/contracts/${contractId}/sign/on-screen`, { signature_png: signaturePng }),
+    onSuccess: () => {
+      if (contractStudent) invalidateContractQueries(contractStudent.id)
+      signaturePadRef.current?.clear()
+    },
+  })
+
+  const signByUploadMutation = useMutation({
+    mutationFn: ({ contractId, file }: { contractId: string; file: File }) => {
+      const body = new FormData()
+      body.append('file', file)
+      return api.post(`/api/v1/contracts/${contractId}/sign/upload`, body, {
+        headers: { 'Content-Type': undefined },
+      })
+    },
+    onSuccess: () => {
+      if (contractStudent) invalidateContractQueries(contractStudent.id)
+      setUploadFile(null)
+    },
+  })
+
+  const handleSignOnScreen = () => {
+    if (!currentContract || signaturePadRef.current?.isEmpty()) return
+    signOnScreenMutation.mutate({
+      contractId: currentContract.id,
+      signaturePng: signaturePadRef.current!.toDataURL(),
+    })
+  }
+
+  const handleSignByUpload = () => {
+    if (!currentContract || !uploadFile) return
+    signByUploadMutation.mutate({ contractId: currentContract.id, file: uploadFile })
+  }
+
+  const handleDownloadContract = async (contractId: string) => {
+    const response = await api.get(`/api/v1/contracts/${contractId}/download`, {
+      responseType: 'blob',
+    })
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `contrato-${contractId}.pdf`
+    link.click()
+    window.URL.revokeObjectURL(url)
+  }
 
   const resetForm = () => {
     setFormData({
@@ -634,164 +773,181 @@ export default function StudentsPage() {
       )}
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Matrícula
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Nome
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Celular
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Contratante
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Categoria
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Faixa
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Progresso
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Aulas
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Exame Médico
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Financeiro
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Status
-              </th>
-              {isAdmin && (
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Ações
+                  Matrícula
                 </th>
-              )}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {filteredStudents?.map((student) => {
-              const progress = progressMap[student.id]
-              return (
-                <tr key={student.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {student.registration_number}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {student.full_name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {student.phone || '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {student.contract_name || (student.category === 'adult' ? 'Próprio' : '-')}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {student.category === 'child' ? 'Criança' : 'Adulto'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {student.current_belt?.name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {progress ? (
-                      <div className="flex items-center space-x-2">
-                        <div className="flex-1 min-w-[80px]">
-                          <div className="bg-gray-200 rounded-full h-2">
-                            <div
-                              className={`rounded-full h-2 transition-all ${
-                                progress.overall_progress.percentage >= 100
-                                  ? 'bg-green-500'
-                                  : progress.overall_progress.percentage >= 50
-                                    ? 'bg-yellow-500'
-                                    : 'bg-blue-500'
-                              }`}
-                              style={{
-                                width: `${Math.min(100, progress.overall_progress.percentage)}%`,
-                              }}
-                            />
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Nome
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Celular
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Contratante
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Categoria
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Faixa
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Progresso
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Aulas
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Exame Médico
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Financeiro
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Contrato
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Status
+                </th>
+                {isAdmin && (
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Ações
+                  </th>
+                )}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {filteredStudents?.map((student) => {
+                const progress = progressMap[student.id]
+                return (
+                  <tr key={student.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {student.registration_number}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {student.full_name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {student.phone || '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {student.contract_name || (student.category === 'adult' ? 'Próprio' : '-')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {student.category === 'child' ? 'Criança' : 'Adulto'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {student.current_belt?.name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {progress ? (
+                        <div className="flex items-center space-x-2">
+                          <div className="flex-1 min-w-[80px]">
+                            <div className="bg-gray-200 rounded-full h-2">
+                              <div
+                                className={`rounded-full h-2 transition-all ${
+                                  progress.overall_progress.percentage >= 100
+                                    ? 'bg-green-500'
+                                    : progress.overall_progress.percentage >= 50
+                                      ? 'bg-yellow-500'
+                                      : 'bg-blue-500'
+                                }`}
+                                style={{
+                                  width: `${Math.min(100, progress.overall_progress.percentage)}%`,
+                                }}
+                              />
+                            </div>
                           </div>
+                          <span className="text-xs text-gray-600 whitespace-nowrap">
+                            {progress.overall_progress.total_complete}/
+                            {progress.overall_progress.total_required}
+                          </span>
+                          {!progress.next_belt && <TrendingUp className="w-4 h-4 text-green-500" />}
                         </div>
-                        <span className="text-xs text-gray-600 whitespace-nowrap">
-                          {progress.overall_progress.total_complete}/
-                          {progress.overall_progress.total_required}
-                        </span>
-                        {!progress.next_belt && <TrendingUp className="w-4 h-4 text-green-500" />}
+                      ) : (
+                        <span className="text-xs text-gray-400">Carregando...</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {student.classes_per_week || '-'}/sem{' '}
+                      {student.class_days ? `(${student.class_days})` : ''}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <div className="flex items-center gap-2">
+                        <MedicalExamBadge status={medicalExamStatusMap[student.id]?.status} />
+                        <button
+                          onClick={() => {
+                            setMedicalExamStudent(student)
+                            setMedicalExamForm({ exam_date: '', file: null })
+                          }}
+                          title="Exame médico"
+                          className="text-gray-500 hover:text-blue-600"
+                        >
+                          <Stethoscope className="w-4 h-4" />
+                        </button>
                       </div>
-                    ) : (
-                      <span className="text-xs text-gray-400">Carregando...</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {student.classes_per_week || '-'}/sem{' '}
-                    {student.class_days ? `(${student.class_days})` : ''}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <div className="flex items-center gap-2">
-                      <MedicalExamBadge status={medicalExamStatusMap[student.id]?.status} />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <button
                         onClick={() => {
-                          setMedicalExamStudent(student)
-                          setMedicalExamForm({ exam_date: '', file: null })
+                          setFinanceStudent(student)
+                          setPaymentForm({ amount: '', payment_date: '', method: '' })
                         }}
-                        title="Exame médico"
+                        title="Financeiro"
                         className="text-gray-500 hover:text-blue-600"
                       >
-                        <Stethoscope className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <button
-                      onClick={() => {
-                        setFinanceStudent(student)
-                        setPaymentForm({ amount: '', payment_date: '', method: '' })
-                      }}
-                      title="Financeiro"
-                      className="text-gray-500 hover:text-blue-600"
-                    >
-                      <Wallet className="w-4 h-4" />
-                    </button>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`inline-flex px-2 text-xs leading-5 font-semibold rounded-full ${
-                        student.is_active
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}
-                    >
-                      {student.is_active ? 'Ativo' : 'Inativo'}
-                    </span>
-                  </td>
-                  {isAdmin && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button
-                        onClick={() => handleEdit(student)}
-                        className="text-blue-600 hover:text-blue-900 mr-3"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => deleteMutation.mutate(student.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        <Trash2 className="w-4 h-4" />
+                        <Wallet className="w-4 h-4" />
                       </button>
                     </td>
-                  )}
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <button
+                        onClick={() => {
+                          setContractStudent(student)
+                          setUploadFile(null)
+                        }}
+                        title="Contrato"
+                        className="text-gray-500 hover:text-blue-600"
+                      >
+                        <FileSignature className="w-4 h-4" />
+                      </button>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`inline-flex px-2 text-xs leading-5 font-semibold rounded-full ${
+                          student.is_active
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}
+                      >
+                        {student.is_active ? 'Ativo' : 'Inativo'}
+                      </span>
+                    </td>
+                    {isAdmin && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => handleEdit(student)}
+                          className="text-blue-600 hover:text-blue-900 mr-3"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => deleteMutation.mutate(student.id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {medicalExamStudent && (
@@ -928,11 +1084,13 @@ export default function StudentsPage() {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-semibold text-gray-700">Plano Atual</span>
                 <button
-                  onClick={() => assignPlanMutation.mutate(financeStudent.id)}
-                  disabled={assignPlanMutation.isPending}
+                  onClick={() => matricularMutation.mutate(financeStudent.id)}
+                  disabled={matricularMutation.isPending}
                   className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-60"
                 >
-                  {currentStudentPlan ? 'Reatribuir Plano' : 'Atribuir Plano'}
+                  {matricularMutation.isPending
+                    ? 'Enviando...'
+                    : 'Matricular/Renovar (Plano + Contrato)'}
                 </button>
               </div>
               {currentStudentPlan ? (
@@ -943,10 +1101,10 @@ export default function StudentsPage() {
               ) : (
                 <p className="text-sm text-gray-400">Nenhum plano atribuído.</p>
               )}
-              {assignPlanMutation.isError && (
+              {matricularMutation.isError && (
                 <p className="text-sm text-red-600 mt-1">
-                  Não foi possível atribuir um plano (verifique se existe um plano para as aulas por
-                  semana deste aluno).
+                  Não foi possível matricular/renovar (verifique se existe um plano e um modelo de
+                  contrato para as aulas por semana deste aluno).
                 </p>
               )}
               {balance && (
@@ -1059,6 +1217,160 @@ export default function StudentsPage() {
                     <tr>
                       <td colSpan={5} className="px-3 py-4 text-center text-gray-400">
                         Nenhuma mensalidade encontrada.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {contractStudent && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-40 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">
+                Contrato — {contractStudent.full_name}
+              </h3>
+              <button
+                onClick={() => setContractStudent(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="mb-4 flex items-center justify-between bg-gray-50 rounded-md p-4">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">Status atual:</span>
+                  <ContractBadge status={currentContract?.status} />
+                </div>
+              </div>
+              <button
+                onClick={() => matricularMutation.mutate(contractStudent.id)}
+                disabled={matricularMutation.isPending}
+                className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-60"
+              >
+                {matricularMutation.isPending ? 'Enviando...' : 'Matricular/Renovar'}
+              </button>
+            </div>
+
+            {currentContract?.status === 'draft' && (
+              <div className="mb-6 space-y-4">
+                <div>
+                  <button
+                    onClick={() => regenerateDraftMutation.mutate(currentContract.id)}
+                    disabled={regenerateDraftMutation.isPending}
+                    className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-60"
+                  >
+                    {regenerateDraftMutation.isPending ? 'Regenerando...' : 'Regenerar Rascunho'}
+                  </button>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Assinar na Tela</h4>
+                  <SignaturePad ref={signaturePadRef} />
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      onClick={() => signaturePadRef.current?.clear()}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50"
+                    >
+                      Limpar
+                    </button>
+                    <button
+                      onClick={handleSignOnScreen}
+                      disabled={signOnScreenMutation.isPending}
+                      className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-60"
+                    >
+                      {signOnScreenMutation.isPending ? 'Enviando...' : 'Assinar'}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                    Ou Enviar Contrato Assinado (PDF, JPEG ou PNG, até 10MB)
+                  </h4>
+                  <div className="flex gap-2">
+                    <input
+                      type="file"
+                      accept="application/pdf,image/jpeg,image/png"
+                      onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                      className="text-sm"
+                    />
+                    <button
+                      onClick={handleSignByUpload}
+                      disabled={!uploadFile || signByUploadMutation.isPending}
+                      className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-60"
+                    >
+                      {signByUploadMutation.isPending ? 'Enviando...' : 'Enviar'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {currentContract?.document && (
+              <div className="mb-6">
+                <button
+                  onClick={() => handleDownloadContract(currentContract.id)}
+                  className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  Baixar Contrato Atual
+                </button>
+              </div>
+            )}
+
+            <h4 className="text-sm font-semibold text-gray-700 mb-2">Histórico</h4>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      Criado em
+                    </th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      Situação
+                    </th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      Assinatura
+                    </th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      Documento
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {contractHistory?.length ? (
+                    contractHistory.map((contract) => (
+                      <tr key={contract.id}>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          {new Date(contract.created_at).toLocaleDateString('pt-BR')}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          <ContractBadge status={contract.status} />
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-gray-500">
+                          {contract.signature_method === 'on_screen'
+                            ? 'Na tela'
+                            : contract.signature_method === 'uploaded'
+                              ? 'Upload'
+                              : '-'}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-gray-500">
+                          {contract.document
+                            ? `${contract.document.mime_type} (${Math.round(contract.document.size_bytes / 1024)} KB)`
+                            : '-'}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={4} className="px-3 py-4 text-center text-gray-400">
+                        Nenhum contrato encontrado.
                       </td>
                     </tr>
                   )}

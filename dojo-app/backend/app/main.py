@@ -5,6 +5,8 @@ from app.api import (
     auth,
     belts,
     checkin,
+    contract_templates,
+    contracts,
     events,
     exams,
     medical_exams,
@@ -46,6 +48,8 @@ app.include_router(medical_exams.router)
 app.include_router(plans.router)
 app.include_router(mensalidades.router)
 app.include_router(payments.router)
+app.include_router(contract_templates.router)
+app.include_router(contracts.router)
 app.include_router(organizations.router)
 
 

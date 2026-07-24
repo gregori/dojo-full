@@ -10,6 +10,7 @@ import PreCheckInPage from './pages/PreCheckInPage'
 import MedicalExamPage from './pages/MedicalExamPage'
 import ExamsPage from './pages/ExamsPage'
 import PlansPage from './pages/PlansPage'
+import ContractTemplatesPage from './pages/ContractTemplatesPage'
 import BeltRequirementsPage from './pages/BeltRequirementsPage'
 import BeltsPage from './pages/BeltsPage'
 import DojosPage from './pages/DojosPage'
@@ -87,6 +88,14 @@ function App() {
               element={
                 <AdminRoute>
                   <PlansPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/contract-templates"
+              element={
+                <AdminRoute>
+                  <ContractTemplatesPage />
                 </AdminRoute>
               }
             />

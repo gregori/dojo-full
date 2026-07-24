@@ -118,7 +118,7 @@
       "name": "Contracts",
       "pr": "PR-4",
       "requirements": "CON-01–CON-04",
-      "status": "pending",
+      "status": "implemented_e2e_green_pending_commit",
       "commit": null,
       "gates": {
         "policy": {
@@ -126,10 +126,26 @@
           "note": "Template versioning and dual signature-capture path resolved. Legal wording itself is still a product/legal input, not a scoping blocker.",
           "evidence": ".workflow/epic-02/handoff.md"
         },
-        "lint": { "status": "pending" },
-        "test": { "status": "pending" },
-        "independent_review": { "status": "pending" },
-        "security_review": { "status": "pending" }
+        "lint": {
+          "status": "passed",
+          "evidence": ".workflow/epic-02/pr-4-contracts/lint-results.md",
+          "note": "Backend ruff check/format --check clean; frontend eslint/tsc/build clean. Re-verified 2026-07-23 after the review-findings fix pass."
+        },
+        "test": {
+          "status": "passed",
+          "evidence": ".workflow/epic-02/pr-4-contracts/test-results.md",
+          "note": "Backend: 331 passed, 0 failed (against real MySQL via docker), contract_service.py at 100% coverage. Frontend: 33 passed, 0 failed. Cypress e2e (contracts.cy.ts) run against a live stack 2026-07-24: 6/6 passing, verified over 5 consecutive clean runs. Root-caused and fixed a real infra bug (Poetry 2.4.1 auto-creating an empty in-project .venv that shadowed the global site-packages, hanging entrypoint.sh) and a real frontend bug (main students table using overflow-hidden instead of overflow-x-auto, clipping the Contrato action button off-screen); remaining fixes were test-authoring issues (wrong button text, mouse vs pointer events for signature_pad, unscoped selectors, missing scrollIntoView, unasserted beforeEach preconditions)."
+        },
+        "independent_review": {
+          "status": "passed",
+          "evidence": ".workflow/epic-02/pr-4-contracts/review.md",
+          "note": "First pass NOT APPROVED (2 HIGH, 1 MEDIUM, 1 LOW). All 4 fixed and independently re-verified 2026-07-23 against the code and new regression tests; verdict APPROVED. Finding 5 (template-version supersession race) accepted non-blocking, consistent with PR-2 precedent."
+        },
+        "security_review": {
+          "status": "passed",
+          "evidence": ".workflow/epic-02/pr-4-contracts/review.md",
+          "note": "Dual-checklist coverage included in the same review: authz unchanged on all endpoints, no new injection/traversal surface, no PII leakage introduced by the fixes."
+        }
       }
     },
     {

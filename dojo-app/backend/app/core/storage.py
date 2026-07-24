@@ -52,3 +52,12 @@ def delete_document(key: str) -> None:
         (_LOCAL_STORAGE_DIR / key).unlink(missing_ok=True)
         return
     _client().delete_object(settings.oci_bucket_namespace, settings.documents_bucket_name, key)
+
+
+def download_document(key: str) -> bytes:
+    """Return the bytes of a previously uploaded document by its storage key."""
+    settings = get_settings()
+    if not settings.oci_tenancy_ocid:
+        return (_LOCAL_STORAGE_DIR / key).read_bytes()
+    response = _client().get_object(settings.oci_bucket_namespace, settings.documents_bucket_name, key)
+    return response.data.content

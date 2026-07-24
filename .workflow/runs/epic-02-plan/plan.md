@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 1 (Pré-Checkin) shipped as `da5bd69`. Phase 2 (Exames Médicos + document foundation) ready for `squad-feature`. Phase 3 (Financial foundation) plan complete and decisions signed off (2026-07-20); ready for `squad-feature`. Phases 4–5 policies defined but need implementation planning.
+Phase 1 (Pré-Checkin) shipped as `da5bd69`. Phase 2 (Exames Médicos + document foundation) shipped (PR #25). Phase 3 (Financial foundation) built, PR #26 open against `develop`, CI green. Phase 4 (Contracts) requirements approved (D1–D7 resolved 2026-07-22) and implementation plan complete below; ready for `squad-feature` once PR #26 merges. Phase 5 policy defined but needs implementation planning.
 
 ## Scope and Outcome
 
@@ -260,3 +260,168 @@ open            otherwise
 7. FIN-06's weekly-frequency value is `Student.classes_per_week` (D1 confirmed); no attendance-derived frequency metric exists in this phase.
 8. No public/self-service financial endpoint exists (D5); no online payment processing, discount modeling (D10 confirmed), or email/SMS/push notifications are introduced (carried-over Non-Goals).
 9. The new `PlanTier`/`PlanVersion`/`StudentPlan`/`Mensalidade`/`Payment` tables are unrelated to, and do not modify, the existing `exams`/`exam_participants`/`exam_board_members` (belt-promotion) tables.
+
+## Phase 4 Implementation Plan — Contracts
+
+### Requirements review
+
+Requirements (`requirements-phase4.md`) and review (`review-phase4.md`) both **APPROVED** 2026-07-22; D1–D7 signed off with no re-litigation needed (D3 approved with `birth_date`/`phone` added to the required merge-field set). One correction the review made is treated as ground truth here: `StudentPlanService.assign(db: Session, student: Student) -> StudentPlan` takes no `tier_id` — the tier is derived internally from `student.classes_per_week` (verified again 2026-07-22 against `student_plan_service.py:40`, unchanged since).
+
+Ground-truth re-confirmed while designing (2026-07-22): current Alembic head is `c7a3f9d21b6e` (`add_financial_foundation`, on top of `ea64c8751ff2`); `Student.contract_name`/`contract_cpf`/address block/`birth_date`/`phone` are all nullable exactly as the requirements doc describes; `Document`'s upload policy (`MAX_FILE_SIZE_BYTES = 10MB`, magic-byte-checked PDF/JPEG/PNG) lives in `medical_exam_service.py` with no shared/extracted helper yet; no PDF-generation, signature-capture, or document-download-by-key capability exists anywhere in the codebase — all three are genuinely greenfield for this phase (there is no existing "download a document's bytes" endpoint at all, not even for medical exams — Phase 2/3 only ever exposed metadata).
+
+**A real integration gap found during design, not present in the requirements doc:** `StudentsPage.tsx`'s existing "Financeiro" modal already has an "Atribuir/Reatribuir Plano" button (Phase 3) that calls `POST /api/v1/students/{id}/plan` directly — i.e., today's shipped UI already lets an operator reassign a student's plan **without** touching contracts at all. Left as-is, this button would keep letting operators silently drift a student's price out of sync with their printed contract, which is exactly the failure mode D1's combined action was designed to prevent. This phase must repoint that existing button at the new combined D1 endpoint (see "Frontend" below) rather than leave two parallel, inconsistent triggers in the UI. The bare `POST /api/v1/students/{id}/plan` endpoint itself is left in place unchanged (still correct, still tested, harmless to keep as a lower-level primitive) — only the UI's call site changes.
+
+### Autocrítica (self-review, performed before committing the design below)
+
+- **Original draft mirrored `PlanTier`/`PlanVersion` 1:1 for templates (a `ContractTemplate` identity table plus a `ContractTemplateVersion` history table).** Rejected on review: `PlanTier` exists because weekly frequency is a real, multi-valued dimension (1x, 2x, 3x/week are genuinely different catalog rows). Nothing in CON-01–CON-04 or D1–D7 introduces an analogous dimension for contract templates — there is exactly one legal template lineage. Adding a parent "identity" table with no second dimension would be an unjustified extra join and an unjustified extra admin-UI concept (which identity to pick before authoring a version) for no real requirement. **Fixed:** a single `ContractTemplateVersion` table, self-contained, versioned by `status`/`effective_from` exactly like `PlanVersion`, with no parent identity table. If a genuine second template type is needed later (e.g., different wording for `child` vs `adult` students), that is new scope requiring its own decision gate, not something to build speculatively now.
+- **Considered WeasyPrint (HTML/CSS-to-PDF) for rendering.** Rejected: it requires native system libraries (Pango, Cairo, GDK-Pixbuf) that would need to be added to both `Dockerfile.dev` and `Dockerfile.prod` and to the CI image, for a template-authoring UX (D2's "a text field holding the template body with placeholders") that doesn't need HTML/CSS layout power in the first place — legal contract bodies are paragraphs of text, not a styled document. That's exactly the kind of avoidable complexity CLAUDE.md's "do not overengineer" rule flags. **Fixed:** ReportLab (pure-Python-installable via `pip`/Poetry, no system-library dependency in the common wheel-based install path) with its `platypus` paragraph-flow API, which is sufficient for a plain-text legal body with basic paragraph breaks and an embedded signature image.
+- **Considered letting "regenerate draft" (D7) also re-fetch the current active `ContractTemplateVersion`** (only preserving `plan_version_id`, per D7's literal text, which only calls out price). Rejected: an admin editing template wording mid-draft is the same "silent change the operator didn't ask for" risk D7 explicitly calls out for price, and CON-04's design intent throughout this phase is "nothing changes silently on regeneration except what the operator explicitly asked to fix." **Fixed:** regeneration preserves both `plan_version_id` and `contract_template_version_id`; only the merge-field data itself (fresh student fields) and, in the on-screen path, the signature are re-read at render/sign time. This is a documented implementation note, not a new decision-gate item — it's a direct, necessary extrapolation of D7's own stated rationale, not a fresh judgment call.
+- **Considered a separate `signature_pad` React wrapper package (`react-signature-canvas`).** Checked: it wraps the same underlying `signature_pad` library but pins an old React peer dependency and hasn't tracked React 19, risking `npm install` peer-conflict friction inconsistent with "use latest library APIs." **Fixed:** depend directly on `signature_pad` (framework-agnostic, actively maintained, no React version coupling) behind a small first-party `SignaturePad.tsx` wrapper (~40 lines: canvas ref, resize handling, `clear()`/`toDataURL()`), avoiding both the stale-wrapper risk and the "one more package" overhead of a wrapper that would only proxy 2 methods.
+- **Considered giving `Contract` its own uniqueness constraint** (e.g., one row per student/plan_version). Rejected: a genuine re-run of "matricular/renovar" against the *same* `plan_version_id` (e.g., an operator retries after a mistake, or two consecutive years happen to land on the same catalog price) is a legitimate, expected case per D6/D7 and must not be blocked by a DB constraint — exactly the same reasoning Phase 2/3 already used for not constraining `MedicalExam`/`StudentPlan` beyond "service-layer-enforced single active/draft row." **Fixed:** no new uniqueness constraint; "at most one non-superseded contract per student" is enforced in `ContractService`, matching the established pattern exactly.
+- **Checked testability:** every new service method is a plain function taking/returning ORM objects or primitives, following `MedicalExamService`/`StudentPlanService`'s existing style — no new abstraction layer, no dependency-injection framework, straightforward to unit test with the existing `factory-boy`/`pytest` fixtures already in the repo.
+
+### Data model
+
+**`ContractTemplateVersion`** (new, single versioned lineage — see autocrítica above for why there is no separate identity table):
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `String(36)` PK | `UUIDMixin` |
+| `body` | `Text` | Plain-text legal body with Jinja2-style placeholders, e.g. `{{ student.contract_name }}` |
+| `status` | `Enum("active", "superseded")` | Exactly one `active` row at a time, service-layer-enforced (same pattern as `PlanVersion`) |
+| `effective_from` | `DateTime(timezone=True)` | |
+| `created_by` | `ForeignKey("users.id")` | |
+| `created_at`/`updated_at` | `TimestampMixin` | |
+
+**`Contract`** (new, append-only history per student, mirrors `MedicalExam`'s shape):
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `String(36)` PK | `UUIDMixin` |
+| `student_id` | `ForeignKey("students.id")`, not null | |
+| `contract_template_version_id` | `ForeignKey("contract_template_versions.id")`, not null | Which template wording was used |
+| `plan_version_id` | `ForeignKey("plan_versions.id")`, not null | The price-locking record (D7b); never re-derived on regeneration |
+| `document_id` | `ForeignKey("documents.id")`, nullable | The current PDF (draft, signed-on-screen, or uploaded-signed); nullable for ORM-flush-order symmetry with `MedicalExam.document_id`, though the service layer always populates it in the same transaction that creates the `Contract` row |
+| `signature_method` | `Enum("on_screen", "uploaded")`, nullable | Set only at signing; null while `draft` |
+| `status` | `Enum("draft", "signed", "superseded")` | |
+| `signed_at` | `DateTime(timezone=True)`, nullable | |
+| `created_by` | `ForeignKey("users.id")`, not null | Operator who ran "matricular/renovar" |
+| `created_at`/`updated_at` | `TimestampMixin` | `updated_at` moves on D7 in-place regeneration; the row itself is never replaced until signing/superseding |
+
+`__table_args__`: `CheckConstraint("status IN ('draft', 'signed', 'superseded')")`. No DB uniqueness constraint (see autocrítica) — "at most one `draft`-or-`signed` contract per student" is enforced by `ContractService`, same pattern as `MedicalExam`/`StudentPlan`'s single-active-row rule.
+
+`Student` gains `contracts: Mapped[list["Contract"]] = relationship(back_populates="student")`, following the existing relationship-list convention on `Student`.
+
+### Migration plan
+
+New Alembic revision, generated via `poetry run alembic revision --autogenerate -m "add_contracts"` inside `dojo-app/backend`, with `down_revision = "c7a3f9d21b6e"` (the current head, confirmed 2026-07-22 — `add_financial_foundation`). The actual revision hash is assigned by Alembic at generation time and must be recorded in `handoff.md` once built, following the exact precedent of Phases 2/3 recording `ea64c8751ff2`/`c7a3f9d21b6e`.
+
+- Creates `contract_template_versions` (columns above) and `contracts` (columns above, three FKs to `students`/`contract_template_versions`/`plan_versions`, nullable FK to `documents`).
+- Adds the two new MySQL enum types (`contract_template_version_status`, `contract_status`, `contract_signature_method`), following the existing `Enum(..., name=...)` convention used throughout `models/__init__.py`.
+- Downgrade drops both new tables and their enum types, in FK-dependency order (`contracts` before `contract_template_versions`), mirroring the reversible-downgrade precedent from `ea64c8751ff2`/`c7a3f9d21b6e`.
+- No existing table is altered. `documents.document_type` gains a new value in practice (`"contract"`), but since that column is a plain `String(50)` (not a DB enum — its own Phase 2 docstring says "reused by medical exams and future document types"), this requires no migration at all, exactly as anticipated.
+
+### Service layer
+
+**New dependency (Poetry, this backend's established package manager — confirmed via `pyproject.toml`, no `uv`/`uv.lock` anywhere in `dojo-app/backend`):**
+
+```
+poetry add reportlab jinja2
+```
+
+- **`reportlab`** — pure-Python-installable PDF rendering via its `platypus` API (`SimpleDocTemplate`, `Paragraph`, `Image`, `Spacer`). Chosen over WeasyPrint specifically to avoid adding native system-library dependencies (Pango/Cairo/GDK-Pixbuf) to `Dockerfile.dev`/`Dockerfile.prod`/CI for a plain-paragraph legal-body use case that doesn't need HTML/CSS layout (see autocrítica). Latest stable major (4.x) supports Python 3.13.
+- **`jinja2`** — merge-field substitution (`{{ student.contract_name }}` etc.) into the template body's plain text before layout. Lightweight, pure-Python, no native deps, already a common FastAPI-ecosystem dependency (not currently pinned in this project, but zero-risk to add).
+
+**`app/core/uploads.py`** (new, small extraction — not a new abstraction layer, just deduplication): moves `MedicalExamService`'s `MAX_FILE_SIZE_BYTES`, `UPLOAD_CHUNK_SIZE`, `MIME_SIGNATURES`, `_read_bounded`, and `_validate_file` into shared functions (`read_bounded(file, max_bytes) -> bytes`, `validate_file(file, content, allowed_signatures) -> None`). `medical_exam_service.py` is updated to import from here instead of defining its own copies (minimal diff, behavior-preserving). `contract_service.py`'s uploaded-signature path (D4: "reuses Phase 2's `Document` upload policy exactly") calls the same two functions with the same `MIME_SIGNATURES`/10MB limit, guaranteeing the policies can never silently drift apart.
+
+**`app/core/storage.py` extension:** add `download_document(key: str) -> bytes`, symmetric to the existing `upload_document`/`delete_document` (OCI `get_object` in production, local-disk read in dev/CI fallback). This is a genuinely new capability — no document-download path exists anywhere in the codebase today (Phase 2/3 never needed one); required now for D5's "instructor/admin can view/download" contract access.
+
+**`ContractTemplateService`** (new, `app/services/contract_template_service.py`):
+- `get_active_version(db) -> ContractTemplateVersion | None`
+- `get_history(db) -> list[ContractTemplateVersion]` — most recent first
+- `create_version(db, body: str, effective_from: datetime, created_by: str) -> ContractTemplateVersion` — supersedes the prior `active` row in the same transaction (identical single-active-row pattern to `PlanService.set_price`)
+
+**`ContractPdfService`** (new, `app/services/contract_pdf_service.py`) — pure rendering, no DB writes:
+- `REQUIRED_STUDENT_FIELDS = ["contract_name", "contract_cpf", "address_street", "address_neighborhood", "address_city", "address_zip", "birth_date", "phone"]` (D3's committed floor)
+- `validate_merge_fields(student: Student) -> None` — collects **all** missing/blank required fields (not just the first) and raises one `HTTPException(400, detail="Missing required student data: contract_cpf, phone")`-style error naming every missing field, per D3's "clear error naming which field(s)" requirement
+- `build_context(student, plan_tier, plan_version) -> dict` — pre-formats values into display strings before Jinja2 substitution (e.g. `birth_date.strftime("%d/%m/%Y")`, `f"R$ {price:,.2f}"`, a single composed `address` string) rather than adding custom Jinja filters, keeping the template body itself simple plain text
+- `render_pdf(template_body: str, context: dict, signature_png: bytes | None) -> bytes` — Jinja2-renders the body, lays it out via `platypus.SimpleDocTemplate`/`Paragraph` flowables (paragraph breaks on blank lines), and appends a `platypus.Image` flowable above an "Assinatura" line when `signature_png` is provided
+
+**`ContractService`** (new, `app/services/contract_service.py`) — the D1–D7 orchestration:
+- `get_active_or_draft(db, student_id) -> Contract | None` — the student's current `draft`-or-`signed` row (at most one, service-enforced)
+- `get_history(db, student_id) -> list[Contract]` — most recent first
+- `generate_for_matricula(db, student, current_user) -> Contract` — **the D1 combined action**:
+  1. `StudentPlanService.assign(db, student)` (existing Phase 3 call, unchanged signature, itself supersedes any prior `StudentPlan`)
+  2. `ContractPdfService.validate_merge_fields(student)`
+  3. Look up the resulting `plan_version` (from the new `StudentPlan`) and its `plan_tier`, and `ContractTemplateService.get_active_version(db)`
+  4. Render the draft PDF, upload via `upload_document`, create a `Document(document_type="contract", status="active")`
+  5. `existing = get_active_or_draft(db, student.id)`:
+     - if `existing.status == "draft"`: reuse and update that same row in place — repoint `document_id` (superseding the old draft `Document`, per D7a), update `plan_version_id`/`contract_template_version_id` to the freshly assigned ones (this *is* the explicit D1 re-run that's allowed to re-price, per D7b's own carve-out: "a genuine re-price only happens via an explicit re-run of the matricular/renovar action")
+     - if `existing.status == "signed"`: create a **new** `Contract` row (`status="draft"`) — this is a renewal; the previous `signed` row is *not* touched yet (D6: supersession happens "per signing event", i.e. when the new one is signed, not when it's merely drafted)
+     - if none: create a new `Contract` row (`status="draft"`)
+  6. Single DB transaction for steps 1–5 (matches D1's "atomically" requirement)
+- `regenerate_draft(db, contract, current_user) -> Contract` — **D7's in-place regeneration**, `draft` status only (`HTTPException(409)` otherwise): does **not** call `StudentPlanService.assign` and does **not** change `plan_version_id` or `contract_template_version_id` (see autocrítica); re-validates merge fields against the student's *current* data (picks up a corrected address/phone/etc.), re-renders the PDF from the *unchanged* `plan_version`/`template_version`, creates a new `Document`, marks the old draft `Document` `status="superseded"` + `deleted_at`/`deleted_by` (D7a — never mutates a `Document` row in place), repoints `Contract.document_id`
+- `sign_on_screen(db, contract, signature_png: bytes, current_user) -> Contract` — `draft` only: re-renders the PDF with the signature embedded, creates a new `Document`, supersedes the draft `Document`, sets `signature_method="on_screen"`, `status="signed"`, `signed_at=now`; then finds and marks any *other* `signed` contract for this student as `status="superseded"` (D6, at the signing moment)
+- `sign_by_upload(db, contract, file: UploadFile, current_user) -> Contract` — `draft` only: `app.core.uploads.read_bounded`/`validate_file` (D4, identical policy), creates a `Document(document_type="contract")` from the uploaded bytes (replacing the draft PDF `Document`, same supersession as above), sets `signature_method="uploaded"`, `status="signed"`, `signed_at=now`; same cross-student supersession step as `sign_on_screen`
+- `get_document_bytes(db, contract) -> tuple[bytes, str]` — for the download endpoint (D5): `download_document(contract.document.storage_key)`, returns bytes + `mime_type`
+
+**Plan-tier/template-missing edge cases (implementation notes, not new decisions):** `generate_for_matricula` propagates `StudentPlanService.assign`'s existing `HTTPException(400)` unchanged if no `PlanTier` matches (Phase 3's already-shipped behavior); if no `ContractTemplateVersion` exists yet at all (a fresh install before any admin has authored one), it raises its own `HTTPException(400, "No active contract template exists")` rather than generating a blank/templateless PDF.
+
+### API layer
+
+New router `app/api/contract_templates.py` (instructor/admin only, `get_current_instructor_or_admin`, mirrors `plans.py`):
+
+- `GET /api/v1/contract-templates` — version history, most recent first
+- `GET /api/v1/contract-templates/active` — current active version (for the authoring UI's "current" preview and for any pre-generation preview)
+- `POST /api/v1/contract-templates` — create a new version body (supersedes the previous active one)
+
+New router `app/api/contracts.py` (instructor/admin only throughout — D5, no public endpoint):
+
+- `POST /api/v1/students/{student_id}/contracts/matricular` — the D1 combined action; 201, returns the resulting `Contract`
+- `GET /api/v1/students/{student_id}/contracts` — history, most recent first
+- `GET /api/v1/students/{student_id}/contracts/current` — the active `draft`-or-`signed` row, or 404
+- `POST /api/v1/contracts/{contract_id}/regenerate` — D7 in-place regeneration; 409 if not `draft`
+- `POST /api/v1/contracts/{contract_id}/sign/on-screen` — body: base64 PNG signature; 409 if not `draft`
+- `POST /api/v1/contracts/{contract_id}/sign/upload` — multipart file (PDF/JPEG/PNG ≤10MB, D4); 409 if not `draft`
+- `GET /api/v1/contracts/{contract_id}/download` — streams the current `Document`'s bytes (`Content-Disposition: attachment`) via `ContractService.get_document_bytes`; instructor/admin only (D5) — the phase's one genuinely new "serve file bytes" endpoint, since none exists for any document type yet
+
+`app/main.py` gains `app.include_router(contract_templates.router)` and `app.include_router(contracts.router)`, following the existing registration list's order (after `payments.router`).
+
+### Frontend
+
+**Signature capture:** `signature_pad` (npm, framework-agnostic, actively maintained, no React-version coupling — chosen over `react-signature-canvas` per autocrítica) added to `dojo-app/frontend/package.json`. New `src/components/SignaturePad.tsx`: a thin wrapper (canvas ref + `useEffect` to construct/resize the underlying `SignaturePad` instance, `clear()` and `toDataURL('image/png')` exposed via `forwardRef`/`useImperativeHandle`) — tablet-usable (the library handles pointer/touch events natively), consistent with the existing tablet check-in flow's device assumptions.
+
+**New `ContractTemplatesPage.tsx`** (admin-only, mirrors `PlansPage.tsx`'s structure exactly): a textarea form for the template body (with a short static help text listing the available `{{ student.* }}` / `{{ plan_tier.* }}` / `{{ plan_version.* }}` placeholders per D3), submitting creates a new version; a read-only history table below, structurally identical to `PlansPage.tsx`'s tier table (version, `effective_from`, `created_by`, status badge).
+
+**`StudentsPage.tsx` changes:**
+- The existing "Financeiro" modal's "Atribuir/Reatribuir Plano" button is **repointed** from `POST /api/v1/students/{id}/plan` to the new `POST /api/v1/students/{id}/contracts/matricular` endpoint, and relabeled "Matricular/Renovar (Plano + Contrato)" — closing the integration gap found during design (see "Requirements review" above). The response now also carries the generated `Contract`, so the modal can immediately show its status.
+- New "Contrato" icon/action per row (mirrors the existing `Stethoscope`/medical-exam and `Wallet`/financeiro icon-button pattern), opening a new contract modal: current contract status badge (`draft`/`signed`/`superseded`), the "Matricular/Renovar" trigger (same button as above, surfaced here too for discoverability), a signature area (embedded `SignaturePad` + "Assinar" button calling `sign/on-screen`, or a file-input calling `sign/upload`) shown only when a `draft` exists, a "Regenerar Rascunho" button (only for `draft`), a "Baixar" download link/button (calls `GET .../download`, only when a `document_id` exists), and a history list (mirrors the medical-exam/financeiro history tables already in this file).
+
+### Test plan
+
+**Pytest (backend, unit + API — mirrors `test_medical_exam_service.py`/`test_student_plan_service.py`'s existing structure):**
+- `ContractPdfService.validate_merge_fields` — passes with all 8 fields populated; fails naming every missing field when 1, several, or all are blank
+- `ContractPdfService.render_pdf` — produces non-empty PDF bytes (magic-byte check `%PDF-`, same style as `MIME_SIGNATURES` checks elsewhere); signature image present/absent toggles output size
+- `ContractTemplateService.create_version` — supersedes the prior active version, exactly one active row afterward
+- `ContractService.generate_for_matricula`:
+  - creates a `draft` `Contract` referencing the just-assigned `StudentPlan`'s `plan_version_id` and the active template version
+  - propagates `StudentPlanService.assign`'s `HTTPException(400)` when no matching `PlanTier` exists (regression, same style as Phase 3's own plan-tier-lookup-gap test)
+  - fails with a named-fields error when required student data is missing
+  - re-running against an existing `draft` updates the *same* row (no duplicate row), repoints `document_id`, supersedes the old draft `Document`
+  - re-running against an existing `signed` contract creates a **new** `draft` row and does **not** yet touch the old `signed` row's status
+- `ContractService.regenerate_draft` — preserves `plan_version_id`/`contract_template_version_id` even if the catalog/template changed since the draft was created (regression test for D7b); rejects (409-equivalent) on a `signed` contract
+- `ContractService.sign_on_screen` / `sign_by_upload` — sets `signature_method`/`status`/`signed_at`; supersedes a prior `signed` contract for the same student (D6 regression); rejects on a non-`draft` contract; upload path rejects a non-PDF/JPEG/PNG or >10MB file identically to `medical_exam_service.py`'s existing tests (shared-helper regression)
+- API tests: 401/403 for a non-instructor/admin caller on every new endpoint (matches Phase 2/3's authz test convention); happy-path 200/201/409 status codes for each action
+
+**Jest (frontend, per the repo's mandatory-testing policy):**
+- `SignaturePad.tsx` — mounts, `clear()`/`toDataURL()` behave as expected (jsdom canvas mocking, following the existing `MedicalExamBadge`-style presentational-component test pattern)
+- `ContractTemplatesPage.tsx` — form submit calls the create-version endpoint (network layer mocked, same `jest.mock('../services/api', ...)` convention as `MedicalExamPage.test.tsx`)
+- `StudentsPage.tsx` contract-modal additions — "Matricular/Renovar" button calls the new combined endpoint (not the old bare plan endpoint); signature/upload/regenerate/download actions call their respective endpoints and update the modal's status badge
+
+**Cypress e2e (`contracts.cy.ts`, new, following `financial.cy.ts`'s custom-command conventions):**
+1. Instructor logs in, opens a student's contract modal, triggers "Matricular/Renovar", confirms a `draft` contract appears
+2. Signs on-screen (draws on the canvas via `cy.get('canvas')` pointer events, or a `data-testid`-exposed programmatic fallback if canvas-drawing proves flaky in CI — to be confirmed during build, following this repo's own precedent of adapting e2e technique per-flakiness, as documented in the Phase 3 CI-fix history below), confirms status becomes `signed` and a download link appears
+3. A second "Matricular/Renovar" (renewal) on the same student produces a new `draft` while the prior contract remains `signed` (not yet superseded) until the new one is itself signed
+4. Upload-signed path: uploads a PDF, confirms `signed`/`uploaded` status (reusing the same PDF fixture `medical-exam.cy.ts` already uses for its own upload test)
+5. "Regenerar Rascunho" on an unsigned draft updates the document without changing the displayed price
+6. Non-admin/instructor session gets 403 on a direct API call to a contract endpoint (authz regression, matching the existing e2e authz-check convention)
