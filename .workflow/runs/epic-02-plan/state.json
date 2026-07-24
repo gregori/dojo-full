@@ -2,12 +2,12 @@
   "schema_version": 1,
   "run_id": "epic-02-plan",
   "work_item": "Epic 2 — Financeiro, Pré-Checkin e Relatórios",
-  "status": "phase_3_pr_open_e2e_fixes_pending",
+  "status": "phase_4_gates_review_and_e2e_passed_pending_commit",
   "created_at": "2026-07-19",
-  "updated_at": "2026-07-22",
+  "updated_at": "2026-07-24",
   "requirements_review": "completed",
   "plan_path": ".workflow/runs/epic-02-plan/plan.md",
   "handoff_path": ".workflow/epic-02/handoff.md",
-  "next_action": "PR #26 (feature/financial-foundation, commits a92798f/bccef30/bc892bc) open against develop, not yet merged. Real CI e2e run shows 22/25 Cypress tests passing; 3 known failures in medical-exam.cy.ts's public-upload tests need fixing (see handoff.md and pr-3-financial-foundation/test-results.md for exact errors and hypotheses). Frontend Jest unit tests also confirmed unwritten (0% coverage) and requested by the user as follow-up work. Next session: fix the 3 e2e failures, write Jest tests, then merge PR #26 before starting Phase 4 (Contracts) planning.",
+  "next_action": "PR-4 (Contracts) implemented, independently re-reviewed (APPROVED, 2026-07-23), and Cypress e2e (contracts.cy.ts) is now green 6/6 (2026-07-24, verified over 5 consecutive clean runs) after root-causing and fixing a real Docker/Poetry infra bug (stale anonymous .venv volume + Poetry 2.4.1 auto-creating an empty in-project venv on `poetry run`, breaking entrypoint.sh) and a real frontend bug (students table using overflow-hidden instead of overflow-x-auto, clipping the Contrato action button); remaining fixes were test-authoring issues in contracts.cy.ts. Full detail in .workflow/epic-02/pr-4-contracts/test-results.md. Working tree still uncommitted on feature/contracts. Next: commit and open PR-4 against develop.",
   "checks_path": ".workflow/runs/epic-02-plan/checks.json"
 }

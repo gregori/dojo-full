@@ -15,6 +15,8 @@ from app.schemas.belt import (
     BeltWithRequirements,
 )
 from app.schemas.belt_promotion import BeltPromotionCreate, BeltPromotionResponse
+from app.schemas.contract import ContractResponse, ContractSignOnScreenRequest
+from app.schemas.contract_template import ContractTemplateVersionCreate, ContractTemplateVersionResponse
 from app.schemas.document import DocumentResponse
 from app.schemas.event import (
     EventCreate,

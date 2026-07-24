@@ -33,7 +33,6 @@ services:
       - "8000:8000"
     volumes:
       - ./dojo-app/backend:/app
-      - /app/.venv
     depends_on:
       mysql:
         condition: service_healthy

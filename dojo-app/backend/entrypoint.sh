@@ -6,7 +6,7 @@ echo "================================"
 
 # Wait for database
 echo "Waiting for database..."
-until poetry run python -c "
+until python -c "
 import sys
 sys.path.append('.')
 from app.core.database import engine
@@ -21,12 +21,12 @@ done
 
 # Run migrations
 echo "Running database migrations..."
-poetry run alembic upgrade head
+alembic upgrade head
 
 # Seed database if needed
 echo "Checking if seed is needed..."
-poetry run python scripts/seed_database.py
+python scripts/seed_database.py
 
 # Start application
 echo "Starting FastAPI application..."
-exec poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload

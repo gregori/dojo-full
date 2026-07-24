@@ -25,6 +25,8 @@ from app.models import (
     Belt,
     BeltPromotion,
     BeltRequirement,
+    Contract,
+    ContractTemplateVersion,
     Dojo,
     Event,
     EventType,
@@ -352,6 +354,72 @@ def make_mensalidade(db, student_id=None, plan_version_id=None, **kwargs):
     db.add(mensalidade)
     db.flush()
     return mensalidade
+
+
+def make_student_with_contract_data(db, **kwargs):
+    """Create a student with every CON-02/D3 required legal-data field populated."""
+    from datetime import datetime
+
+    defaults = {
+        "contract_name": "Responsavel Legal",
+        "contract_cpf": "123.456.789-00",
+        "address_street": "Rua Teste, 100",
+        "address_neighborhood": "Centro",
+        "address_city": "Sao Paulo",
+        "address_zip": "01000-000",
+        "birth_date": datetime(2000, 1, 1, tzinfo=UTC),
+        "phone": "(11) 99999-9999",
+    }
+    defaults.update(kwargs)
+    return make_student(db, **defaults)
+
+
+def make_contract_template_version(db, created_by=None, **kwargs):
+    from datetime import datetime
+
+    if created_by is None:
+        user = make_user(db)
+        created_by = user.id
+    defaults = {
+        "body": "Contrato de {{ student.contract_name }}, plano {{ plan_tier.name }}, valor {{ plan_version.price }}.",
+        "status": "active",
+        "effective_from": datetime.now(UTC),
+        "created_by": created_by,
+    }
+    defaults.update(kwargs)
+    version = ContractTemplateVersion(**defaults)
+    db.add(version)
+    db.flush()
+    return version
+
+
+def make_contract(
+    db, student_id=None, contract_template_version_id=None, plan_version_id=None, created_by=None, **kwargs
+):
+    if student_id is None:
+        student = make_student_with_contract_data(db)
+        student_id = student.id
+    if contract_template_version_id is None:
+        template_version = make_contract_template_version(db)
+        contract_template_version_id = template_version.id
+    if plan_version_id is None:
+        plan_version = make_plan_version(db)
+        plan_version_id = plan_version.id
+    if created_by is None:
+        user = make_user(db)
+        created_by = user.id
+    defaults = {
+        "student_id": student_id,
+        "contract_template_version_id": contract_template_version_id,
+        "plan_version_id": plan_version_id,
+        "status": "draft",
+        "created_by": created_by,
+    }
+    defaults.update(kwargs)
+    contract = Contract(**defaults)
+    db.add(contract)
+    db.flush()
+    return contract
 
 
 def make_payment(db, student_id=None, recorded_by=None, **kwargs):

@@ -168,6 +168,7 @@ class Student(UUIDMixin, TimestampMixin, Base):
     student_plans: Mapped[list["StudentPlan"]] = relationship(back_populates="student")
     mensalidades: Mapped[list["Mensalidade"]] = relationship(back_populates="student")
     payments: Mapped[list["Payment"]] = relationship(back_populates="student")
+    contracts: Mapped[list["Contract"]] = relationship(back_populates="student")
 
 
 class Event(UUIDMixin, TimestampMixin, Base):
@@ -404,6 +405,62 @@ class Payment(UUIDMixin, TimestampMixin, Base):
     student: Mapped["Student"] = relationship(back_populates="payments")
     recorder: Mapped["User"] = relationship(foreign_keys=[recorded_by])
     voider: Mapped[Optional["User"]] = relationship(foreign_keys=[voided_by])
+
+
+class ContractTemplateVersion(UUIDMixin, TimestampMixin, Base):
+    """A versioned legal contract template body.
+
+    Single versioned lineage (no separate identity table, unlike
+    ``PlanTier``/``PlanVersion`` -- there is exactly one template lineage).
+    Exactly one ``active`` row at a time, service-layer-enforced.
+    """
+
+    __tablename__ = "contract_template_versions"
+    __table_args__ = (
+        CheckConstraint("status IN ('active', 'superseded')", name="ck_contract_template_versions_status"),
+    )
+
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(
+        Enum("active", "superseded", name="contract_template_version_status"), default="active", nullable=False
+    )
+    effective_from: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_by: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
+
+    creator: Mapped["User"] = relationship(foreign_keys=[created_by])
+
+
+class Contract(UUIDMixin, TimestampMixin, Base):
+    """A student's contract, append-only history mirroring ``MedicalExam``'s shape.
+
+    A ``draft`` row is the one pattern in this codebase that is mutably
+    edited in place before signing (D7); signing/superseding is append-only
+    from that point on, exactly like every other versioned entity here.
+    """
+
+    __tablename__ = "contracts"
+    __table_args__ = (CheckConstraint("status IN ('draft', 'signed', 'superseded')", name="ck_contracts_status"),)
+
+    student_id: Mapped[str] = mapped_column(ForeignKey("students.id"), nullable=False)
+    contract_template_version_id: Mapped[str] = mapped_column(
+        ForeignKey("contract_template_versions.id"), nullable=False
+    )
+    plan_version_id: Mapped[str] = mapped_column(ForeignKey("plan_versions.id"), nullable=False)
+    document_id: Mapped[str | None] = mapped_column(ForeignKey("documents.id"), nullable=True)
+    signature_method: Mapped[str | None] = mapped_column(
+        Enum("on_screen", "uploaded", name="contract_signature_method"), nullable=True
+    )
+    status: Mapped[str] = mapped_column(
+        Enum("draft", "signed", "superseded", name="contract_status"), default="draft", nullable=False
+    )
+    signed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_by: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
+
+    student: Mapped[Student] = relationship(back_populates="contracts")
+    contract_template_version: Mapped[ContractTemplateVersion] = relationship()
+    plan_version: Mapped[PlanVersion] = relationship()
+    document: Mapped[Document | None] = relationship()
+    creator: Mapped["User"] = relationship(foreign_keys=[created_by])
 
 
 class Exam(UUIDMixin, TimestampMixin, Base):
