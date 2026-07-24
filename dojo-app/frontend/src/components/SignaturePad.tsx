@@ -26,7 +26,9 @@ const SignaturePad = forwardRef<SignaturePadHandle, SignaturePadProps>(function 
 
   useEffect(() => {
     if (!canvasRef.current) return
-    padRef.current = new SignaturePadLib(canvasRef.current, { backgroundColor: 'rgb(255, 255, 255)' })
+    padRef.current = new SignaturePadLib(canvasRef.current, {
+      backgroundColor: 'rgb(255, 255, 255)',
+    })
     return () => {
       padRef.current?.off()
       padRef.current = null

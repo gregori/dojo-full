@@ -1,6 +1,16 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { LogOut, Users, Calendar, Home, Award, QrCode, Settings, Wallet, FileText } from 'lucide-react'
+import {
+  LogOut,
+  Users,
+  Calendar,
+  Home,
+  Award,
+  QrCode,
+  Settings,
+  Wallet,
+  FileText,
+} from 'lucide-react'
 
 interface LayoutProps {
   children: React.ReactNode

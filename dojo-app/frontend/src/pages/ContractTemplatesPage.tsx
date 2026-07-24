@@ -47,7 +47,9 @@ export default function ContractTemplatesPage() {
   if (!isAdmin) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">Apenas administradores podem gerenciar o modelo de contrato.</p>
+        <p className="text-gray-500">
+          Apenas administradores podem gerenciar o modelo de contrato.
+        </p>
       </div>
     )
   }
@@ -72,12 +74,15 @@ export default function ContractTemplatesPage() {
             Placeholders disponíveis: <code>{'{{ student.contract_name }}'}</code>,{' '}
             <code>{'{{ student.contract_cpf }}'}</code>, <code>{'{{ student.address }}'}</code>,{' '}
             <code>{'{{ student.birth_date }}'}</code>, <code>{'{{ student.phone }}'}</code>,{' '}
-            <code>{'{{ plan_tier.name }}'}</code>, <code>{'{{ plan_tier.weekly_frequency }}'}</code>,{' '}
-            <code>{'{{ plan_version.price }}'}</code>.
+            <code>{'{{ plan_tier.name }}'}</code>, <code>{'{{ plan_tier.weekly_frequency }}'}</code>
+            , <code>{'{{ plan_version.price }}'}</code>.
           </p>
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
-              <label htmlFor="contract-template-body" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="contract-template-body"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Corpo do Contrato
               </label>
               <textarea
@@ -90,7 +95,10 @@ export default function ContractTemplatesPage() {
               />
             </div>
             <div className="mb-4">
-              <label htmlFor="contract-template-effective-from" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="contract-template-effective-from"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Vigente a partir de
               </label>
               <input
@@ -132,7 +140,9 @@ export default function ContractTemplatesPage() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 Criado em
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                Status
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">

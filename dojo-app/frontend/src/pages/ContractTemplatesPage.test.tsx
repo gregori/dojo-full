@@ -55,7 +55,14 @@ describe('ContractTemplatesPage', () => {
 
   it('submitting the form calls the create-version endpoint with the entered body', async () => {
     mockedPost.mockResolvedValue({
-      data: { id: 'v1', body: 'Corpo do contrato', status: 'active', effective_from: '2026-01-01', created_by: 'user-1', created_at: '2026-01-01' },
+      data: {
+        id: 'v1',
+        body: 'Corpo do contrato',
+        status: 'active',
+        effective_from: '2026-01-01',
+        created_by: 'user-1',
+        created_at: '2026-01-01',
+      },
     })
     const user = userEvent.setup()
     renderPage()

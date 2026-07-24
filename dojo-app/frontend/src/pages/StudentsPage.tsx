@@ -1,6 +1,16 @@
 import { useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient, useQueries } from '@tanstack/react-query'
-import { Plus, Edit, Trash2, Search, TrendingUp, Stethoscope, Wallet, FileSignature, X } from 'lucide-react'
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Search,
+  TrendingUp,
+  Stethoscope,
+  Wallet,
+  FileSignature,
+  X,
+} from 'lucide-react'
 import api from '../services/api'
 import { useAuth } from '../hooks/useAuth'
 import MedicalExamBadge, { type MedicalExamStatusValue } from '../components/MedicalExamBadge'
@@ -360,7 +370,8 @@ export default function StudentsPage() {
   })
 
   const matricularMutation = useMutation({
-    mutationFn: (studentId: string) => api.post(`/api/v1/students/${studentId}/contracts/matricular`),
+    mutationFn: (studentId: string) =>
+      api.post(`/api/v1/students/${studentId}/contracts/matricular`),
     onSuccess: (_response, studentId) => {
       queryClient.invalidateQueries({ queryKey: ['student-plan', studentId] })
       queryClient.invalidateQueries({ queryKey: ['contract-current', studentId] })
@@ -462,7 +473,9 @@ export default function StudentsPage() {
   }
 
   const handleDownloadContract = async (contractId: string) => {
-    const response = await api.get(`/api/v1/contracts/${contractId}/download`, { responseType: 'blob' })
+    const response = await api.get(`/api/v1/contracts/${contractId}/download`, {
+      responseType: 'blob',
+    })
     const url = window.URL.createObjectURL(new Blob([response.data]))
     const link = document.createElement('a')
     link.href = url
@@ -761,179 +774,179 @@ export default function StudentsPage() {
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Matrícula
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Nome
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Celular
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Contratante
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Categoria
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Faixa
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Progresso
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Aulas
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Exame Médico
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Financeiro
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Contrato
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Status
-              </th>
-              {isAdmin && (
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Ações
+                  Matrícula
                 </th>
-              )}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {filteredStudents?.map((student) => {
-              const progress = progressMap[student.id]
-              return (
-                <tr key={student.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {student.registration_number}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {student.full_name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {student.phone || '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {student.contract_name || (student.category === 'adult' ? 'Próprio' : '-')}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {student.category === 'child' ? 'Criança' : 'Adulto'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {student.current_belt?.name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {progress ? (
-                      <div className="flex items-center space-x-2">
-                        <div className="flex-1 min-w-[80px]">
-                          <div className="bg-gray-200 rounded-full h-2">
-                            <div
-                              className={`rounded-full h-2 transition-all ${
-                                progress.overall_progress.percentage >= 100
-                                  ? 'bg-green-500'
-                                  : progress.overall_progress.percentage >= 50
-                                    ? 'bg-yellow-500'
-                                    : 'bg-blue-500'
-                              }`}
-                              style={{
-                                width: `${Math.min(100, progress.overall_progress.percentage)}%`,
-                              }}
-                            />
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Nome
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Celular
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Contratante
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Categoria
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Faixa
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Progresso
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Aulas
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Exame Médico
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Financeiro
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Contrato
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Status
+                </th>
+                {isAdmin && (
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Ações
+                  </th>
+                )}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {filteredStudents?.map((student) => {
+                const progress = progressMap[student.id]
+                return (
+                  <tr key={student.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {student.registration_number}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {student.full_name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {student.phone || '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {student.contract_name || (student.category === 'adult' ? 'Próprio' : '-')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {student.category === 'child' ? 'Criança' : 'Adulto'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {student.current_belt?.name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {progress ? (
+                        <div className="flex items-center space-x-2">
+                          <div className="flex-1 min-w-[80px]">
+                            <div className="bg-gray-200 rounded-full h-2">
+                              <div
+                                className={`rounded-full h-2 transition-all ${
+                                  progress.overall_progress.percentage >= 100
+                                    ? 'bg-green-500'
+                                    : progress.overall_progress.percentage >= 50
+                                      ? 'bg-yellow-500'
+                                      : 'bg-blue-500'
+                                }`}
+                                style={{
+                                  width: `${Math.min(100, progress.overall_progress.percentage)}%`,
+                                }}
+                              />
+                            </div>
                           </div>
+                          <span className="text-xs text-gray-600 whitespace-nowrap">
+                            {progress.overall_progress.total_complete}/
+                            {progress.overall_progress.total_required}
+                          </span>
+                          {!progress.next_belt && <TrendingUp className="w-4 h-4 text-green-500" />}
                         </div>
-                        <span className="text-xs text-gray-600 whitespace-nowrap">
-                          {progress.overall_progress.total_complete}/
-                          {progress.overall_progress.total_required}
-                        </span>
-                        {!progress.next_belt && <TrendingUp className="w-4 h-4 text-green-500" />}
+                      ) : (
+                        <span className="text-xs text-gray-400">Carregando...</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {student.classes_per_week || '-'}/sem{' '}
+                      {student.class_days ? `(${student.class_days})` : ''}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <div className="flex items-center gap-2">
+                        <MedicalExamBadge status={medicalExamStatusMap[student.id]?.status} />
+                        <button
+                          onClick={() => {
+                            setMedicalExamStudent(student)
+                            setMedicalExamForm({ exam_date: '', file: null })
+                          }}
+                          title="Exame médico"
+                          className="text-gray-500 hover:text-blue-600"
+                        >
+                          <Stethoscope className="w-4 h-4" />
+                        </button>
                       </div>
-                    ) : (
-                      <span className="text-xs text-gray-400">Carregando...</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {student.classes_per_week || '-'}/sem{' '}
-                    {student.class_days ? `(${student.class_days})` : ''}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <div className="flex items-center gap-2">
-                      <MedicalExamBadge status={medicalExamStatusMap[student.id]?.status} />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <button
                         onClick={() => {
-                          setMedicalExamStudent(student)
-                          setMedicalExamForm({ exam_date: '', file: null })
+                          setFinanceStudent(student)
+                          setPaymentForm({ amount: '', payment_date: '', method: '' })
                         }}
-                        title="Exame médico"
+                        title="Financeiro"
                         className="text-gray-500 hover:text-blue-600"
                       >
-                        <Stethoscope className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <button
-                      onClick={() => {
-                        setFinanceStudent(student)
-                        setPaymentForm({ amount: '', payment_date: '', method: '' })
-                      }}
-                      title="Financeiro"
-                      className="text-gray-500 hover:text-blue-600"
-                    >
-                      <Wallet className="w-4 h-4" />
-                    </button>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <button
-                      onClick={() => {
-                        setContractStudent(student)
-                        setUploadFile(null)
-                      }}
-                      title="Contrato"
-                      className="text-gray-500 hover:text-blue-600"
-                    >
-                      <FileSignature className="w-4 h-4" />
-                    </button>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`inline-flex px-2 text-xs leading-5 font-semibold rounded-full ${
-                        student.is_active
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}
-                    >
-                      {student.is_active ? 'Ativo' : 'Inativo'}
-                    </span>
-                  </td>
-                  {isAdmin && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button
-                        onClick={() => handleEdit(student)}
-                        className="text-blue-600 hover:text-blue-900 mr-3"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => deleteMutation.mutate(student.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        <Trash2 className="w-4 h-4" />
+                        <Wallet className="w-4 h-4" />
                       </button>
                     </td>
-                  )}
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <button
+                        onClick={() => {
+                          setContractStudent(student)
+                          setUploadFile(null)
+                        }}
+                        title="Contrato"
+                        className="text-gray-500 hover:text-blue-600"
+                      >
+                        <FileSignature className="w-4 h-4" />
+                      </button>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`inline-flex px-2 text-xs leading-5 font-semibold rounded-full ${
+                          student.is_active
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}
+                      >
+                        {student.is_active ? 'Ativo' : 'Inativo'}
+                      </span>
+                    </td>
+                    {isAdmin && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => handleEdit(student)}
+                          className="text-blue-600 hover:text-blue-900 mr-3"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => deleteMutation.mutate(student.id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -1075,7 +1088,9 @@ export default function StudentsPage() {
                   disabled={matricularMutation.isPending}
                   className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-60"
                 >
-                  {matricularMutation.isPending ? 'Enviando...' : 'Matricular/Renovar (Plano + Contrato)'}
+                  {matricularMutation.isPending
+                    ? 'Enviando...'
+                    : 'Matricular/Renovar (Plano + Contrato)'}
                 </button>
               </div>
               {currentStudentPlan ? (
@@ -1256,9 +1271,7 @@ export default function StudentsPage() {
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                    Assinar na Tela
-                  </h4>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Assinar na Tela</h4>
                   <SignaturePad ref={signaturePadRef} />
                   <div className="flex gap-2 mt-2">
                     <button

@@ -75,10 +75,14 @@ function setupApiMocks() {
     if (url.endsWith('/plan')) return Promise.resolve({ data: [] })
     if (url.endsWith('/mensalidades')) return Promise.resolve({ data: [] })
     if (url.endsWith('/balance')) {
-      return Promise.resolve({ data: { student_id: STUDENT.id, balance: '0', open_count: 0, overdue_count: 0 } })
+      return Promise.resolve({
+        data: { student_id: STUDENT.id, balance: '0', open_count: 0, overdue_count: 0 },
+      })
     }
     if (url.endsWith('/contracts/current')) {
-      return currentContract ? Promise.resolve({ data: currentContract }) : Promise.reject(new Error('404'))
+      return currentContract
+        ? Promise.resolve({ data: currentContract })
+        : Promise.reject(new Error('404'))
     }
     if (url.endsWith('/contracts')) {
       return Promise.resolve({ data: currentContract ? [currentContract] : [] })
@@ -103,7 +107,13 @@ describe('StudentsPage contract integration', () => {
 
   it('repoints the "Matricular/Renovar" button in the Financeiro modal at the combined endpoint', async () => {
     mockedPost.mockResolvedValue({
-      data: { id: 'contract-1', status: 'draft', signature_method: null, signed_at: null, document: null },
+      data: {
+        id: 'contract-1',
+        status: 'draft',
+        signature_method: null,
+        signed_at: null,
+        document: null,
+      },
     })
     const user = userEvent.setup()
     renderPage()
@@ -112,7 +122,9 @@ describe('StudentsPage contract integration', () => {
     await user.click(screen.getByTitle('Financeiro'))
     await user.click(await screen.findByText('Matricular/Renovar (Plano + Contrato)'))
 
-    await waitFor(() => expect(mockedPost).toHaveBeenCalledWith(`/api/v1/students/${STUDENT.id}/contracts/matricular`))
+    await waitFor(() =>
+      expect(mockedPost).toHaveBeenCalledWith(`/api/v1/students/${STUDENT.id}/contracts/matricular`)
+    )
     expect(mockedPost).not.toHaveBeenCalledWith(`/api/v1/students/${STUDENT.id}/plan`)
   })
 
@@ -124,7 +136,13 @@ describe('StudentsPage contract integration', () => {
           status: 'draft',
           signature_method: null,
           signed_at: null,
-          document: { id: 'doc-1', mime_type: 'application/pdf', size_bytes: 10, status: 'active', created_at: '2026-01-01' },
+          document: {
+            id: 'doc-1',
+            mime_type: 'application/pdf',
+            size_bytes: 10,
+            status: 'active',
+            created_at: '2026-01-01',
+          },
           created_at: '2026-01-01',
         }
         return Promise.resolve({ data: currentContract })
@@ -155,7 +173,13 @@ describe('StudentsPage contract integration', () => {
       status: 'draft',
       signature_method: null,
       signed_at: null,
-      document: { id: 'doc-1', mime_type: 'application/pdf', size_bytes: 10, status: 'active', created_at: '2026-01-01' },
+      document: {
+        id: 'doc-1',
+        mime_type: 'application/pdf',
+        size_bytes: 10,
+        status: 'active',
+        created_at: '2026-01-01',
+      },
       created_at: '2026-01-01',
     }
     mockedPost.mockResolvedValue({ data: currentContract })
@@ -168,7 +192,9 @@ describe('StudentsPage contract integration', () => {
 
     await user.click(screen.getByText('Regenerar Rascunho'))
 
-    await waitFor(() => expect(mockedPost).toHaveBeenCalledWith('/api/v1/contracts/contract-1/regenerate'))
+    await waitFor(() =>
+      expect(mockedPost).toHaveBeenCalledWith('/api/v1/contracts/contract-1/regenerate')
+    )
   })
 
   it('calls the download endpoint when "Baixar Contrato Atual" is clicked', async () => {
@@ -177,7 +203,13 @@ describe('StudentsPage contract integration', () => {
       status: 'signed',
       signature_method: 'on_screen',
       signed_at: '2026-01-01',
-      document: { id: 'doc-1', mime_type: 'application/pdf', size_bytes: 10, status: 'active', created_at: '2026-01-01' },
+      document: {
+        id: 'doc-1',
+        mime_type: 'application/pdf',
+        size_bytes: 10,
+        status: 'active',
+        created_at: '2026-01-01',
+      },
       created_at: '2026-01-01',
     }
     mockedGet.mockImplementation((url: string, config?: { responseType?: string }) => {
@@ -217,7 +249,9 @@ describe('StudentsPage contract integration', () => {
     await user.click(screen.getByText('Baixar Contrato Atual'))
 
     await waitFor(() =>
-      expect(mockedGet).toHaveBeenCalledWith('/api/v1/contracts/contract-1/download', { responseType: 'blob' })
+      expect(mockedGet).toHaveBeenCalledWith('/api/v1/contracts/contract-1/download', {
+        responseType: 'blob',
+      })
     )
   })
 })
