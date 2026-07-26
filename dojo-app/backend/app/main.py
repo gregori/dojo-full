@@ -15,6 +15,7 @@ from app.api import (
     payments,
     plans,
     pre_checkins,
+    reports,
     students,
     users,
 )
@@ -50,6 +51,7 @@ app.include_router(mensalidades.router)
 app.include_router(payments.router)
 app.include_router(contract_templates.router)
 app.include_router(contracts.router)
+app.include_router(reports.router)
 app.include_router(organizations.router)
 
 

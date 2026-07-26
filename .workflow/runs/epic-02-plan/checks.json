@@ -153,18 +153,34 @@
       "name": "Reports",
       "pr": "PR-5",
       "requirements": "REP-01–REP-05",
-      "status": "pending",
+      "status": "reviewed_approved_pending_commit",
       "commit": null,
       "gates": {
         "policy": {
           "status": "passed",
-          "note": "REP-04 financial projection formula and default horizon resolved.",
-          "evidence": ".workflow/epic-02/handoff.md"
+          "note": "REP-04 financial projection formula and default horizon resolved. Full Phase 5 implementation plan reviewed 2026-07-26: APPROVED WITH FOLLOW-UPS (review-phase5.md), all 6 non-blocking findings folded into plan.md as an addendum (test plan, 404 handling, empty-result behavior, REP-03 roster scope, input validation defaults, export row-limit note) by tech-analyst. No new tables/migration required for this phase.",
+          "evidence": ".workflow/epic-02/handoff.md, .workflow/runs/epic-02-plan/plan.md (\"Phase 5 Implementation Plan — Reports\"), .workflow/runs/epic-02-plan/review-phase5.md"
         },
-        "lint": { "status": "pending" },
-        "test": { "status": "pending" },
-        "independent_review": { "status": "pending" },
-        "security_review": { "status": "pending" }
+        "lint": {
+          "status": "passed",
+          "evidence": ".workflow/epic-02/pr-5-reports/lint-results.md",
+          "note": "Backend: ruff check + ruff format --check clean on all PR-5 files (one unrelated pre-existing ruff error in test_contract_pdf_service.py confirmed via git log to predate this PR, from PR-4). Frontend: eslint, tsc --noEmit, vite build, prettier format:check all clean."
+        },
+        "test": {
+          "status": "passed",
+          "evidence": ".workflow/epic-02/pr-5-reports/test-results.md",
+          "note": "Backend: 382 passed, 0 failed (51 new total across the initial build + fix pass), 100% coverage confirmed by the re-verifying reviewer on all 3 new modules (report_service.py, report_export_service.py, app/api/reports.py) — independently re-run, not just re-trusted. Frontend: 44 Jest passed, 0 failed (11 new in ReportsPage.test.tsx). Cypress reports.cy.ts: 5/5 passing, verified both isolated and inside a full 12-spec suite run (all epic-owned specs green: contracts.cy.ts 6/6, financial.cy.ts 10/10, medical-exam.cy.ts 10/10, precheckin.cy.ts 5/5). 7 pre-existing pre-Epic-2 legacy specs failed in that same full run but were never part of the CI e2e job and are unrelated to Reports; out of scope, not fixed."
+        },
+        "independent_review": {
+          "status": "passed",
+          "evidence": ".workflow/epic-02/pr-5-reports/review.md",
+          "note": "First pass NOT APPROVED (1 HIGH: render_pdf_table crash on unescaped ReportLab-markup-like title text; 1 MEDIUM: render_csv formula-injection, CWE-1236; 2 LOW non-blocking). Implementer fix pass: HIGH fixed via xml.sax.saxutils.escape() on all Paragraph-bound strings; MEDIUM fixed via a _neutralize_formula() helper (OWASP CSV-injection mitigation); both LOW items addressed. Re-verification pass (independent, not re-trusted): reviewer reproduced the original crash against the actual pinned reportlab==5.0.0, confirmed the fix resolves it with no bypass across all call sites in app/api/reports.py; independently ran render_csv against the exact trigger characters and confirmed correct neutralization with no false-positives on normal text; independently re-ran the full backend suite (382/0, matches claim) and confirmed 100% coverage on all 3 new modules (contradicting the implementer's environment-limitation claim, but in a favorable direction — nothing hidden); confirmed the pre-existing ruff error's provenance via git log. Verdict: **APPROVED**. One residual non-blocking note: CSV formula-neutralization covers the 4 core OWASP trigger characters but not the legacy tab/CR Excel-DDE edge case — defense-in-depth gap only, not a regression, not required for this phase."
+        },
+        "security_review": {
+          "status": "passed",
+          "evidence": ".workflow/epic-02/pr-5-reports/review.md",
+          "note": "Dual-checklist coverage included in the same review. CSV formula-injection (CWE-1236) fixed and independently re-verified; authz (instructor/admin-only, 403-wrong-role now explicitly tested), SQL-injection surface, and header-injection via export filenames all confirmed clean in both passes."
+        }
       }
     }
   ]

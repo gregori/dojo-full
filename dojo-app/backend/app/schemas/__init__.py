@@ -76,5 +76,17 @@ from app.schemas.pre_checkin import (
     PreCheckInRosterItem,
     PublicPreCheckInEvent,
 )
+from app.schemas.report import (
+    AttendanceItem,
+    BeltExamParticipationItem,
+    BeltExamReportResponse,
+    ClassAttendanceReportResponse,
+    ClassEventCount,
+    ClassRosterItem,
+    FinancialPaymentItem,
+    FinancialProjection,
+    FinancialReportResponse,
+    StudentAttendanceReportResponse,
+)
 from app.schemas.student import StudentCreate, StudentResponse, StudentUpdate, StudentWithBelt
 from app.schemas.user import Token, UserCreate, UserLogin, UserResponse, UserUpdate

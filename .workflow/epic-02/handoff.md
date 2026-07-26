@@ -102,10 +102,77 @@ Two real bugs were found and fixed while getting the e2e suite green against a l
 - **Docker/Poetry infra bug**: Poetry 2.4.1 auto-creates an empty in-project `.venv` on `poetry run` even with `virtualenvs.create=false`, shadowing the correctly-populated global site-packages and hanging `entrypoint.sh`'s DB-readiness loop forever. Fixed by dropping `poetry run` from `entrypoint.sh` (deps are global per `Dockerfile.dev`'s own config) and removing the now-pointless anonymous `- /app/.venv` volume from `docker-compose.yml`.
 - **Frontend bug**: `StudentsPage.tsx`'s main students table used `overflow-hidden` instead of `overflow-x-auto` (unlike every other table in the file), clipping the rightmost per-row action buttons off-screen as columns accumulated across PR-2/3/4.
 
+## Phase 5 (Reports) implementation plan written (2026-07-26)
+
+tech-analyst wrote the "Phase 5 Implementation Plan — Reports" section into `.workflow/runs/epic-02-plan/plan.md` (after the Phase 4 section). Key points:
+
+- **No new tables, no new Alembic migration** — confirmed, not assumed: every REP-0X requirement traced to existing Phase 1-4 models (`Exam`/`ExamParticipant`/`BeltPromotion` for belt exams; `Attendance`/`Event`/`EventType` for attendance, with `EventType` confirmed as the codebase's existing stand-in for "turma"; `Payment`/`StudentPlan`/`BalanceService.get_overdue_dashboard`/`StudentPlanService.get_current_price` for finance). This holds up the original plan.md "Phase 5 remains read-oriented" line with no deviation.
+- **Service layer:** two new modules split by concern the same way Phase 4 split `ContractPdfService`/`ContractService` — `report_service.py` (pure query/aggregation, returns plain dicts) and `report_export_service.py` (pure rendering, no DB access: `render_csv` via stdlib `csv`, new to this codebase; `render_pdf_table` via ReportLab `platypus.Table`, reusing the dependency Phase 4 already added — no new PDF library).
+- **API:** new `app/api/reports.py`, instructor/admin-only, 4 endpoints (`belt-exams/{student_id}`, `attendance/student/{student_id}`, `attendance/class`, `finance`) each supporting `?format=json|pdf|csv` (default json) rather than tripling route count — mirrors the existing `download_contract` endpoint's `Response(...)` pattern for the pdf/csv path.
+- **Frontend:** new `ReportsPage.tsx`, four sections, reusing `StudentsPage.tsx`'s `handleDownloadContract` blob-download pattern verbatim for export buttons.
+- **No blocking decisions remain** — REP-04's projection formula was already resolved 2026-07-19 and is not re-litigated. Two low-risk implementation defaults are flagged as documented (not gated): default date range = current calendar month when omitted; REP-04's CSV = three stacked sections (payments/delinquency/projection) in one file with section-header rows.
+- Full acceptance criteria for REP-01–REP-05 (plus a no-new-tables confirmation and an auth confirmation) are written into plan.md's new "Phase 5 acceptance criteria" subsection.
+
+## Phase 5 plan reviewed and approved with follow-ups resolved (2026-07-26)
+
+requirements-reviewer verdict in `.workflow/runs/epic-02-plan/review-phase5.md`: **APPROVED WITH FOLLOW-UPS**. All ground-truth claims (existing models/services/precedent code the plan relies on) were checked directly against the codebase and confirmed accurate — no factual or design correction needed. Six non-blocking findings (missing test-plan content, incomplete 404 handling, unspecified empty-result behavior, ambiguous REP-03 roster scope, unstated input-validation edge cases, no export row-limit note) were then folded into `plan.md`'s Phase 5 section by tech-analyst as a same-day addendum:
+
+- Added a full `### Test plan` subsection (pytest per `report_service.py` function incl. 404/empty-range cases; a `%PDF-` magic-byte check for `render_pdf_table` citing the existing `test_contract_pdf_service.py` precedent; a shape check for `render_csv`; Jest for `ReportsPage.tsx`'s four sections; a `reports.cy.ts` Cypress plan mirroring `contracts.cy.ts`, including a real PDF/CSV download round trip).
+- Added a "Validation, error handling, and edge-case defaults" subsection: uniform 404 across all three FK-scoped report functions on an invalid `student_id`/`event_type_id` (finance report has no such lookup); empty range = HTTP 200 with an empty list/zero total; REP-03's roster includes only students with ≥1 attendance in range (no "enrolled in EventType" concept exists to define a zero-attendance roster against); `start_date > end_date` → 400; `months_ahead` defaults to 3, minimum 1; `format` is a plain validated `str` (matching this backend's actual existing convention, not a `Literal`/enum — verified against `events.py`); export row-limits are a deliberate no-limit default for current scale, not an oversight.
+- Acceptance criteria (AC1-AC4) updated to reflect the above so they're directly testable.
+
+Phase 5's plan is now complete and build-ready.
+
+## Implemented PR-5 (Reports) (2026-07-26)
+
+Built exactly against `.workflow/runs/epic-02-plan/plan.md`'s "Phase 5 Implementation Plan — Reports" section and its acceptance criteria/test plan.
+
+**Backend (no new migration, confirmed — every report reads existing Phase 1-4 tables/services unmodified):**
+- `app/services/report_service.py` (new) — `ReportService.get_belt_exam_report`, `get_student_attendance_report`, `get_class_attendance_report`, `get_financial_report`, each a pure query/aggregation `@staticmethod` returning plain dicts. Shared `_resolve_date_range`/`_ensure_utc` helpers implement the plan's resolved defaults: omitted range → current calendar month; `start_date > end_date` → 400; naive datetimes normalized to UTC before comparison. 404s on invalid `student_id`/`event_type_id` for the three FK-scoped functions; `months_ahead` validated to a minimum of 1 (400 below that). REP-03's roster includes only students with ≥1 attendance in range, per the resolved roster-scope default.
+- `app/services/report_export_service.py` (new) — `ReportExportService.render_csv` (stdlib `csv`, one title/header/data block per section, blank-line separated) and `render_pdf_table` (ReportLab `platypus.Table`/`TableStyle`, same `SimpleDocTemplate`/`A4` scaffold as `ContractPdfService.render_pdf`). No new PDF library; no DB access in this module.
+- `app/schemas/report.py` (new) — Pydantic response models for all four reports; reuses the existing `OverdueDashboardItem` schema unchanged for the finance report's delinquency section.
+- `app/api/reports.py` (new router, instructor/admin-only via `get_current_instructor_or_admin`) — the four planned endpoints (`belt-exams/{student_id}`, `attendance/student/{student_id}`, `attendance/class`, `finance`), each with a plain `format: str = "json"` query param validated against `{json, pdf, csv}` (400 otherwise), matching `events.py`'s existing plain-`str`-filter convention rather than `Literal`/enum. json branch returns a typed Pydantic model; pdf/csv branches return a plain `Response` with `Content-Disposition: attachment`, mirroring `contracts.py`'s `download_contract` exactly. Registered in `app/main.py` after `contracts.router`.
+- `tests/unit/conftest.py` — added one new factory, `make_exam_participant`, needed for the belt-exam report's test fixtures (no other Phase 1-4 test fixture touched).
+
+**Frontend:**
+- `ReportsPage.tsx` (new) — four sections (Exame de Faixa / Presenças Aluno / Presenças Turma / Financeiro), each with a filter form, a "Visualizar" JSON-preview table, and "Exportar PDF"/"Exportar CSV" buttons reusing `StudentsPage.tsx`'s `handleDownloadContract` blob-download pattern verbatim (`responseType: 'blob'` → `URL.createObjectURL` → synthetic `<a download>` click).
+- `App.tsx` — new `/reports` route wrapped in `PrivateRoute` (instructor+admin, same tier as `/exams`, not `AdminRoute`).
+- `components/Layout.tsx` — new "Relatórios" nav entry (`BarChart3` icon) alongside "Exames", visible to both instructor and admin.
+
+**Tests (all new):** `test_report_service.py`, `test_report_export_service.py`, `test_api_reports.py` (backend, 44 tests); `ReportsPage.test.tsx` (frontend Jest, 11 tests); `reports.cy.ts` (Cypress e2e, 5 scenarios incl. a real PDF and a real CSV download round trip against a live stack, mirroring `contracts.cy.ts`'s conventions).
+
+**Gate results — all green:**
+- Backend: `ruff check .` PASS, `ruff format --check .` PASS, full `pytest` suite **375 passed, 0 failed** (100% coverage on all three new service/schema modules).
+- Frontend: `npm run lint` PASS, `npx tsc --noEmit` PASS, `npm run build` PASS, `npm run format:check` PASS, full `npx jest` suite **44 passed, 0 failed**.
+- Cypress `reports.cy.ts`: **5/5 passing**, confirmed both in isolation and inside a full 12-spec suite run against the live dockerized stack (db+backend+frontend), with no regression to any of this epic's actual CI-verified specs (`contracts.cy.ts` 6/6, `financial.cy.ts` 10/10, `medical-exam.cy.ts` 10/10, `precheckin.cy.ts` 5/5). Full detail, including the pre-existing/out-of-scope legacy-spec failures observed in that same full run (not part of `ci-frontend.yml`'s e2e job, unrelated to Reports), is in `.workflow/epic-02/pr-5-reports/{lint-results.md,test-results.md}`.
+
+**One small additive deviation:** `ci-frontend.yml`'s e2e job only ran `precheckin.cy.ts,medical-exam.cy.ts,financial.cy.ts` — `contracts.cy.ts` had never actually been wired in despite being reported green "via real CI" during Phase 4. Added both `contracts.cy.ts` and `reports.cy.ts` to that `--spec` list so both are actually CI-gated going forward. One-line CI config change, not application code.
+
+No other deviations from `plan.md`. No public/self-service report endpoint added; no pagination/row-limits added; no Phase 1-4 code touched beyond `app/main.py` (router registration) and `App.tsx`/`Layout.tsx` (route/nav registration), per scope discipline.
+
+## PR-5 (Reports) fix pass — review findings 1-2 fixed and re-verified (2026-07-26)
+
+Independent+security review (`.workflow/epic-02/pr-5-reports/review.md`) returned **NOT APPROVED (first pass)**: 1 HIGH finding (unescaped `Paragraph` titles crash PDF export with a 500 when a student/event/class name contains ReportLab-markup-special characters, e.g. `"Aula <Avançado>"`) and 1 MEDIUM/CWE-1236 finding (unescaped CSV cells enable spreadsheet formula injection), plus 2 non-blocking observations (no 403-wrong-role test; `app/api/reports.py` at 85% coverage). Mirrors the PR-2/PR-3/PR-4 fix→re-verify pattern.
+
+**Fixed, mirroring the review's own fix guidance:**
+- `app/services/report_export_service.py`: `render_pdf_table` now escapes `title` and every `section_title` with `xml.sax.saxutils.escape()` before building a `Paragraph` (confirmed via a standalone script that plain-string `Table` cells don't need escaping — ReportLab renders them literally, no markup parsing). `render_csv` now runs every data-row cell through a new `_neutralize_formula` helper that prefixes a leading `'` onto any value starting with `=`, `+`, `-`, or `@` (OWASP CSV-injection mitigation, CWE-1236) — headers/titles are untouched since they're static report-level strings, not attacker-influenced.
+- `tests/unit/test_report_export_service.py`: added a regression test reproducing the review's exact repro string (`"Aula <Avançado>"` / `"<b>unclosed bold"`) and asserting valid PDF bytes instead of a raised exception; added a regression test asserting `=`/`+`/`-`/`@`-leading cells get neutralized while normal text is untouched.
+- `tests/unit/test_api_reports.py`: added the non-blocking follow-ups — a 403-wrong-role test (`TestAuthorization::test_report_endpoints_reject_wrong_role_with_403`, overriding only `get_current_user` with a mocked non-instructor/admin role so the real dependency chain runs) and pdf/csv-format tests for the two endpoints (`student_attendance_report`, `class_attendance_report`) that previously had none, closing the exact uncovered lines the reviewer cited.
+
+**Re-verified gates:** `ruff check .` and `ruff format --check .` pass on every file this fix pass touched (one pre-existing, unrelated `ruff` finding remains in `tests/unit/test_contract_pdf_service.py`, untouched since PR-4's `bfc62c7`, out of scope). Full backend suite: **382 passed, 0 failed** (was 375; +7 new tests, no regressions). Full detail in `.workflow/epic-02/pr-5-reports/{test-results.md,lint-results.md}`.
+
+## PR-5 (Reports) re-review — APPROVED (2026-07-26)
+
+Independent+security re-review (`.workflow/epic-02/pr-5-reports/review.md`, "Re-verification (fix pass)" section) independently re-verified the fix pass against the actual diff, not just the implementer's report: reproduced the original PDF-crash finding against the project's real pinned `reportlab==5.0.0`, confirmed the `xml.sax.saxutils.escape()` fix resolves it with no bypass across any call site in `app/api/reports.py`; independently ran `render_csv` against `=`/`+`/`-`/`@`-leading cells and confirmed correct neutralization with no false positives on normal text; independently re-ran the full backend suite (**382 passed, 0 failed**, matching the implementer's count) and independently confirmed **100% coverage** on all three new modules (`report_service.py`, `report_export_service.py`, `app/api/reports.py`) — resolving the implementer's own unreproducible coverage-tooling limitation in a favorable direction. Confirmed the one pre-existing `ruff` finding in `test_contract_pdf_service.py` predates this PR via `git log`.
+
+**Verdict: APPROVED.** One non-blocking residual note: CSV formula-neutralization covers the four core OWASP trigger characters (`=`/`+`/`-`/`@`) but not the legacy tab/CR Excel-DDE edge case — a defense-in-depth gap only, not a regression, not required for this phase.
+
+Phase 5 (Reports, PR-5) is now fully implemented, tested, and approved — same bar as PR-1 through PR-4. The working tree has the complete implementation uncommitted.
+
 ## Next Action
 
-Phase 4 is complete. **Phase 5 (Reports, PR-5) is next** — policy already resolved (REP-04's financial projection formula and default horizon, see plan.md's "Requirements Review — Phase 5" section), but implementation planning (data model, service layer, API, frontend touch points) has not yet been written into plan.md the way Phases 2/3/4 were.
+**Next: commit the Phase 5 (Reports) changes, push `feature/reports`, and open a PR against `develop`**, mirroring PR-1 through PR-4's exact process. Root orchestrator should confirm with the user before pushing/opening the PR in this session, since git push and PR creation are shared-state actions.
 
 ## Next Agent
 
-Next Agent: tech-analyst (Phase 5 — Reports implementation planning), then requirements-reviewer, then squad-feature to build PR-5.
+Next Agent: finisher (commit message + PR creation), once the user confirms.

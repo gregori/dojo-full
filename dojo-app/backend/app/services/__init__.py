@@ -12,5 +12,7 @@ from app.services.mensalidade_service import MensalidadeService
 from app.services.payment_service import PaymentService
 from app.services.plan_service import PlanService
 from app.services.pre_checkin_service import PreCheckInService
+from app.services.report_export_service import ReportExportService
+from app.services.report_service import ReportService
 from app.services.student_plan_service import StudentPlanService
 from app.services.student_service import StudentService

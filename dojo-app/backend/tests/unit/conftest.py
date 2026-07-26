@@ -31,6 +31,7 @@ from app.models import (
     Event,
     EventType,
     Exam,
+    ExamParticipant,
     Mensalidade,
     Organization,
     Payment,
@@ -254,6 +255,27 @@ def make_exam(db, event_id=None, belt_id=None, created_by=None, **kwargs):
     db.add(exam)
     db.flush()
     return exam
+
+
+def make_exam_participant(db, exam_id=None, student_id=None, **kwargs):
+    if exam_id is None:
+        exam = make_exam(db)
+        exam_id = exam.id
+    if student_id is None:
+        student = make_student(db)
+        student_id = student.id
+    defaults = {
+        "exam_id": exam_id,
+        "student_id": student_id,
+        "role": "candidate",
+        "status": "pending",
+        "is_eligible": True,
+    }
+    defaults.update(kwargs)
+    participant = ExamParticipant(**defaults)
+    db.add(participant)
+    db.flush()
+    return participant
 
 
 def make_belt_promotion(db, student_id=None, belt_id=None, **kwargs):
