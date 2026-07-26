@@ -169,10 +169,18 @@ Independent+security re-review (`.workflow/epic-02/pr-5-reports/review.md`, "Re-
 
 Phase 5 (Reports, PR-5) is now fully implemented, tested, and approved — same bar as PR-1 through PR-4. The working tree has the complete implementation uncommitted.
 
+## PR-5 (Reports) committed, pushed, and opened (2026-07-26)
+
+User confirmed commit/push/PR. Staged only the files genuinely part of Phase 5 (25 files: new backend `reports.py`/`report.py`/`report_service.py`/`report_export_service.py`/3 test modules, `main.py`/`schemas/__init__.py`/`services/__init__.py` registrations, `tests/unit/conftest.py`'s new fixture, `ReportsPage.tsx`/`ReportsPage.test.tsx`, `App.tsx`'s `/reports` route, `Layout.tsx`'s nav entry, `ci-frontend.yml`'s e2e spec-list addition, and the `.workflow/` planning/review/state artifacts documenting this phase). Left out of the commit, and confirmed to have zero actual diff against `HEAD` (`git diff`/`git diff --raw`/`git diff-index` all show no content change despite `git status` flagging them "M" — a stat-only/racy-index artifact, not real changes): `LoadingSpinner.tsx`, `MedicalExamBadge.tsx`, `Toast.tsx`, `useAuth.tsx`, `index.css`, `main.tsx`, `BeltRequirementsPage.tsx`, `BeltsPage.tsx`, `CheckInPage.tsx`, `DashboardPage.tsx`, `DojosPage.tsx`, `EventTypesPage.tsx`, `ExamsPage.tsx`, `LoginPage.tsx`, `services/api.ts`, `vite-env.d.ts`. Also left out as genuinely unrelated to Reports (a local `rtk-for-opencode` tool config, predating this session): `opencode.json`, root `package.json`/`package-lock.json`, `.opencode/rtk-config.json`. Also left out: `cypress/downloads/` and `cypress/screenshots/` (local Cypress run artifacts, never committed in this repo's history, not source).
+
+Committed as `2e29319 feat(reports): add belt-exam, attendance, and financial reports (PR-5)`; pushed `feature/reports` and opened [PR #28](https://github.com/gregori/dojo-full/pull/28) against `develop`.
+
+No GitHub Issues exist in this repository for this epic (`gh issue list --state all` returns empty) — Phases 1-5 were tracked entirely via `.workflow/` state, not GitHub Issues, so there is no issue to comment on or label.
+
 ## Next Action
 
-**Next: commit the Phase 5 (Reports) changes, push `feature/reports`, and open a PR against `develop`**, mirroring PR-1 through PR-4's exact process. Root orchestrator should confirm with the user before pushing/opening the PR in this session, since git push and PR creation are shared-state actions.
+None — Epic 2 (Financeiro, Pré-Checkin e Relatórios) is fully implemented across all 5 phases. PR-1 through PR-4 are merged to `develop`; PR-5 (#28) is open, green on all deterministic gates, and independently reviewed APPROVED, pending human merge.
 
 ## Next Agent
 
-Next Agent: finisher (commit message + PR creation), once the user confirms.
+None — workflow complete.

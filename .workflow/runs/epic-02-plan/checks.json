@@ -153,8 +153,8 @@
       "name": "Reports",
       "pr": "PR-5",
       "requirements": "REP-01–REP-05",
-      "status": "reviewed_approved_pending_commit",
-      "commit": null,
+      "status": "complete",
+      "commit": "2e29319",
       "gates": {
         "policy": {
           "status": "passed",

@@ -2,12 +2,12 @@
   "schema_version": 1,
   "run_id": "epic-02-plan",
   "work_item": "Epic 2 — Financeiro, Pré-Checkin e Relatórios",
-  "status": "phase_5_approved_pending_commit_and_pr",
+  "status": "epic_complete_pr5_opened",
   "created_at": "2026-07-19",
   "updated_at": "2026-07-26",
   "requirements_review": "completed",
   "plan_path": ".workflow/runs/epic-02-plan/plan.md",
   "handoff_path": ".workflow/epic-02/handoff.md",
-  "next_action": "Phase 5 (Reports, PR-5) is fully implemented, tested, and independently reviewed — verdict APPROVED (2026-07-26, review.md's re-verification section). All deterministic gates green (backend 382/382 pytest incl. security regression tests, 100% coverage on new modules; frontend 44/44 Jest; Cypress reports.cy.ts 5/5 both isolated and in the full suite). The one first-pass NOT APPROVED finding set (1 HIGH PDF-crash, 1 MEDIUM CSV-formula-injection, 2 LOW) was fixed and independently re-verified against the actual diff, not just re-trusted — reviewer reproduced the original crash, confirmed the fix, confirmed no bypass, and independently re-ran tests/coverage. One non-blocking residual note only (CSV neutralization defense-in-depth gap on a legacy DDE edge case, not required for this phase). Working tree has the full implementation uncommitted — not yet committed, pushed, or opened as a PR, exactly like PR-3 was at the equivalent point in its own history. Next: commit the Phase 5 (Reports) changes, push feature/reports, and open a PR against develop, mirroring PR-1 through PR-4's exact process — but confirm with the user first before pushing/opening a PR, since this is a new session and git push / PR creation are shared-state actions requiring explicit go-ahead per this session's operating guidance.",
+  "next_action": "Phase 5 (Reports, PR-5) committed as 2e29319, pushed feature/reports, and opened as PR #28 against develop (https://github.com/gregori/dojo-full/pull/28), mirroring PR-1 through PR-4's process. All five Epic 2 phases (Pre-Checkin, Medical Exams, Financial Foundation, Contracts, Reports) are now implemented, tested, reviewed, and have an open/merged PR. PR-1, PR-2, PR-3, PR-4 are already merged to develop; PR-5 is open pending review/merge. No further phases remain in this epic's plan.",
   "checks_path": ".workflow/runs/epic-02-plan/checks.json"
 }
