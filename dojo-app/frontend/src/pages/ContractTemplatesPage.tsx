@@ -1,8 +1,18 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus } from 'lucide-react'
+import { Plus, Eye } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
 import api from '../services/api'
 import { useAuth } from '../hooks/useAuth'
+
+const MARKDOWN_CONTENT_CLASSES =
+  '[&_h1]:text-xl [&_h1]:font-bold [&_h1]:mt-2 [&_h1]:mb-1 ' +
+  '[&_h2]:text-lg [&_h2]:font-bold [&_h2]:mt-2 [&_h2]:mb-1 ' +
+  '[&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-2 ' +
+  '[&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-2 ' +
+  '[&_li]:mb-0.5 ' +
+  '[&_hr]:my-3 [&_hr]:border-gray-300 ' +
+  '[&_p]:mb-2 last:[&_p]:mb-0'
 
 interface ContractTemplateVersion {
   id: string
@@ -19,6 +29,7 @@ export default function ContractTemplatesPage() {
   const [showForm, setShowForm] = useState(false)
   const [body, setBody] = useState('')
   const [effectiveFrom, setEffectiveFrom] = useState('')
+  const [viewVersion, setViewVersion] = useState<ContractTemplateVersion | null>(null)
 
   const { data: history } = useQuery<ContractTemplateVersion[]>({
     queryKey: ['contract-template-versions'],
@@ -75,24 +86,41 @@ export default function ContractTemplatesPage() {
             <code>{'{{ student.contract_cpf }}'}</code>, <code>{'{{ student.address }}'}</code>,{' '}
             <code>{'{{ student.birth_date }}'}</code>, <code>{'{{ student.phone }}'}</code>,{' '}
             <code>{'{{ plan_tier.name }}'}</code>, <code>{'{{ plan_tier.weekly_frequency }}'}</code>
-            , <code>{'{{ plan_version.price }}'}</code>.
+            , <code>{'{{ plan_version.price }}'}</code>. Você pode usar **negrito**, _itálico_, # e
+            ## para títulos, - para listas, e --- para uma linha divisória.
           </p>
           <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <label
-                htmlFor="contract-template-body"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Corpo do Contrato
-              </label>
-              <textarea
-                id="contract-template-body"
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                rows={10}
-                className="w-full px-3 py-2 border rounded-md"
-                required
-              />
+            <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label
+                  htmlFor="contract-template-body"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Corpo do Contrato
+                </label>
+                <textarea
+                  id="contract-template-body"
+                  value={body}
+                  onChange={(e) => setBody(e.target.value)}
+                  rows={10}
+                  className="w-full px-3 py-2 border rounded-md"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Pré-visualização
+                </label>
+                <div
+                  className={`w-full h-full min-h-[10rem] border rounded-md p-3 overflow-y-auto text-sm text-gray-800 ${MARKDOWN_CONTENT_CLASSES}`}
+                >
+                  {body ? (
+                    <ReactMarkdown>{body}</ReactMarkdown>
+                  ) : (
+                    <p className="text-gray-400 text-sm">A pré-visualização aparecerá aqui.</p>
+                  )}
+                </div>
+              </div>
             </div>
             <div className="mb-4">
               <label
@@ -143,6 +171,9 @@ export default function ContractTemplatesPage() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 Status
               </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                Ações
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -166,11 +197,20 @@ export default function ContractTemplatesPage() {
                       {version.status === 'active' ? 'Ativo' : 'Substituído'}
                     </span>
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button
+                      onClick={() => setViewVersion(version)}
+                      title="Ver conteúdo"
+                      className="text-blue-600 hover:text-blue-900"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={3} className="px-6 py-4 text-center text-gray-400">
+                <td colSpan={4} className="px-6 py-4 text-center text-gray-400">
                   Nenhuma versão cadastrada.
                 </td>
               </tr>
@@ -178,6 +218,31 @@ export default function ContractTemplatesPage() {
           </tbody>
         </table>
       </div>
+
+      {viewVersion && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-40 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6 max-h-[80vh] flex flex-col">
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+              Contrato — Vigente desde{' '}
+              {new Date(viewVersion.effective_from).toLocaleDateString('pt-BR')}
+            </h3>
+            <div
+              className={`overflow-y-auto text-sm text-gray-800 border rounded-md p-4 mb-4 ${MARKDOWN_CONTENT_CLASSES}`}
+            >
+              <ReactMarkdown>{viewVersion.body}</ReactMarkdown>
+            </div>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setViewVersion(null)}
+                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
