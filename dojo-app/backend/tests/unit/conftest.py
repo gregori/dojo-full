@@ -29,6 +29,7 @@ from app.models import (
     ContractTemplateVersion,
     Dojo,
     Event,
+    EventSeries,
     EventType,
     Exam,
     ExamParticipant,
@@ -167,6 +168,34 @@ def make_event(db, event_type_id=None, created_by=None, **kwargs):
     db.add(event)
     db.flush()
     return event
+
+
+def make_event_series(db, event_type_id=None, created_by=None, **kwargs):
+    from datetime import time
+
+    from app.core.timezone import local_today
+
+    if event_type_id is None:
+        et = make_event_type(db)
+        event_type_id = et.id
+    if created_by is None:
+        user = make_user(db)
+        created_by = user.id
+    n = _next_id()
+    defaults = {
+        "title": f"Test Series {n}",
+        "event_type_id": event_type_id,
+        "days_of_week": "0,2,5",
+        "start_time": time(7, 0),
+        "series_start_date": local_today(),
+        "is_active": True,
+        "created_by": created_by,
+    }
+    defaults.update(kwargs)
+    series = EventSeries(**defaults)
+    db.add(series)
+    db.flush()
+    return series
 
 
 def make_student(db, current_belt_id=None, **kwargs):

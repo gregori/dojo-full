@@ -15,7 +15,8 @@ import factory
 from factory.alchemy import SQLAlchemyModelFactory
 
 from app.core.security import get_password_hash
-from app.models import Belt, Event, EventType, Exam, Student, User
+from app.core.timezone import local_today
+from app.models import Belt, Event, EventSeries, EventType, Exam, Student, User
 
 
 class UserFactory(SQLAlchemyModelFactory):
@@ -71,6 +72,20 @@ class EventFactory(SQLAlchemyModelFactory):
     created_by = factory.LazyAttribute(lambda _: UserFactory().id)
     check_in_token = factory.LazyFunction(lambda: str(__import__("uuid").uuid4()))
     status = "scheduled"
+
+
+class EventSeriesFactory(SQLAlchemyModelFactory):
+    class Meta:
+        model = EventSeries
+
+    title = factory.Sequence(lambda n: f"Event Series {n}")
+    event_type_id = factory.LazyAttribute(lambda _: EventTypeFactory().id)
+    days_of_week = "0,2,5"
+    start_time = __import__("datetime").time(7, 0)
+    series_start_date = factory.LazyFunction(local_today)
+    is_active = True
+    created_by = factory.LazyAttribute(lambda _: UserFactory().id)
+    check_in_token = factory.LazyFunction(lambda: str(__import__("uuid").uuid4()))
 
 
 class ExamFactory(SQLAlchemyModelFactory):

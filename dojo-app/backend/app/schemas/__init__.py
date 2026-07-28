@@ -27,6 +27,12 @@ from app.schemas.event import (
     EventUpdate,
     EventWithDetails,
 )
+from app.schemas.event_series import (
+    EventSeriesCreate,
+    EventSeriesResponse,
+    EventSeriesUpdate,
+    GenerateOccurrencesResponse,
+)
 from app.schemas.exam import (
     ExamBoardMemberCreate,
     ExamBoardMemberResponse,

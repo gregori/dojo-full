@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import StudentsPage from './pages/StudentsPage'
 import EventsPage from './pages/EventsPage'
+import EventSeriesPage from './pages/EventSeriesPage'
 import CheckInPage from './pages/CheckInPage'
 import PreCheckInPage from './pages/PreCheckInPage'
 import MedicalExamPage from './pages/MedicalExamPage'
@@ -65,6 +66,14 @@ function App() {
               element={
                 <PrivateRoute>
                   <EventsPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/event-series"
+              element={
+                <PrivateRoute>
+                  <EventSeriesPage />
                 </PrivateRoute>
               }
             />

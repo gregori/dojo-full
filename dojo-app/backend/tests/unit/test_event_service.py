@@ -1,15 +1,18 @@
 """Unit tests for app.services.event_service module."""
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi import HTTPException
 
+from app.models import PreCheckIn
 from app.schemas import EventCreate, EventTypeCreate, EventTypeUpdate, EventUpdate
 from app.services.event_service import EventService, EventTypeService
 from tests.unit.conftest import (
+    make_belt,
     make_event,
     make_event_type,
+    make_student,
     make_user,
 )
 
@@ -204,3 +207,51 @@ class TestEventServiceDelete:
         with pytest.raises(HTTPException) as exc_info:
             EventService.delete_event(db_session, "nonexistent")
         assert exc_info.value.status_code == 404
+
+    def test_delete_event_cascades_to_confirmed_pre_checkins(self, db_session):
+        """RES-09 bug fix: delete_event now cascades to confirmed PreCheckIns
+        (previously it only set event.status, never touching PreCheckIn).
+        """
+        belt = make_belt(db_session)
+        event = make_event(db_session, title="To Cancel", start_datetime=datetime.now(UTC) + timedelta(days=1))
+        student_confirmed = make_student(db_session, current_belt_id=belt.id)
+        student_other = make_student(db_session, current_belt_id=belt.id)
+        db_session.commit()
+
+        confirmed = PreCheckIn(event_id=event.id, student_id=student_confirmed.id, status="confirmed")
+        already_cancelled = PreCheckIn(event_id=event.id, student_id=student_other.id, status="cancelled")
+        db_session.add_all([confirmed, already_cancelled])
+        db_session.commit()
+
+        EventService.delete_event(db_session, event.id)
+
+        db_session.refresh(confirmed)
+        assert confirmed.status == "cancelled"
+        assert confirmed.cancelled_at is not None
+
+        # An already-cancelled row is left untouched (no double-cancel).
+        db_session.refresh(already_cancelled)
+        assert already_cancelled.status == "cancelled"
+
+
+class TestEventServiceUpdateCascadeRegression:
+    """Regression guard: update_event's reschedule-cutoff cascade is unchanged
+    after being refactored into the shared cancel_pre_checkins_for_event helper.
+    """
+
+    def test_reschedule_into_cutoff_still_cancels_confirmed_pre_checkins(self, db_session):
+        belt = make_belt(db_session)
+        event = make_event(db_session, start_datetime=datetime.now(UTC) + timedelta(days=1))
+        student = make_student(db_session, current_belt_id=belt.id)
+        db_session.commit()
+
+        pre_checkin = PreCheckIn(event_id=event.id, student_id=student.id, status="confirmed")
+        db_session.add(pre_checkin)
+        db_session.commit()
+
+        update = EventUpdate(start_datetime=datetime.now(UTC) + timedelta(minutes=30))
+        EventService.update_event(db_session, event.id, update)
+
+        db_session.refresh(pre_checkin)
+        assert pre_checkin.status == "cancelled"
+        assert pre_checkin.cancelled_at is not None

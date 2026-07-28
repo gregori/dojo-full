@@ -7,6 +7,7 @@ from app.api import (
     checkin,
     contract_templates,
     contracts,
+    event_series,
     events,
     exams,
     medical_exams,
@@ -42,6 +43,7 @@ app.include_router(users.router)
 app.include_router(belts.router)
 app.include_router(students.router)
 app.include_router(events.router)
+app.include_router(event_series.router)
 app.include_router(checkin.router)
 app.include_router(pre_checkins.router)
 app.include_router(exams.router)

@@ -11,6 +11,7 @@ import {
   Wallet,
   FileText,
   BarChart3,
+  Repeat,
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -31,6 +32,7 @@ export default function Layout({ children }: LayoutProps) {
     { path: '/', label: 'Dashboard', icon: Home },
     { path: '/students', label: 'Alunos', icon: Users },
     { path: '/events', label: 'Eventos', icon: Calendar },
+    { path: '/event-series', label: 'Aulas Recorrentes', icon: Repeat },
     { path: '/exams', label: 'Exames', icon: Award },
     { path: '/reports', label: 'Relatórios', icon: BarChart3 },
     ...(isAdmin
