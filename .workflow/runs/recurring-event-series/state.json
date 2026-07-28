@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "run_id": "recurring-event-series",
+  "work_item": "Recurring event series with a persistent series-level check-in QR code",
+  "status": "review_approved_followups_applied",
+  "created_at": "2026-07-27",
+  "updated_at": "2026-07-27",
+  "review_verdict": "APPROVED (2026-07-27) -- no blocking correctness or security findings. See .workflow/runs/recurring-event-series/review.md for full detail. Findings 1, 2, and 4 (quick one-line fixes) applied same day: EventSeriesCreate.validate_dates now checks series_end_date against the effective (defaulted) series_start_date; duration_minutes now has a gt=0 constraint on both EventSeriesBase and EventSeriesUpdate; _reconcile_future_occurrences now stamps event.updated_at with datetime.now(UTC) instead of local_now(), matching the rest of the codebase's timestamp convention. Findings 3 (DRY nit), 5 (pre-existing, faithfully-mirrored 404 gap shared with events.py), and 6 (informational, SQLite StaticPool test note) left untouched per the review's own framing (non-actionable/informational). Root independently re-confirmed backend (ruff check/format clean, pytest 477 passed including the fix pass, 41/41 in test_event_series_service.py) and frontend (eslint/tsc clean modulo the one pre-existing unrelated StudentsPage.tsx error, jest 5/5 EventSeriesPage tests) gates directly, not just via agent self-report.",
+  "review_path": ".workflow/runs/recurring-event-series/review.md",
+  "requirements_review": "Two rounds: first pass NOT APPROVED -> fixed same day (timezone/concurrency gaps). Second pass (post-plan.md amendment: 365-day window, RES-05 propagation reversal, new RES-09 PreCheckIn cascade) APPROVED WITH FOLLOW-UPS, both follow-ups resolved directly by tech-analyst during plan.md redesign.",
+  "requirements_path": ".workflow/runs/recurring-event-series/requirements.md",
+  "requirements_review_path": ".workflow/runs/recurring-event-series/review-requirements.md",
+  "plan_path": ".workflow/runs/recurring-event-series/plan.md",
+  "handoff_path": ".workflow/runs/recurring-event-series/handoff.md",
+  "next_action": "Feature complete, gate-clean, independently reviewed APPROVED, and the 3 recommended quick follow-up fixes applied and re-verified. Not committed/pushed yet -- awaiting user's explicit go-ahead. Working tree also contains a separate, unrelated set of pre-existing in-progress changes (belts/students WIP, predating this run) that must be excluded from any commit of this feature, mirroring the discipline already used for the contract-markdown-rendering run earlier this session.",
+  "next_agent": null,
+  "checks_path": ".workflow/runs/recurring-event-series/checks.json"
+}

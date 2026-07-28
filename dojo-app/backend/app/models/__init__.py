@@ -1,11 +1,12 @@
 import uuid
-from datetime import UTC, datetime, timezone
+from datetime import UTC, date, datetime, time, timezone
 from decimal import Decimal
 from typing import List, Optional
 
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
+    Date,
     DateTime,
     Enum,
     ForeignKey,
@@ -13,6 +14,7 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    Time,
     UniqueConstraint,
     create_engine,
 )
@@ -171,10 +173,43 @@ class Student(UUIDMixin, TimestampMixin, Base):
     contracts: Mapped[list["Contract"]] = relationship(back_populates="student")
 
 
+class EventSeries(UUIDMixin, TimestampMixin, Base):
+    """A recurring weekly class template that produces ordinary Event occurrences.
+
+    Fields mirror Event's own single-occurrence fields (RES-01/RES-03); days_of_week
+    is a simple sorted comma-separated string of Monday=0..Sunday=6 integers -- not a
+    join table, mirroring Student.class_days's storage simplicity but, unlike
+    class_days, machine-parseable (see plan.md ground-truth notes).
+    """
+
+    __tablename__ = "event_series"
+
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    event_type_id: Mapped[str] = mapped_column(ForeignKey("event_types.id"), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    location: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    minimum_belt_id: Mapped[str | None] = mapped_column(ForeignKey("belts.id"), nullable=True)
+    days_of_week: Mapped[str] = mapped_column(String(20), nullable=False)
+    start_time: Mapped[time] = mapped_column(Time, nullable=False)
+    duration_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    series_start_date: Mapped[date] = mapped_column(Date, nullable=False)
+    series_end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    check_in_token: Mapped[str] = mapped_column(String(36), unique=True, default=lambda: str(uuid.uuid4()))
+    created_by: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
+    organization_id: Mapped[str | None] = mapped_column(ForeignKey("organizations.id"), nullable=True)
+
+    event_type: Mapped["EventType"] = relationship()
+    minimum_belt: Mapped[Belt | None] = relationship(foreign_keys=[minimum_belt_id])
+    organization: Mapped[Organization | None] = relationship()
+    occurrences: Mapped[list["Event"]] = relationship(back_populates="event_series")
+
+
 class Event(UUIDMixin, TimestampMixin, Base):
     """Dojo events/classes."""
 
     __tablename__ = "events"
+    __table_args__ = (UniqueConstraint("event_series_id", "occurrence_date", name="uq_events_series_occurrence_date"),)
 
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     event_type_id: Mapped[str] = mapped_column(ForeignKey("event_types.id"), nullable=False)
@@ -190,6 +225,8 @@ class Event(UUIDMixin, TimestampMixin, Base):
         default="scheduled",
     )
     minimum_belt_id: Mapped[str | None] = mapped_column(ForeignKey("belts.id"), nullable=True)
+    event_series_id: Mapped[str | None] = mapped_column(ForeignKey("event_series.id"), nullable=True)
+    occurrence_date: Mapped[date | None] = mapped_column(Date, nullable=True)
 
     # Relationships
     event_type: Mapped[EventType] = relationship(back_populates="events")
@@ -198,6 +235,7 @@ class Event(UUIDMixin, TimestampMixin, Base):
     pre_checkins: Mapped[list["PreCheckIn"]] = relationship(back_populates="event")
     minimum_belt: Mapped[Belt | None] = relationship(foreign_keys=[minimum_belt_id])
     exam: Mapped[Optional["Exam"]] = relationship(back_populates="event")
+    event_series: Mapped[Optional["EventSeries"]] = relationship(back_populates="occurrences")
 
 
 class Attendance(UUIDMixin, TimestampMixin, Base):

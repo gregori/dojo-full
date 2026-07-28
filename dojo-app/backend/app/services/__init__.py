@@ -5,6 +5,7 @@ from app.services.belt_service import BeltService
 from app.services.contract_pdf_service import ContractPdfService
 from app.services.contract_service import ContractService
 from app.services.contract_template_service import ContractTemplateService
+from app.services.event_series_service import EventSeriesService
 from app.services.event_service import EventService, EventTypeService
 from app.services.exam_service import ExamService
 from app.services.medical_exam_service import MedicalExamService

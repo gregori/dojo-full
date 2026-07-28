@@ -1,15 +1,19 @@
 """Unit tests for app.services.attendance_service module."""
 
+from datetime import datetime
+
 import pytest
 from fastapi import HTTPException
 
 from app.core.security import get_password_hash
+from app.core.timezone import APP_TIMEZONE, local_today
 from app.schemas import AttendanceCreate, CheckInQRRequest, CheckInRequest
 from app.services.attendance_service import AttendanceService
 from tests.unit.conftest import (
     make_attendance,
     make_belt,
     make_event,
+    make_event_series,
     make_event_type,
     make_student,
     make_user,
@@ -257,6 +261,99 @@ class TestAttendanceServiceCheckInQR:
         with pytest.raises(HTTPException) as exc_info:
             AttendanceService.check_in_qr(db_session, data)
         assert exc_info.value.status_code == 400
+
+
+class TestAttendanceServiceCheckInQRSeries:
+    """Tests for AttendanceService.check_in_qr's series-token fallback (RES-04)."""
+
+    def _setup_series_and_student(self, db_session, **series_kwargs):
+        belt = make_belt(db_session)
+        et = make_event_type(db_session)
+        user = make_user(db_session)
+        series = make_event_series(db_session, event_type_id=et.id, created_by=user.id, **series_kwargs)
+        student = make_student(
+            db_session,
+            current_belt_id=belt.id,
+            registration_number="SER001",
+            pin=get_password_hash("1234"),
+        )
+        db_session.commit()
+        return series, student
+
+    def test_series_token_resolves_to_todays_occurrence_and_checks_in(self, db_session):
+        today = local_today()
+        series, student = self._setup_series_and_student(
+            db_session, days_of_week=str(today.weekday()), series_start_date=today
+        )
+
+        data = CheckInQRRequest(
+            registration_number="SER001",
+            pin="1234",
+            check_in_token=series.check_in_token,
+        )
+        result = AttendanceService.check_in_qr(db_session, data)
+        assert result.student_id == student.id
+        assert result.check_in_method == "qrcode"
+
+    def test_series_token_on_non_scheduled_day_returns_400(self, db_session):
+        today = local_today()
+        not_today = (today.weekday() + 1) % 7
+        series, student = self._setup_series_and_student(
+            db_session, days_of_week=str(not_today), series_start_date=today
+        )
+
+        data = CheckInQRRequest(
+            registration_number="SER001",
+            pin="1234",
+            check_in_token=series.check_in_token,
+        )
+        with pytest.raises(HTTPException) as exc_info:
+            AttendanceService.check_in_qr(db_session, data)
+        assert exc_info.value.status_code == 400
+
+    def test_series_token_resolved_to_cancelled_occurrence_returns_400(self, db_session):
+        today = local_today()
+        et = make_event_type(db_session)
+        user = make_user(db_session)
+        belt = make_belt(db_session)
+        series = make_event_series(
+            db_session,
+            event_type_id=et.id,
+            created_by=user.id,
+            days_of_week=str(today.weekday()),
+            series_start_date=today,
+        )
+        make_event(
+            db_session,
+            event_type_id=et.id,
+            created_by=user.id,
+            event_series_id=series.id,
+            occurrence_date=today,
+            start_datetime=datetime.combine(today, series.start_time, tzinfo=APP_TIMEZONE),
+            status="cancelled",
+        )
+        make_student(db_session, current_belt_id=belt.id, registration_number="SER002", pin=get_password_hash("1234"))
+        db_session.commit()
+
+        data = CheckInQRRequest(
+            registration_number="SER002",
+            pin="1234",
+            check_in_token=series.check_in_token,
+        )
+        with pytest.raises(HTTPException) as exc_info:
+            AttendanceService.check_in_qr(db_session, data)
+        assert exc_info.value.status_code == 400
+        assert exc_info.value.detail == "Event is cancelled"
+
+    def test_unrecognized_token_still_returns_404(self, db_session):
+        data = CheckInQRRequest(
+            registration_number="SER001",
+            pin="1234",
+            check_in_token="neither-event-nor-series",
+        )
+        with pytest.raises(HTTPException) as exc_info:
+            AttendanceService.check_in_qr(db_session, data)
+        assert exc_info.value.status_code == 404
 
 
 class TestAttendanceServiceManual:
