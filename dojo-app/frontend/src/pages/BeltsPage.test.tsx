@@ -37,7 +37,9 @@ describe('BeltsPage', () => {
     mockedGet.mockReset()
     mockedDelete.mockReset()
     mockedGet.mockResolvedValue({
-      data: [{ id: 'belt-1', name: 'Branca', category: 'adult', sort_order: 1, organization_id: null }],
+      data: [
+        { id: 'belt-1', name: 'Branca', category: 'adult', sort_order: 1, organization_id: null },
+      ],
     })
     alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {})
   })
@@ -62,7 +64,9 @@ describe('BeltsPage', () => {
 
   it('shows the backend error message instead of silently failing when the belt is in use', async () => {
     mockedDelete.mockRejectedValue({
-      response: { data: { detail: 'Belt is assigned to one or more students and cannot be deleted' } },
+      response: {
+        data: { detail: 'Belt is assigned to one or more students and cannot be deleted' },
+      },
     })
     const user = userEvent.setup()
     renderPage()

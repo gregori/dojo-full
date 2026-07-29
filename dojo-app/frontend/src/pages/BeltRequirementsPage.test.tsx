@@ -188,16 +188,17 @@ describe('BeltRequirementsPage', () => {
       }
       if (url === '/api/v1/belts/belt-1/requirements') {
         return Promise.resolve({
-          data: mockedPost.mock.calls.length > 0
-            ? [
-                {
-                  id: 'req-1',
-                  event_type: { name: 'Treino' },
-                  description: 'Treinos',
-                  required_count: 5,
-                },
-              ]
-            : [],
+          data:
+            mockedPost.mock.calls.length > 0
+              ? [
+                  {
+                    id: 'req-1',
+                    event_type: { name: 'Treino' },
+                    description: 'Treinos',
+                    required_count: 5,
+                  },
+                ]
+              : [],
         })
       }
       return Promise.resolve({ data: [] })
