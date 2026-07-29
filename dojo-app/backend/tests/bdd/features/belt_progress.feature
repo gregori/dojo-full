@@ -94,9 +94,11 @@ Funcionalidade: Progresso de Faixa
     E a resposta deve conter "required_count" com valor "40"
 
   Cenário: Requisito de presença com counts_for_belt=false não conta (US-016)
-    Dado existe um tipo de evento "Evento Social" com cor "#9b59b6" e não conta para faixa
+    Dado o aluno "João Silva" está na faixa "Branca"
+    E existe um tipo de evento "Evento Social" com cor "#9b59b6" e não conta para faixa
+    E o requisito de "Evento Social" para faixa "6º Kyu" é 30
     E existe um evento "Festa do Dojo" com tipo "Evento Social"
-    E o requisito de "Aula Regular" para faixa "Branca" é 30
     E o aluno "João Silva" fez check-in no evento "Festa do Dojo"
     Quando eu envio uma requisição GET para "/api/v1/students/<student_id>/progress"
     Então o status da resposta deve ser 200
+    E todas as contagens de presença devem ser 0

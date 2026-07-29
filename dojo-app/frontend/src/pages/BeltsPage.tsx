@@ -57,6 +57,10 @@ export default function BeltsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['belts'] })
     },
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { detail?: string } } }
+      alert(err?.response?.data?.detail || 'Não foi possível excluir a faixa.')
+    },
   })
 
   const resetForm = () => {
