@@ -16,6 +16,7 @@ import BeltRequirementsPage from './pages/BeltRequirementsPage'
 import BeltsPage from './pages/BeltsPage'
 import DojosPage from './pages/DojosPage'
 import EventTypesPage from './pages/EventTypesPage'
+import ReportsPage from './pages/ReportsPage'
 import Layout from './components/Layout'
 import { ToastContainer } from './components/Toast'
 
@@ -81,6 +82,14 @@ function App() {
               element={
                 <PrivateRoute>
                   <ExamsPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/reports"
+              element={
+                <PrivateRoute>
+                  <ReportsPage />
                 </PrivateRoute>
               }
             />

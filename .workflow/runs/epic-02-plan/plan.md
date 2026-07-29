@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 1 (Pré-Checkin) shipped as `da5bd69`. Phase 2 (Exames Médicos + document foundation) shipped (PR #25). Phase 3 (Financial foundation) built, PR #26 open against `develop`, CI green. Phase 4 (Contracts) requirements approved (D1–D7 resolved 2026-07-22) and implementation plan complete below; ready for `squad-feature` once PR #26 merges. Phase 5 policy defined but needs implementation planning.
+Phase 1 (Pré-Checkin) shipped as `da5bd69`. Phase 2 (Exames Médicos + document foundation) shipped (PR #25). Phase 3 (Financial foundation) merged to `develop`. Phase 4 (Contracts) merged to `develop` (PR #27). Phase 5 (Reports) implementation plan complete below, reviewed (APPROVED WITH FOLLOW-UPS, `review-phase5.md`), and all follow-ups resolved in-plan (2026-07-26); ready for `squad-feature` to build PR-5.
 
 ## Scope and Outcome
 
@@ -161,7 +161,9 @@ Supply parameterized PDF/CSV exports for belt exams, individual/class attendance
 
 ## Next Action
 
-Phase 1 (Pré-Checkin) shipped as `da5bd69`. Phase 2 (Exames Médicos + document foundation) decisions are resolved and the implementation plan above is ready; use `squad-feature` to build PR-2 against the acceptance criteria in "Phase 2 Implementation Plan".
+Phase 5 (Reports) implementation plan is complete above (2026-07-26), with no open decision gates beyond the already-resolved REP-04 projection formula. `requirements-reviewer` returned **APPROVED WITH FOLLOW-UPS** (`review-phase5.md`); all six non-blocking findings (missing test plan, 404 coverage, empty-result behavior, REP-03 roster scope, input validation, export row limits) have been folded into the Phase 5 section above (2026-07-26) — no schema/design change was needed, only clarifying defaults and a new "### Test plan" subsection. Phase 5 is now review-complete; ready for `squad-feature` to build PR-5.
+
+(Historical: Phase 1 (Pré-Checkin) shipped as `da5bd69`. Phase 2 (Exames Médicos + document foundation) shipped PR #25. Phase 3 (Financial foundation) and Phase 4 (Contracts) are both merged to `develop`.)
 
 ## Phase 3 Implementation Plan — Financial Foundation
 
@@ -425,3 +427,102 @@ New router `app/api/contracts.py` (instructor/admin only throughout — D5, no p
 4. Upload-signed path: uploads a PDF, confirms `signed`/`uploaded` status (reusing the same PDF fixture `medical-exam.cy.ts` already uses for its own upload test)
 5. "Regenerar Rascunho" on an unsigned draft updates the document without changing the displayed price
 6. Non-admin/instructor session gets 403 on a direct API call to a contract endpoint (authz regression, matching the existing e2e authz-check convention)
+
+## Phase 5 Implementation Plan — Reports
+
+### Requirements review
+
+There is no dedicated `requirements-phase5.md`/`review-phase5.md` — Phase 5's only prior review input is [review.md](review.md)'s "Reporting order" finding ("Financial reports preceded financial data" → resolved by delivering finance before reports, which is now satisfied: Phases 3/4 are merged) and the already-resolved REP-04 policy recorded above under "Later Phase Contracts" (2026-07-19): the financial projection is expected revenue over the next N months (default N=3) = sum of currently active plans' prices, with no adjustment for historical delinquency/cancellation. Both are treated as settled; this section does not re-litigate them.
+
+Ground-truth re-confirmed while designing (2026-07-26): current Alembic head is unchanged since Phase 4 (`add_contracts`, on top of `c7a3f9d21b6e`) — Phase 5 adds no migration, confirmed below. No report/export code of any kind exists anywhere in the codebase yet; PDF generation exists exactly once, in `contract_pdf_service.py` (ReportLab `platypus`, `SimpleDocTemplate`/`Paragraph`/`Image`/`Spacer` — a merge-field **text** renderer, not a tabular one). No CSV export exists anywhere. The following read paths are the exact data sources this phase aggregates, each re-confirmed directly against the models/services:
+
+- **Belt exams (REP-01):** `Exam`/`ExamParticipant`/`ExamBoardMember`/`BeltPromotion` (`models/__init__.py:466-543`) — independent of `Document`/`MedicalExam`, exactly as the Phase 2 handoff noted. `ExamParticipant` carries `role` (`candidate`/`uke`), `status` (`pending`/`approved`/`rejected`), and eligibility-override fields; `BeltPromotion` (`student_id`, `belt_id`, `promoted_at`, `exam_id`) is the authoritative promotion record already linked back to the `Exam` that produced it (`exam_service.py:248-275`, `promote_candidate`).
+- **Attendance (REP-02/REP-03):** `Attendance` (`event_id`, `student_id`, `check_in_method`, `check_in_at`) joined to `Event` (`title`, `event_type_id`, `start_datetime`, `status`) and `EventType` (`name`) — `events.py`'s existing `GET /api/v1/events?event_type_id=` filter confirms `EventType` is the codebase's existing stand-in for "turma" (class); there is no separate recurring-class/roster entity, so REP-03's "por turma" groups by `event_type_id` over a date range, exactly the same dimension the Events page already filters by.
+- **Finance (REP-04):** `Payment` (`payment_date`, `amount`, `status`) for the payments section; `BalanceService.get_overdue_dashboard(db)` (`balance_service.py:102-129`) reused unchanged for the delinquency section (it already returns student, amount owed, overdue count, oldest overdue due date, plus the D3 medical-exam flag); `StudentPlanService.get_current_price(db, student_id)` (`student_plan_service.py:33-37`) — confirmed still present and unchanged, exactly the standalone query the Phase 3 design flagged as existing "specifically so Phase 5's REP-04 can look up a student's current price" — is the per-student input to the projection total (summed across all students with an `active` `StudentPlan` whose `Student.is_active` is true).
+- **PDF/CSV export (REP-05):** `contract_pdf_service.py` establishes the only precedent — pure-rendering, no-DB-writes, ReportLab-based. Its paragraph-flow API doesn't fit tabular reports as-is, but it confirms ReportLab is already a project dependency (`poetry add reportlab` from Phase 4) capable of the `platypus.Table` flowable needed here, so **no new PDF library dependency is needed**. CSV export has no precedent; Python's stdlib `csv` module is the obvious, dependency-free, idiomatic choice for this FastAPI backend (confirmed no CSV library of any kind — stdlib or third-party — is used anywhere in `dojo-app/backend`).
+- **Frontend download pattern (REP-05):** `StudentsPage.tsx`'s `handleDownloadContract` (`StudentsPage.tsx:475-485`) is the one existing precedent for a binary-file download: `api.get(url, { responseType: 'blob' })`, then `URL.createObjectURL` + a synthetic `<a download>` click. This is reused verbatim for report PDF/CSV export.
+
+### Required decisions
+
+None remain beyond the already-resolved REP-04 projection formula (cited above). Two implementation notes are flagged below (not decision gates — each has an obvious, low-risk default consistent with the rest of the epic, so build proceeds against them without a further sign-off round):
+
+- **Default date range when a report's `start_date`/`end_date` are omitted:** defaults to the current calendar month (`[first day of current month, today]`), consistent with the epic's existing monthly billing cadence (Phase 3) rather than an arbitrary rolling window like "last 30 days."
+- **CSV shape for a multi-section report (REP-04 only):** the financial report's three sections (payments, delinquency, projection) are rendered as three stacked tables in one CSV file, each preceded by a one-line section header row and separated by a blank line — the simplest option that keeps a single downloadable file per the REP-04/REP-05 requirement text, without inventing a multi-file/zip mechanism.
+
+### Intended design
+
+**Data model:** no new tables, confirmed. Every report reads existing Phase 1–4 tables (`Exam`/`ExamParticipant`/`BeltPromotion`, `Attendance`/`Event`/`EventType`, `Payment`/`StudentPlan`, `Student`) and existing services (`BalanceService`, `StudentPlanService`). A report is generated on demand from a request; there is nowhere in this design a stored "last export" record would be read back, so none is added — this confirms the Migration Strategy section's "Phase 5 remains read-oriented" holds with no deviation, and no Alembic revision is created for this phase.
+
+**Service layer** — two new modules, split by concern the same way Phase 4 split `ContractPdfService` (pure rendering) from `ContractService` (DB orchestration):
+
+- **`app/services/report_service.py`** (new) — pure query/aggregation functions, each returning plain `dict`/`list[dict]` data (not ORM objects, so the same shape can feed both the JSON preview response and the export renderers without a second query):
+  - `get_belt_exam_report(db, student_id) -> dict` — student identity plus each `ExamParticipant` row for that student (exam date, target belt, role, status, override flag/reason if any) joined to the resulting `BeltPromotion` when `status == "approved"`, most recent first. 404s (propagated as `HTTPException`) if the student doesn't exist, mirroring `ContractService`'s existing not-found handling style.
+  - `get_student_attendance_report(db, student_id, start_date, end_date) -> dict` — student identity, total count, and each `Attendance` row in range (event title, event type name, check-in date/time, check-in method) ordered by date.
+  - `get_class_attendance_report(db, event_type_id, start_date, end_date) -> dict` — event type name, per-event attendance counts for every `Event` of that type in range, and a per-student roster (student, total attendances in range) for that event type — the "instructor" view (REP-03) is class-first rather than student-first, the inverse grouping of REP-02.
+  - `get_financial_report(db, start_date, end_date, months_ahead=3) -> dict` — three independently-computed sections: `payments` (active `Payment` rows with `payment_date` in range), `delinquency` (`BalanceService.get_overdue_dashboard(db)`, reused unchanged — no new delinquency logic is written here), `projection` (`monthly_total` = sum of `StudentPlanService.get_current_price(db, student_id)` over every `Student` with `is_active == True` and an active `StudentPlan`; `months_ahead` and `projected_total = monthly_total * months_ahead`, per the resolved REP-04 formula — no per-month variation, since the policy explicitly excludes delinquency/cancellation adjustment).
+- **`app/services/report_export_service.py`** (new) — pure rendering, no DB access, mirroring `ContractPdfService`'s "no DB writes" discipline exactly:
+  - `render_csv(sections: list[tuple[str, list[str], list[list[str]]]]) -> bytes` — each section is `(title, column_headers, rows)`; writes a title line, a header row, and data rows per section (blank line between sections) via stdlib `csv.writer` into an `io.StringIO`, encoded to `bytes`. A single-section report (REP-01/REP-02/REP-03) is just a one-element list.
+  - `render_pdf_table(title: str, sections: list[tuple[str, list[str], list[list[str]]]]) -> bytes` — one `platypus.SimpleDocTemplate`, a `Paragraph` title, then per section a sub-heading `Paragraph` and a `platypus.Table` (header row bolded via `TableStyle`), separated by `Spacer`s — the same `A4`/`SimpleDocTemplate` scaffold `ContractPdfService.render_pdf` already uses, generalized from a paragraph flow to a table flow.
+
+### Validation, error handling, and edge-case defaults
+
+Resolved 2026-07-26 in response to `review-phase5.md`'s findings #2-#6 — none require a schema/design change, each is a low-risk default that makes the acceptance criteria below directly testable:
+
+- **404s (finding #2):** `get_belt_exam_report`, `get_student_attendance_report`, and `get_class_attendance_report` each 404 (`HTTPException(404)`) when their scoping id (`student_id`, `student_id`, `event_type_id` respectively) doesn't exist, mirroring `ContractService`'s already-established not-found style. `get_financial_report` has no FK-scoped lookup — it aggregates across all students — so it has no 404 case; its own input validation is covered below.
+- **Empty results (finding #3):** a report whose date range or scope produces zero rows returns HTTP 200 with an empty list and a zero total (e.g. `total_attendances: 0`, `payments: []`, `monthly_total: 0`), for all four functions and both the JSON and PDF/CSV export paths — this is not an error condition; an empty section still renders its header row with zero data rows.
+- **REP-03 roster scope (finding #4):** the per-student roster returned by `get_class_attendance_report` includes only students with at least one `Attendance` in the requested range for that `event_type_id` — there is no "enrolled in this `EventType`" concept in the schema to define a zero-attendance roster against, so no all-active-students-with-zero-rows behavior is implemented.
+- **Input validation (finding #5):** `start_date > end_date` → `HTTPException(400)` on all three range-scoped functions (`get_student_attendance_report`, `get_class_attendance_report`, `get_financial_report`). `months_ahead` defaults to `3` and is validated to a minimum of `1` (`HTTPException(400)` below that, no upper clamp, consistent with the "no adjustment" REP-04 formula). The `format` query parameter is a plain `str` defaulting to `"json"`, validated explicitly against `{"json", "pdf", "csv"}` in the route handler with `HTTPException(400)` on any other value — this matches this backend's existing convention of plain `str | None` query filters with manual validation (confirmed against `events.py`'s `status`/`event_type_id` filters, `app/api/events.py:62-64`), not FastAPI `Query(..., regex=...)` or a `Literal` type, neither of which appears anywhere in this codebase today.
+- **Export row limits (finding #6):** no row-count cap is imposed on any report or export. This is a conscious "fine at current scale" default for this phase, not an oversight, and can be revisited if dataset size becomes a real concern later.
+
+**API layer** (instructor/admin only throughout, via `get_current_instructor_or_admin` — no REP-0X item requests student/public self-service, consistent with the default stated in the task brief; new router `app/api/reports.py`, registered in `app/main.py` after `contracts.router`):
+
+- `GET /api/v1/reports/belt-exams/{student_id}?format=json|pdf|csv` (default `json`)
+- `GET /api/v1/reports/attendance/student/{student_id}?start_date=&end_date=&format=`
+- `GET /api/v1/reports/attendance/class?event_type_id=&start_date=&end_date=&format=`
+- `GET /api/v1/reports/finance?start_date=&end_date=&months_ahead=3&format=`
+
+Each endpoint calls its `report_service` function first; if `format == "json"` it returns the dict directly (typed via a matching Pydantic response model in `app/schemas/report.py`, new); if `format in ("pdf", "csv")` it passes the same dict's rows into `report_export_service`'s matching renderer and returns a plain `Response` with `media_type="application/pdf"`/`"text/csv"` and `Content-Disposition: attachment`, exactly matching the existing `download_contract` endpoint's `Response(...)` construction in `contracts.py:103-117` (no `response_model` on that code path, same as today's contract download). This single-endpoint-three-formats shape avoids tripling the route count while still giving the frontend a JSON preview path and two export paths from the same filter parameters.
+
+**Frontend:** new `ReportsPage.tsx` (instructor/admin route, added to `App.tsx`'s `PrivateRoute` list after `/exams`, plus a nav entry in `Layout`), structured as four sections (mirroring `PlansPage.tsx`/`DashboardPage.tsx`'s existing card/table conventions):
+
+1. **Exame de Faixa** — a student picker (reuses the existing student-search input pattern from `StudentsPage.tsx`), "Visualizar" fetches `?format=json` and renders a table; "Exportar PDF"/"Exportar CSV" buttons call the same endpoint with `format=pdf`/`csv` and `responseType: 'blob'`, reusing `handleDownloadContract`'s exact blob-to-`<a download>` pattern.
+2. **Presenças (Aluno)** — student picker + date-range inputs, same preview/export pattern.
+3. **Presenças (Turma)** — `EventType` dropdown (reusing `EventTypesPage.tsx`'s existing list-fetch) + date-range inputs, same pattern.
+4. **Financeiro** — date-range inputs + a `months_ahead` number input (default 3), same pattern; the JSON preview renders three sub-tables (payments, delinquency, projection) matching the CSV's three-section shape.
+
+### Phase 5 acceptance criteria
+
+1. **REP-01:** Instructor/admin can request a per-student belt-exam report showing every exam participation (date, target belt, role, status, override info) and resulting promotion, in JSON preview and as a PDF/CSV export; requesting a nonexistent `student_id` returns 404, and a student with no exam participations returns an empty list with HTTP 200.
+2. **REP-02:** Instructor/admin can request an individual student's attendance report for a given date range (defaulting to the current month when omitted), listing each attendance with event/class-type/date, plus a total count, in JSON preview and as a PDF/CSV export; a nonexistent `student_id` returns 404, `start_date > end_date` returns 400, and a range with no attendances returns an empty list with `total_attendances: 0` and HTTP 200.
+3. **REP-03:** Instructor/admin can request a class/period attendance report scoped to an `EventType` and date range, showing per-event attendance counts and a per-student roster of attendance totals for that class type — the roster includes only students with at least one attendance in range (no zero-attendance rows, per the resolved roster-scope default), in JSON preview and as a PDF/CSV export; a nonexistent `event_type_id` returns 404, `start_date > end_date` returns 400, and a range with no attendance returns an empty roster/event list with HTTP 200.
+4. **REP-04:** Instructor/admin can request a financial report for a date range showing (a) payments recorded in that range, (b) the current delinquency list (reusing `BalanceService.get_overdue_dashboard` unchanged), and (c) a revenue projection over the next N months (default 3, minimum 1, `HTTPException(400)` below that) computed as `sum(current active-student prices) * N`, with no delinquency/cancellation adjustment (REP-04 policy, confirmed 2026-07-19) — all three sections in one JSON preview and one combined PDF/CSV export; `start_date > end_date` returns 400, and a range with no payments/no delinquent students returns empty sections and a zero `monthly_total` with HTTP 200 (this report has no FK-scoped id, so no 404 case applies).
+5. **REP-05:** Every report above supports `format=pdf` and `format=csv` in addition to a default `format=json` preview, using ReportLab (already a project dependency since Phase 4, no new PDF library added) for PDF tables and the Python stdlib `csv` module for CSV — both producing a downloadable file via the same `Content-Disposition: attachment` pattern already established by the Phase 4 contract-download endpoint; an unrecognized `format` value returns `HTTPException(400)`.
+6. No new database table or Alembic migration is introduced by this phase; every report reads existing `exams`/`exam_participants`/`belt_promotions`, `attendances`/`events`/`event_types`, `payments`/`student_plans`/`students` data and existing services (`BalanceService`, `StudentPlanService`) without modifying any of them.
+7. All new report endpoints require instructor/admin authentication (`get_current_instructor_or_admin`); no public/self-service report endpoint is introduced.
+
+### Test plan
+
+Added 2026-07-26 in response to `review-phase5.md` finding #1 (no test-plan content), matching Phase 4's "### Test plan" format (lines 402-429).
+
+**Pytest (backend, unit + API — mirrors `test_contract_pdf_service.py`/`test_contract_service.py`'s existing structure):**
+- `get_belt_exam_report` — happy path (participations + resulting promotions, most recent first); 404 for a nonexistent `student_id`; empty list with HTTP 200 for a student with no exam participations
+- `get_student_attendance_report` — happy path across a date range with correct total count; 404 for a nonexistent `student_id`; 400 for `start_date > end_date`; empty list + `total_attendances: 0` for a range with no attendances
+- `get_class_attendance_report` — happy path (per-event counts + per-student roster); 404 for a nonexistent `event_type_id`; 400 for `start_date > end_date`; empty roster/event list for a range with no attendance; roster excludes a student with zero attendances in range (finding #4 regression)
+- `get_financial_report` — happy path across all three sections (payments, delinquency, projection); 400 for `start_date > end_date`; 400 for `months_ahead < 1`; empty payments/delinquency lists and zero `monthly_total`/`projected_total` when there is no qualifying data; projection math regression (`monthly_total * months_ahead`, no delinquency/cancellation adjustment)
+- `render_pdf_table` — produces non-empty PDF bytes with `content.startswith(b"%PDF-")` (same magic-byte assertion style as `test_contract_pdf_service.py:62,73`); a multi-section input produces one table per section
+- `render_csv` — a multi-section input produces one title/header/data block per section, blank-line separated; a section with zero rows still emits its header row
+- API tests (`app/api/reports.py`): 401/403 for a non-instructor/admin caller on every endpoint (matches Phase 2-4's authz convention); 400 for invalid `format`/date-range/`months_ahead`; 404 for an invalid `student_id`/`event_type_id`; happy-path 200 for `format=json|pdf|csv` on each of the four endpoints
+
+**Jest (frontend, per the repo's mandatory-testing policy):**
+- `ReportsPage.tsx`'s four sections — each section's "Visualizar" calls the correct endpoint/query params (network mocked, same `jest.mock('../services/api', ...)` convention as `MedicalExamPage.test.tsx`/`ContractTemplatesPage.tsx` tests) and renders the returned rows, including the empty-result case; "Exportar PDF"/"Exportar CSV" buttons call the same endpoint with `format=pdf`/`csv` and `responseType: 'blob'`
+
+**Cypress e2e (`reports.cy.ts`, new, mirroring `contracts.cy.ts`'s conventions):**
+1. Instructor logs in, opens the Reports page, requests a belt-exam report for a seeded student, confirms the JSON preview table renders the expected rows
+2. Requests the same student's attendance report over a seeded date range, confirms the rendered total matches the seeded `Attendance` count
+3. A real PDF download: clicks "Exportar PDF" on one section, confirms the downloaded blob starts with `%PDF-` (mirroring the `%PDF-1.4` fixture convention `contracts.cy.ts`'s Scenario 4 already uses for its upload test) — exercises an actual end-to-end PDF round trip, not just the JSON preview
+4. A real CSV download for the financial report, confirming all three section headers (payments/delinquency/projection) appear in the downloaded text body
+5. Non-admin/instructor session gets 401/403 on a direct API call to a report endpoint (authz regression, matching `contracts.cy.ts` Scenario 6's convention)
+
+### Phase 5 status
+
+Review-complete as of 2026-07-26: `review-phase5.md` returned APPROVED WITH FOLLOW-UPS; all six non-blocking findings (test-plan content, 404 coverage, empty-result behavior, REP-03 roster scope, input validation, export row limits) are resolved above via the "Validation, error handling, and edge-case defaults" subsection, the updated acceptance criteria, and this Test plan. No further requirements-reviewer pass is needed — ready for `squad-feature` to build PR-5.
