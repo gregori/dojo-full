@@ -105,7 +105,8 @@ Cypress.Commands.add('createEvent', (data: {
   })
 })
 
-// Seed a belt via API
+// Seed a belt via API (idempotent: reuses an existing belt with the same
+// name+category instead of creating a duplicate on every test run)
 Cypress.Commands.add('createBelt', (data: {
   name: string
   category: string
@@ -114,17 +115,35 @@ Cypress.Commands.add('createBelt', (data: {
   const adminToken = Cypress.env('adminToken') || localStorage.getItem('token')
   const apiUrl = Cypress.env('VITE_API_URL') || 'http://localhost:8000'
 
-  cy.request({
-    method: 'POST',
+  return cy.request({
+    method: 'GET',
     url: `${apiUrl}/api/v1/belts`,
-    body: data,
     headers: { Authorization: `Bearer ${adminToken}` },
     failOnStatusCode: false,
-  }).then((response) => {
-    if (response.status !== 201) {
-      cy.log(`Belt creation warning: ${response.status} - ${response.body?.detail}`)
+  }).then((listResponse) => {
+    const existing =
+      listResponse.status === 200
+        ? (listResponse.body as { id: string; name: string; category: string }[]).find(
+            (belt) => belt.name === data.name && belt.category === data.category
+          )
+        : undefined
+
+    if (existing) {
+      return cy.wrap(existing)
     }
-    return cy.wrap(response.body)
+
+    return cy.request({
+      method: 'POST',
+      url: `${apiUrl}/api/v1/belts`,
+      body: data,
+      headers: { Authorization: `Bearer ${adminToken}` },
+      failOnStatusCode: false,
+    }).then((response) => {
+      if (response.status !== 201) {
+        cy.log(`Belt creation warning: ${response.status} - ${response.body?.detail}`)
+      }
+      return cy.wrap(response.body)
+    })
   })
 })
 
