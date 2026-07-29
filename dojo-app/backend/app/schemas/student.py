@@ -37,6 +37,7 @@ class StudentUpdate(BaseModel):
     current_belt_id: str | None = None
     pin: str | None = None
     is_active: bool | None = None
+    registration_number: str | None = None
     contract_name: str | None = None
     contract_cpf: str | None = None
     address_street: str | None = None

@@ -1,9 +1,9 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.models import Event, EventType
+from app.models import Event, EventType, PreCheckIn
 from app.schemas import EventCreate, EventTypeCreate, EventTypeUpdate, EventUpdate
 
 
@@ -80,6 +80,24 @@ class EventService:
         return db_event
 
     @staticmethod
+    def cancel_pre_checkins_for_event(db: Session, event: Event) -> None:
+        """Cancel every confirmed PreCheckIn for an event, setting cancelled_at.
+
+        Extracted from update_event's existing reschedule-cutoff cascade (the
+        loop body below is unchanged, just given a name and a second caller) so
+        every path that cancels an Event -- this service's own delete_event
+        (RES-09's actual bug fix), update_event's pre-existing reschedule-cutoff
+        trigger, and EventSeriesService's Case B / deactivation cascade -- shares
+        one implementation instead of three copies of the same loop.
+        """
+        now = datetime.now(UTC)
+        for pre_checkin in (
+            db.query(PreCheckIn).filter(PreCheckIn.event_id == event.id, PreCheckIn.status == "confirmed").all()
+        ):
+            pre_checkin.status = "cancelled"
+            pre_checkin.cancelled_at = now
+
+    @staticmethod
     def update_event(db: Session, event_id: str, event_data: EventUpdate) -> Event:
         event = EventService.get_event(db, event_id)
         if not event:
@@ -89,6 +107,15 @@ class EventService:
         for field, value in update_data.items():
             setattr(event, field, value)
 
+        # A reschedule into the one-hour cutoff invalidates existing intent;
+        # attendees must explicitly confirm again once the event is reopened.
+        if "start_datetime" in update_data:
+            start_datetime = event.start_datetime
+            if start_datetime.tzinfo is None:
+                start_datetime = start_datetime.replace(tzinfo=UTC)
+            if start_datetime <= datetime.now(UTC) + timedelta(hours=1):
+                EventService.cancel_pre_checkins_for_event(db, event)
+
         event.updated_at = datetime.now(UTC)
         db.commit()
         db.refresh(event)
@@ -96,9 +123,14 @@ class EventService:
 
     @staticmethod
     def delete_event(db: Session, event_id: str) -> None:
+        """RES-09 fix: cancelling an Event now also cascades to its confirmed
+        PreCheckIns -- this was the pre-existing gap (this method previously
+        only set event.status, never touching PreCheckIn).
+        """
         event = EventService.get_event(db, event_id)
         if not event:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
         event.status = "cancelled"
         event.updated_at = datetime.now(UTC)
+        EventService.cancel_pre_checkins_for_event(db, event)
         db.commit()

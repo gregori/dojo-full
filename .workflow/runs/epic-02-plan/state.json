@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "run_id": "epic-02-plan",
+  "work_item": "Epic 2 — Financeiro, Pré-Checkin e Relatórios",
+  "status": "epic_complete_pr5_opened",
+  "created_at": "2026-07-19",
+  "updated_at": "2026-07-26",
+  "requirements_review": "completed",
+  "plan_path": ".workflow/runs/epic-02-plan/plan.md",
+  "handoff_path": ".workflow/epic-02/handoff.md",
+  "next_action": "Phase 5 (Reports, PR-5) committed as 2e29319, pushed feature/reports, and opened as PR #28 against develop (https://github.com/gregori/dojo-full/pull/28), mirroring PR-1 through PR-4's process. All five Epic 2 phases (Pre-Checkin, Medical Exams, Financial Foundation, Contracts, Reports) are now implemented, tested, reviewed, and have an open/merged PR. PR-1, PR-2, PR-3, PR-4 are already merged to develop; PR-5 is open pending review/merge. No further phases remain in this epic's plan.",
+  "checks_path": ".workflow/runs/epic-02-plan/checks.json"
+}

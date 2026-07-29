@@ -16,6 +16,7 @@ from sqlalchemy.pool import StaticPool
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 
 from datetime import UTC
+from decimal import Decimal
 
 from app.core.security import get_password_hash
 from app.models import (
@@ -24,12 +25,21 @@ from app.models import (
     Belt,
     BeltPromotion,
     BeltRequirement,
+    Contract,
+    ContractTemplateVersion,
     Dojo,
     Event,
+    EventSeries,
     EventType,
     Exam,
+    ExamParticipant,
+    Mensalidade,
     Organization,
+    Payment,
+    PlanTier,
+    PlanVersion,
     Student,
+    StudentPlan,
     User,
 )
 
@@ -160,6 +170,34 @@ def make_event(db, event_type_id=None, created_by=None, **kwargs):
     return event
 
 
+def make_event_series(db, event_type_id=None, created_by=None, **kwargs):
+    from datetime import time
+
+    from app.core.timezone import local_today
+
+    if event_type_id is None:
+        et = make_event_type(db)
+        event_type_id = et.id
+    if created_by is None:
+        user = make_user(db)
+        created_by = user.id
+    n = _next_id()
+    defaults = {
+        "title": f"Test Series {n}",
+        "event_type_id": event_type_id,
+        "days_of_week": "0,2,5",
+        "start_time": time(7, 0),
+        "series_start_date": local_today(),
+        "is_active": True,
+        "created_by": created_by,
+    }
+    defaults.update(kwargs)
+    series = EventSeries(**defaults)
+    db.add(series)
+    db.flush()
+    return series
+
+
 def make_student(db, current_belt_id=None, **kwargs):
     if current_belt_id is None:
         belt = make_belt(db)
@@ -248,6 +286,27 @@ def make_exam(db, event_id=None, belt_id=None, created_by=None, **kwargs):
     return exam
 
 
+def make_exam_participant(db, exam_id=None, student_id=None, **kwargs):
+    if exam_id is None:
+        exam = make_exam(db)
+        exam_id = exam.id
+    if student_id is None:
+        student = make_student(db)
+        student_id = student.id
+    defaults = {
+        "exam_id": exam_id,
+        "student_id": student_id,
+        "role": "candidate",
+        "status": "pending",
+        "is_eligible": True,
+    }
+    defaults.update(kwargs)
+    participant = ExamParticipant(**defaults)
+    db.add(participant)
+    db.flush()
+    return participant
+
+
 def make_belt_promotion(db, student_id=None, belt_id=None, **kwargs):
     from datetime import datetime
 
@@ -268,3 +327,171 @@ def make_belt_promotion(db, student_id=None, belt_id=None, **kwargs):
     db.add(promotion)
     db.flush()
     return promotion
+
+
+def make_plan_tier(db, **kwargs):
+    n = _next_id()
+    defaults = {"weekly_frequency": n, "name": f"{n}x por semana", "is_active": True}
+    defaults.update(kwargs)
+    tier = PlanTier(**defaults)
+    db.add(tier)
+    db.flush()
+    return tier
+
+
+def make_plan_version(db, plan_tier_id=None, created_by=None, **kwargs):
+    from datetime import datetime
+
+    if plan_tier_id is None:
+        tier = make_plan_tier(db)
+        plan_tier_id = tier.id
+    if created_by is None:
+        user = make_user(db)
+        created_by = user.id
+    defaults = {
+        "plan_tier_id": plan_tier_id,
+        "price": Decimal("100.00"),
+        "status": "active",
+        "effective_from": datetime.now(UTC),
+        "created_by": created_by,
+    }
+    defaults.update(kwargs)
+    version = PlanVersion(**defaults)
+    db.add(version)
+    db.flush()
+    return version
+
+
+def make_student_plan(db, student_id=None, plan_version_id=None, **kwargs):
+    from datetime import datetime
+
+    if student_id is None:
+        student = make_student(db)
+        student_id = student.id
+    if plan_version_id is None:
+        version = make_plan_version(db)
+        plan_version_id = version.id
+    defaults = {
+        "student_id": student_id,
+        "plan_version_id": plan_version_id,
+        "status": "active",
+        "started_at": datetime.now(UTC),
+    }
+    defaults.update(kwargs)
+    student_plan = StudentPlan(**defaults)
+    db.add(student_plan)
+    db.flush()
+    return student_plan
+
+
+def make_mensalidade(db, student_id=None, plan_version_id=None, **kwargs):
+    from datetime import datetime
+
+    if student_id is None:
+        student = make_student(db)
+        student_id = student.id
+    if plan_version_id is None:
+        version = make_plan_version(db)
+        plan_version_id = version.id
+    defaults = {
+        "student_id": student_id,
+        "plan_version_id": plan_version_id,
+        "reference_month": datetime(2026, 1, 1, tzinfo=UTC),
+        "due_date": datetime(2026, 1, 5, tzinfo=UTC),
+        "amount": Decimal("100.00"),
+    }
+    defaults.update(kwargs)
+    mensalidade = Mensalidade(**defaults)
+    db.add(mensalidade)
+    db.flush()
+    return mensalidade
+
+
+def make_student_with_contract_data(db, **kwargs):
+    """Create a student with every CON-02/D3 required legal-data field populated."""
+    from datetime import datetime
+
+    defaults = {
+        "contract_name": "Responsavel Legal",
+        "contract_cpf": "123.456.789-00",
+        "address_street": "Rua Teste, 100",
+        "address_neighborhood": "Centro",
+        "address_city": "Sao Paulo",
+        "address_zip": "01000-000",
+        "birth_date": datetime(2000, 1, 1, tzinfo=UTC),
+        "phone": "(11) 99999-9999",
+    }
+    defaults.update(kwargs)
+    return make_student(db, **defaults)
+
+
+def make_contract_template_version(db, created_by=None, **kwargs):
+    from datetime import datetime
+
+    if created_by is None:
+        user = make_user(db)
+        created_by = user.id
+    defaults = {
+        "body": "Contrato de {{ student.contract_name }}, plano {{ plan_tier.name }}, valor {{ plan_version.price }}.",
+        "status": "active",
+        "effective_from": datetime.now(UTC),
+        "created_by": created_by,
+    }
+    defaults.update(kwargs)
+    version = ContractTemplateVersion(**defaults)
+    db.add(version)
+    db.flush()
+    return version
+
+
+def make_contract(
+    db, student_id=None, contract_template_version_id=None, plan_version_id=None, created_by=None, **kwargs
+):
+    if student_id is None:
+        student = make_student_with_contract_data(db)
+        student_id = student.id
+    if contract_template_version_id is None:
+        template_version = make_contract_template_version(db)
+        contract_template_version_id = template_version.id
+    if plan_version_id is None:
+        plan_version = make_plan_version(db)
+        plan_version_id = plan_version.id
+    if created_by is None:
+        user = make_user(db)
+        created_by = user.id
+    defaults = {
+        "student_id": student_id,
+        "contract_template_version_id": contract_template_version_id,
+        "plan_version_id": plan_version_id,
+        "status": "draft",
+        "created_by": created_by,
+    }
+    defaults.update(kwargs)
+    contract = Contract(**defaults)
+    db.add(contract)
+    db.flush()
+    return contract
+
+
+def make_payment(db, student_id=None, recorded_by=None, **kwargs):
+    from datetime import datetime
+
+    if student_id is None:
+        student = make_student(db)
+        student_id = student.id
+    if recorded_by is None:
+        user = make_user(db)
+        recorded_by = user.id
+    defaults = {
+        "student_id": student_id,
+        "amount": Decimal("50.00"),
+        "payment_date": datetime.now(UTC),
+        "method": "pix",
+        "recorded_by": recorded_by,
+        "status": "active",
+    }
+    defaults.update(kwargs)
+    payment = Payment(**defaults)
+    db.add(payment)
+    db.flush()
+    return payment

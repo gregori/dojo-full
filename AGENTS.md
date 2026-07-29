@@ -2,6 +2,21 @@
 
 This document provides essential information for AI coding agents working on this application.
 
+# Application Paths
+
+The runnable Dojo Admin application lives under `dojo-app/`; this is the only
+application source tree to inspect or modify.
+
+- Backend: `dojo-app/backend/`
+- Frontend: `dojo-app/frontend/`
+- Local service configuration: `docker-compose.yml` at the repository root,
+  which builds both services from `dojo-app/`
+
+The root-level `backend/` and `frontend/` directories were obsolete skeletons
+and have been removed. Do not recreate them or target them in code, tests,
+Docker commands, plans, or documentation. Repository-level workflow and
+documentation remain in `.workflow/` and `docs/`.
+
 # Team workflow rules
 
 All agents participate in one workflow.
@@ -152,3 +167,20 @@ Runs at the epic level, before technical planning begins.
 # Project Overview
 
 Project overview is stated in [Project Overview](./PROJECT_OVERVIEW.md).
+
+<!-- orchestrated-squad:codex:start -->
+## Orchestrated Squad
+
+Use the installed `squad-*` workflow commands. The root session owns orchestration and `.workflow/` is canonical state. For every LLM workflow phase, the root must invoke the platform-native specialist subagent; it may only inspect state, coordinate transitions, and run deterministic gates itself. Specialists must not delegate again. Preserve instructions outside this managed block.
+<!-- orchestrated-squad:codex:end -->
+
+
+## Testing
+
+Frontend and backend unit testing **MUST** be performed for all new features and bug fixes.
+All acceptance criteria must be covered by automated tests. 
+
+Layer the testing as:
+- **Unit tests**: Test individual components or functions in isolation. Use Pytest for backend and Jest for frontend.
+- **Integration tests**: Test interactions between components or modules. Use Pytest for backend and Jest for frontend.
+- **End-to-end tests**: Test the entire application flow from the user's perspective. Use Cypress for frontend and Behave for backend

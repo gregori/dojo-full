@@ -1,0 +1,308 @@
+{
+  "schema_version": 1,
+  "files": {
+    ".codex/config.toml": {
+      "hash": "280fc36669322446d0ad08d1a8c58217a8d47530cad1b22ed5a4b684705ca60b",
+      "target": "codex"
+    },
+    ".codex/agents/bug-triager.toml": {
+      "hash": "dbd67eade301ed30d560efcdf353832ea297c3bb31828735452bc7d8282eb8c9",
+      "target": "codex"
+    },
+    ".codex/agents/doc-writer.toml": {
+      "hash": "053761de6720364eb2a5dc6e2bccd58966d8dc5634ecebe988dc80483b9d0a6a",
+      "target": "codex"
+    },
+    ".codex/agents/implementer.toml": {
+      "hash": "7ca8b96bc02010c87a78fe5a46de1205110a0989179af3c2a5f42fcf6dbca738",
+      "target": "codex"
+    },
+    ".codex/agents/product-manager.toml": {
+      "hash": "ed7efb3483df294460ea54bc44a3ac444653b0a5e297f59dc2a2698e3eff95e7",
+      "target": "codex"
+    },
+    ".codex/agents/requirements-reviewer.toml": {
+      "hash": "b99f2c3ba269d0b89bb1e8f0d194cc7514627e65b5dfec2c9027707d89669c56",
+      "target": "codex"
+    },
+    ".codex/agents/reviewer.toml": {
+      "hash": "1776e159eb618ff870eca51489c20d5698521e049d56da55369d6a5ad1555c00",
+      "target": "codex"
+    },
+    ".codex/agents/sre.toml": {
+      "hash": "af778cc8e9e021b502b980ade5272ccc75e105843ee5ae4cf2b5d9e1d630bcc4",
+      "target": "codex"
+    },
+    ".codex/agents/tech-analyst.toml": {
+      "hash": "3671d462f86b6ff2131aaecae460c6db0c02b5f82839c7665961140a6c25d48b",
+      "target": "codex"
+    },
+    ".codex/agents/test-author.toml": {
+      "hash": "e22010999cdfcd1e76c006011b7164a9ae754b0baf22cdab401a60f0136343cc",
+      "target": "codex"
+    },
+    ".agents/skills/squad-plan/SKILL.md": {
+      "hash": "ebae47883ef58d0ca3c10d193bfc2b139f56efd5b502dd750438ee9113d5a912",
+      "target": "codex"
+    },
+    ".agents/skills/squad-feature/SKILL.md": {
+      "hash": "6fc6053a2e9209eee6f953b9a21e9cd0a96abd60fee0bc6113c92a9d8890e0fd",
+      "target": "codex"
+    },
+    ".agents/skills/squad-execute/SKILL.md": {
+      "hash": "a2de233e0fd4298aefe14101dbd0e076797579fea829c692919e2556aa7430ab",
+      "target": "codex"
+    },
+    ".agents/skills/squad-review/SKILL.md": {
+      "hash": "08e160023425e4b875f21acb0d76cb531a327f8cf56deb1ce2da0df3079eba34",
+      "target": "codex"
+    },
+    ".agents/skills/squad-test/SKILL.md": {
+      "hash": "53b0df74f291f997c228b97363b1e1e3e21c672602931d81ce8d17dc8cd78685",
+      "target": "codex"
+    },
+    ".squad/config.yaml": {
+      "hash": "48efe9ad9ac0ea7bf201e1e0bd7ae024c41a403a6ad68ad9ff04d903234552a0",
+      "target": "core"
+    },
+    ".agents/skills/squad-init/SKILL.md": {
+      "hash": "85042b047468e89f8186f89b21e61e025d3a3db75e20fe811f5e707681624447",
+      "target": "codex"
+    },
+    ".claude/agents/bug-triager.md": {
+      "hash": "ea38d312dbce7f638502e229edeb3bb435c5f0375c2399e3893ca4812ae4e553",
+      "target": "claude"
+    },
+    ".claude/agents/doc-writer.md": {
+      "hash": "1c975b67f2440481570b098e381937b1207e098d4618dc9d9b09151bfce1b434",
+      "target": "claude"
+    },
+    ".claude/agents/finisher.md": {
+      "hash": "8635265e5580361fb644cffc08cf3d0cf7719a5515a42dcb98239696d2d5a666",
+      "target": "claude"
+    },
+    ".claude/agents/implementer.md": {
+      "hash": "65dd6281f58b2852ca02e502250d8b8300294269c5cd0e1f872081ddc4306c1c",
+      "target": "claude"
+    },
+    ".claude/agents/issue-creator.md": {
+      "hash": "52ccf8a0fe8008c2558fe994016daa1dd192435c0fe7c3a87ebdc75d58c6cf82",
+      "target": "claude"
+    },
+    ".claude/agents/linter.md": {
+      "hash": "cc812a4434ffdbe4bfb32f13dc4b7fec2d481260a457d4ad6d983a0b36ec7b57",
+      "target": "claude"
+    },
+    ".claude/agents/planner.md": {
+      "hash": "a8756ea133f4f77a0ebfea9064486498eb4a7d5c4d51b37479f79dad12a027bc",
+      "target": "claude"
+    },
+    ".claude/agents/product-manager.md": {
+      "hash": "df56664f86851b577a2c50ab56ea700b4ef4263654282f507ac7a8f582169d91",
+      "target": "claude"
+    },
+    ".claude/agents/requirements-reviewer.md": {
+      "hash": "1bed12fd99f0ed0aa4e4428ff358cc097aae27b1aaaea34be439e23197e9669a",
+      "target": "claude"
+    },
+    ".claude/agents/reviewer.md": {
+      "hash": "8caa2d4c5404bdd73511634e58d37fc08bf2439005a6e23bd01a56353a539480",
+      "target": "claude"
+    },
+    ".claude/agents/sre.md": {
+      "hash": "ee1cc223913dad1d56ca1ce31a3eb979dd06f9ba1e052e607a8b479e9aae0fc6",
+      "target": "claude"
+    },
+    ".claude/agents/tech-analyst.md": {
+      "hash": "d98e3b321f4f64c3c52b3e59122a5fa58abd28844be73fcc13a379389ce4ad29",
+      "target": "claude"
+    },
+    ".claude/agents/tester.md": {
+      "hash": "21aa922209b8a23a5e3671bd1511fa7eab14fabe5c37898829b487c9f363d22f",
+      "target": "claude"
+    },
+    ".claude/settings.json": {
+      "hash": "c59dd3a24518afd681a1599af0776fbe5645734bc0a5db05105470f5e930c301",
+      "target": "claude"
+    },
+    ".claude/skills/squad-debug/SKILL.md": {
+      "hash": "89f771b86b236697f2eb52f6769abaec39a6cb6e6e1a9525efc584e631e46c6b",
+      "target": "claude"
+    },
+    ".claude/skills/squad-execute/SKILL.md": {
+      "hash": "a2de233e0fd4298aefe14101dbd0e076797579fea829c692919e2556aa7430ab",
+      "target": "claude"
+    },
+    ".claude/skills/squad-feature/SKILL.md": {
+      "hash": "6fc6053a2e9209eee6f953b9a21e9cd0a96abd60fee0bc6113c92a9d8890e0fd",
+      "target": "claude"
+    },
+    ".claude/skills/squad-finish/SKILL.md": {
+      "hash": "f3f7a4ec214b2f1c959d54dda662d1913334ddd3ec1f28e1460035a95bac5c46",
+      "target": "claude"
+    },
+    ".claude/skills/squad-init/SKILL.md": {
+      "hash": "85042b047468e89f8186f89b21e61e025d3a3db75e20fe811f5e707681624447",
+      "target": "claude"
+    },
+    ".claude/skills/squad-next/SKILL.md": {
+      "hash": "19304c8c9f1700c9cbe5b7285d16a23015911fb4606db335520f54e8d419abf3",
+      "target": "claude"
+    },
+    ".claude/skills/squad-plan/SKILL.md": {
+      "hash": "ebae47883ef58d0ca3c10d193bfc2b139f56efd5b502dd750438ee9113d5a912",
+      "target": "claude"
+    },
+    ".claude/skills/squad-resume/SKILL.md": {
+      "hash": "1d5d32eace49e5db9f638310aa965a3e542d9940ecfb8d628bf5a82e112e7d20",
+      "target": "claude"
+    },
+    ".claude/skills/squad-review/SKILL.md": {
+      "hash": "08e160023425e4b875f21acb0d76cb531a327f8cf56deb1ce2da0df3079eba34",
+      "target": "claude"
+    },
+    ".claude/skills/squad-status/SKILL.md": {
+      "hash": "f803a6a5c93fb0577aa7e864dc208b2933fe4d6e54289caebc459501758c4bd4",
+      "target": "claude"
+    },
+    ".claude/skills/squad-test/SKILL.md": {
+      "hash": "53b0df74f291f997c228b97363b1e1e3e21c672602931d81ce8d17dc8cd78685",
+      "target": "claude"
+    },
+    ".claude/skills/squad-yolo/SKILL.md": {
+      "hash": "537b49fd14d47554aaf06a28b82a0622c37eb684e7d44bbe4181c16ffa79b50c",
+      "target": "claude"
+    },
+    ".opencode/agents/bug-triager.md": {
+      "hash": "7362e34dfa7c32ffcf4a52cedceb14b0663fbf132da3888753750e3f10972d06",
+      "target": "opencode"
+    },
+    ".opencode/agents/finisher.md": {
+      "hash": "f990e9085246dd23d77f3fcd0fc16d948da06a57dc9a500d25079c12213ef29e",
+      "target": "opencode"
+    },
+    ".opencode/agents/implementer.md": {
+      "hash": "64ce8e8ae4161e71a27c4235598aed0baf1c77893f2193cea1d710dfcd938491",
+      "target": "opencode"
+    },
+    ".opencode/agents/issue-creator.md": {
+      "hash": "70858311cc198a1ce70923022b22887143e5c9cc037b51d85e6c5302c690f421",
+      "target": "opencode"
+    },
+    ".opencode/agents/sre.md": {
+      "hash": "b13242e9a92fee0c8f177f0d9865e36732af07cfc97b9039975f983cab5436b6",
+      "target": "opencode"
+    },
+    ".opencode/commands/squad-debug.md": {
+      "hash": "1a2767b0d982c836fddc4219eff7dce9acfd8717401e5c0eb7cb8666fb81bc57",
+      "target": "opencode"
+    },
+    ".opencode/commands/squad-execute.md": {
+      "hash": "27dc82ba5be18b9937a648f7df373fd3ba235f5fc7c082d653407fdf6b9d93b7",
+      "target": "opencode"
+    },
+    ".opencode/commands/squad-feature.md": {
+      "hash": "682c5986467911cfda46caace33824534ca215d82bfb8536badaf2e0279752d1",
+      "target": "opencode"
+    },
+    ".opencode/commands/squad-finish.md": {
+      "hash": "3fe0a0690899bb940bf6b9e09b0d4d5fe6c31415cc6279b831a1ccef4904777c",
+      "target": "opencode"
+    },
+    ".opencode/commands/squad-init.md": {
+      "hash": "4f4246a764a247929e51d5ca9ac42204fcbf56b36eb1b9393a24fdb6788cd70b",
+      "target": "opencode"
+    },
+    ".opencode/commands/squad-next.md": {
+      "hash": "3283a80ee56b5fe2f99e0f71f2cd65029cfebfb0844fe2c2f53aa252d1df89d5",
+      "target": "opencode"
+    },
+    ".opencode/commands/squad-plan.md": {
+      "hash": "f2ed46a45c33d022d1bf17b7f4550c19f4594dc0112182c41d7b1b06f05b9230",
+      "target": "opencode"
+    },
+    ".opencode/commands/squad-resume.md": {
+      "hash": "39302c97f8ffeda9ae0902935a7ce2c9867c454ee9784da0146315ac37faea7a",
+      "target": "opencode"
+    },
+    ".opencode/commands/squad-review.md": {
+      "hash": "ed4f3ede4f0f8cf0afb41cda1eaa5750eec5c68596985c337997392f90700d25",
+      "target": "opencode"
+    },
+    ".opencode/commands/squad-status.md": {
+      "hash": "3130a7e8a6b57c616aa5e69bf6579bf89aefac2c548ffccf2f059d4980984e0e",
+      "target": "opencode"
+    },
+    ".opencode/commands/squad-test.md": {
+      "hash": "415802607d3aba7f9625206338b051f94dd93df8a9d6ab51c1e93ba3b333ec32",
+      "target": "opencode"
+    },
+    ".opencode/commands/squad-yolo.md": {
+      "hash": "f2543cb861c6fd91d893f280de49c0bd2346e1c3214ffba879573774d3d345be",
+      "target": "opencode"
+    },
+    "opencode.json": {
+      "hash": "5579b2368b9a0a29325a6414344d35723da4847c6c563fa6cf6ba51284337300",
+      "target": "opencode"
+    },
+    ".agents/skills/constitution-generator/SKILL.md": {
+      "hash": "ad194581b0349aa3142c15dba83cfe6075f2b1d5de536db2a8c1bd680589c77d",
+      "target": "opencode"
+    },
+    ".agents/skills/handoff/SKILL.md": {
+      "hash": "d215dd8f2a19bf85fdaf67a3cdb5077641f6b4108f229ba79579414793d7b0a3",
+      "target": "opencode"
+    },
+    ".agents/skills/squad-debug/SKILL.md": {
+      "hash": "89f771b86b236697f2eb52f6769abaec39a6cb6e6e1a9525efc584e631e46c6b",
+      "target": "codex"
+    },
+    ".agents/skills/squad-finish/SKILL.md": {
+      "hash": "f3f7a4ec214b2f1c959d54dda662d1913334ddd3ec1f28e1460035a95bac5c46",
+      "target": "codex"
+    },
+    ".agents/skills/squad-next/SKILL.md": {
+      "hash": "19304c8c9f1700c9cbe5b7285d16a23015911fb4606db335520f54e8d419abf3",
+      "target": "codex"
+    },
+    ".agents/skills/squad-resume/SKILL.md": {
+      "hash": "1d5d32eace49e5db9f638310aa965a3e542d9940ecfb8d628bf5a82e112e7d20",
+      "target": "codex"
+    },
+    ".agents/skills/squad-status/SKILL.md": {
+      "hash": "f803a6a5c93fb0577aa7e864dc208b2933fe4d6e54289caebc459501758c4bd4",
+      "target": "codex"
+    },
+    ".agents/skills/squad-yolo/SKILL.md": {
+      "hash": "537b49fd14d47554aaf06a28b82a0622c37eb684e7d44bbe4181c16ffa79b50c",
+      "target": "codex"
+    }
+  },
+  "blocks": {
+    "codex:AGENTS.md": {
+      "file": "AGENTS.md",
+      "start": "<!-- orchestrated-squad:codex:start -->",
+      "end": "<!-- orchestrated-squad:codex:end -->",
+      "hash": "ac354be37ebeb87ffa8346b96157c328a7f119ec6f3d8f6ff2b42d8fe686ffe4"
+    },
+    "claude:CLAUDE.md": {
+      "file": "CLAUDE.md",
+      "start": "<!-- orchestrated-squad:claude:start -->",
+      "end": "<!-- orchestrated-squad:claude:end -->",
+      "hash": "1b6b78940a4bfb692b883badd121f6024388f4b37334ef14f7926c19ef4b0368"
+    },
+    "opencode:AGENTS.md": {
+      "file": "AGENTS.md",
+      "start": "<!-- orchestrated-squad:opencode:start -->",
+      "end": "<!-- orchestrated-squad:opencode:end -->",
+      "hash": "5f5aa49276cdc16b74e47be32f91aabce101bfd904d728b747ea8c1c5f4e85ad"
+    }
+  },
+  "package": "@gregori/orchestrated-squad",
+  "version": "0.7.2",
+  "targets": [
+    "codex",
+    "claude",
+    "opencode"
+  ]
+}

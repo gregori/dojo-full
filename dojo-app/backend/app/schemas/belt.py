@@ -1,5 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 
+from app.schemas.event import EventTypeResponse
+
 
 class BeltBase(BaseModel):
     name: str
@@ -46,6 +48,7 @@ class BeltRequirementUpdate(BaseModel):
 class BeltRequirementResponse(BeltRequirementBase):
     model_config = ConfigDict(from_attributes=True)
     id: str
+    event_type: EventTypeResponse | None = None
 
 
 class BeltWithRequirements(BeltResponse):

@@ -43,7 +43,7 @@ class StudentService:
             query = query.filter(Student.category == category)
         if is_active is not None:
             query = query.filter(Student.is_active == is_active)
-        return query.offset(skip).limit(limit).all()
+        return query.order_by(Student.created_at.desc()).offset(skip).limit(limit).all()
 
     @staticmethod
     def create_student(db: Session, student_data: StudentCreate, created_by: str | None = None) -> Student:
@@ -111,6 +111,19 @@ class StudentService:
         if "pin" in update_data:
             update_data["pin"] = get_password_hash(update_data["pin"])
 
+        if update_data.get("registration_number") and update_data["registration_number"] != student.registration_number:
+            existing = (
+                db.query(Student)
+                .filter(Student.registration_number == update_data["registration_number"])
+                .filter(Student.id != student_id)
+                .first()
+            )
+            if existing:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Registration number {update_data['registration_number']} already in use",
+                )
+
         for field, value in update_data.items():
             setattr(student, field, value)
 
@@ -166,16 +179,18 @@ class StudentService:
 
         requirements = []
         for req in next_belt.requirements:
-            attendance_count = (
-                db.query(Attendance)
-                .join(Student, Attendance.student_id == Student.id)
-                .filter(
-                    Student.id == student_id,
-                    Attendance.event.has(event_type_id=req.event_type_id),
-                    Attendance.check_in_at >= cutoff_date,
+            attendance_count = 0
+            if req.event_type.counts_for_belt:
+                attendance_count = (
+                    db.query(Attendance)
+                    .join(Student, Attendance.student_id == Student.id)
+                    .filter(
+                        Student.id == student_id,
+                        Attendance.event.has(event_type_id=req.event_type_id),
+                        Attendance.check_in_at >= cutoff_date,
+                    )
+                    .count()
                 )
-                .count()
-            )
 
             requirements.append(
                 {

@@ -13,6 +13,7 @@ interface Belt {
 interface EventType {
   id: string
   name: string
+  counts_for_belt: boolean
 }
 
 interface Requirement {
@@ -84,6 +85,7 @@ export default function BeltRequirementsPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    if (!formData.required_count || formData.required_count < 1) return
     createMutation.mutate({ ...formData, belt_id: selectedBelt })
   }
 
@@ -144,11 +146,13 @@ export default function BeltRequirementsPage() {
                     required
                   >
                     <option value="">Selecione...</option>
-                    {eventTypes?.map((type: EventType) => (
-                      <option key={type.id} value={type.id}>
-                        {type.name}
-                      </option>
-                    ))}
+                    {eventTypes
+                      ?.filter((type: EventType) => type.counts_for_belt)
+                      .map((type: EventType) => (
+                        <option key={type.id} value={type.id}>
+                          {type.name}
+                        </option>
+                      ))}
                   </select>
                 </div>
                 <div>
@@ -156,10 +160,14 @@ export default function BeltRequirementsPage() {
                   <input
                     type="number"
                     min={1}
-                    value={formData.required_count}
-                    onChange={(e) =>
-                      setFormData({ ...formData, required_count: parseInt(e.target.value) || 1 })
-                    }
+                    value={formData.required_count === 0 ? '' : formData.required_count}
+                    onChange={(e) => {
+                      const raw = e.target.value
+                      setFormData({
+                        ...formData,
+                        required_count: raw === '' ? 0 : parseInt(raw, 10),
+                      })
+                    }}
                     className="w-full px-3 py-2 border rounded-md"
                     required
                   />

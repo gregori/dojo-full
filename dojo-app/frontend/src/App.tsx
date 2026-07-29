@@ -5,12 +5,18 @@ import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import StudentsPage from './pages/StudentsPage'
 import EventsPage from './pages/EventsPage'
+import EventSeriesPage from './pages/EventSeriesPage'
 import CheckInPage from './pages/CheckInPage'
+import PreCheckInPage from './pages/PreCheckInPage'
+import MedicalExamPage from './pages/MedicalExamPage'
 import ExamsPage from './pages/ExamsPage'
+import PlansPage from './pages/PlansPage'
+import ContractTemplatesPage from './pages/ContractTemplatesPage'
 import BeltRequirementsPage from './pages/BeltRequirementsPage'
 import BeltsPage from './pages/BeltsPage'
 import DojosPage from './pages/DojosPage'
 import EventTypesPage from './pages/EventTypesPage'
+import ReportsPage from './pages/ReportsPage'
 import Layout from './components/Layout'
 import { ToastContainer } from './components/Toast'
 
@@ -37,6 +43,8 @@ function App() {
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/checkin" element={<CheckInPage />} />
+            <Route path="/precheckin" element={<PreCheckInPage />} />
+            <Route path="/medical-exam" element={<MedicalExamPage />} />
             <Route
               path="/"
               element={
@@ -62,6 +70,14 @@ function App() {
               }
             />
             <Route
+              path="/event-series"
+              element={
+                <PrivateRoute>
+                  <EventSeriesPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
               path="/exams"
               element={
                 <PrivateRoute>
@@ -70,10 +86,34 @@ function App() {
               }
             />
             <Route
+              path="/reports"
+              element={
+                <PrivateRoute>
+                  <ReportsPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
               path="/belt-requirements"
               element={
                 <AdminRoute>
                   <BeltRequirementsPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/plans"
+              element={
+                <AdminRoute>
+                  <PlansPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/contract-templates"
+              element={
+                <AdminRoute>
+                  <ContractTemplatesPage />
                 </AdminRoute>
               }
             />

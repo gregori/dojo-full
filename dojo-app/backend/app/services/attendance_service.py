@@ -1,12 +1,15 @@
 from datetime import UTC, datetime
 
 from fastapi import HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.security import verify_password
 from app.models import Attendance, Student
 from app.schemas import AttendanceCreate, CheckInQRRequest, CheckInRequest
+from app.services.event_series_service import EventSeriesService
 from app.services.event_service import EventService
+from app.services.pre_checkin_service import PreCheckInService
 from app.services.student_service import StudentService
 
 
@@ -77,16 +80,24 @@ class AttendanceService:
             registered_by=registered_by,
         )
         db.add(attendance)
-        db.commit()
+        PreCheckInService.convert_for_attendance(db, event_id, student.id)
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Attendance already recorded")
         db.refresh(attendance)
         return attendance
 
     @staticmethod
     def check_in_qr(db: Session, check_in_data: CheckInQRRequest) -> Attendance:
-        """Process check-in via QR code."""
+        """Process check-in via QR code -- an Event token (unchanged) or an EventSeries token (new, RES-04)."""
         event = EventService.get_event_by_token(db, check_in_data.check_in_token)
         if not event:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid check-in token")
+            series = EventSeriesService.get_series_by_token(db, check_in_data.check_in_token)
+            if not series:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid check-in token")
+            event = EventSeriesService.resolve_today_occurrence(db, series)
 
         if event.status == "cancelled":
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Event is cancelled")
@@ -130,7 +141,12 @@ class AttendanceService:
             registered_by=attendance_data.registered_by,
         )
         db.add(attendance)
-        db.commit()
+        PreCheckInService.convert_for_attendance(db, attendance_data.event_id, attendance_data.student_id)
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Attendance already recorded")
         db.refresh(attendance)
         return attendance
 

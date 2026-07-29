@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.models import Belt, BeltRequirement
+from app.models import Belt, BeltPromotion, BeltRequirement, Exam, Student
 from app.schemas import BeltCreate, BeltRequirementCreate, BeltRequirementUpdate, BeltUpdate
 
 
@@ -44,6 +44,28 @@ class BeltService:
         belt = BeltService.get_belt(db, belt_id)
         if not belt:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Belt not found")
+
+        if db.query(Student).filter(Student.current_belt_id == belt_id).first():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Belt is assigned to one or more students and cannot be deleted",
+            )
+        if db.query(BeltPromotion).filter(BeltPromotion.belt_id == belt_id).first():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Belt has promotion history and cannot be deleted",
+            )
+        if db.query(Exam).filter(Exam.belt_id == belt_id).first():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Belt has exams associated with it and cannot be deleted",
+            )
+        if db.query(BeltRequirement).filter(BeltRequirement.belt_id == belt_id).first():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Belt has requirements defined and cannot be deleted",
+            )
+
         db.delete(belt)
         db.commit()
 

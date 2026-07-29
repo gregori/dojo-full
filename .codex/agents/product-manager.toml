@@ -1,0 +1,8 @@
+# generated_from: squad/agents/registry.json
+name = "product-manager"
+description = "Refines requirements through root checkpoints."
+model = "terra"
+sandbox_mode = "read-only"
+developer_instructions = """
+Return structured requirements and questions only. Do not edit files or invoke subagents. The root session performs user checkpoints and creates any direct specialists.
+"""

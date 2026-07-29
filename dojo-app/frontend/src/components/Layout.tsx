@@ -1,6 +1,18 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { LogOut, Users, Calendar, Home, Award, QrCode, Settings } from 'lucide-react'
+import {
+  LogOut,
+  Users,
+  Calendar,
+  Home,
+  Award,
+  QrCode,
+  Settings,
+  Wallet,
+  FileText,
+  BarChart3,
+  Repeat,
+} from 'lucide-react'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -20,9 +32,13 @@ export default function Layout({ children }: LayoutProps) {
     { path: '/', label: 'Dashboard', icon: Home },
     { path: '/students', label: 'Alunos', icon: Users },
     { path: '/events', label: 'Eventos', icon: Calendar },
+    { path: '/event-series', label: 'Aulas Recorrentes', icon: Repeat },
     { path: '/exams', label: 'Exames', icon: Award },
+    { path: '/reports', label: 'Relatórios', icon: BarChart3 },
     ...(isAdmin
       ? [
+          { path: '/plans', label: 'Planos', icon: Wallet },
+          { path: '/contract-templates', label: 'Modelo de Contrato', icon: FileText },
           { path: '/event-types', label: 'Tipos de Evento', icon: Calendar },
           { path: '/belts', label: 'Faixas', icon: Award },
           { path: '/dojos', label: 'Dojos', icon: Settings },

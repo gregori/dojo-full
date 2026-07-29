@@ -221,6 +221,17 @@ class TestListStudents:
         data = response.json()
         assert all(s["category"] == "adult" for s in data)
 
+    def test_list_students_includes_current_belt(self, client, db_session):
+        """List students should include the nested current_belt object."""
+        belt = _make_belt(db_session, name="Blue")
+        _make_student(db_session, current_belt_id=belt.id, full_name="Student A")
+        response = client.get("/api/v1/students")
+        assert response.status_code == 200
+        data = response.json()
+        assert data[0]["current_belt"] is not None
+        assert data[0]["current_belt"]["name"] == "Blue"
+        assert data[0]["current_belt"]["id"] == belt.id
+
 
 class TestGetStudent:
     """Tests for GET /api/v1/students/{student_id}."""
@@ -273,6 +284,29 @@ class TestUpdateStudent:
         assert response.status_code == 200
         data = response.json()
         assert data["full_name"] == "Updated Name"
+
+    def test_update_student_registration_number(self, client, db_session):
+        """Update student registration number returns updated student."""
+        belt = _make_belt(db_session)
+        student = _make_student(db_session, current_belt_id=belt.id, registration_number="OLD001")
+        response = client.put(
+            f"/api/v1/students/{student.id}",
+            json={"registration_number": "NEW001"},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["registration_number"] == "NEW001"
+
+    def test_update_student_duplicate_registration_number(self, client, db_session):
+        """Update to a registration number already in use returns 409."""
+        belt = _make_belt(db_session)
+        _make_student(db_session, current_belt_id=belt.id, registration_number="TAKEN001")
+        student = _make_student(db_session, current_belt_id=belt.id, registration_number="OWN001")
+        response = client.put(
+            f"/api/v1/students/{student.id}",
+            json={"registration_number": "TAKEN001"},
+        )
+        assert response.status_code == 409
 
 
 class TestDeactivateStudent:

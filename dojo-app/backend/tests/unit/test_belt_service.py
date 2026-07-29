@@ -5,7 +5,14 @@ from fastapi import HTTPException
 
 from app.schemas import BeltCreate, BeltRequirementCreate, BeltRequirementUpdate, BeltUpdate
 from app.services.belt_service import BeltService
-from tests.unit.conftest import make_belt, make_belt_requirement, make_event_type
+from tests.unit.conftest import (
+    make_belt,
+    make_belt_promotion,
+    make_belt_requirement,
+    make_event_type,
+    make_exam,
+    make_student,
+)
 
 
 class TestBeltServiceGet:
@@ -96,6 +103,59 @@ class TestBeltServiceDelete:
         with pytest.raises(HTTPException) as exc_info:
             BeltService.delete_belt(db_session, "nonexistent")
         assert exc_info.value.status_code == 404
+
+    def test_delete_belt_assigned_to_student_raises_409(self, db_session):
+        """Should raise 409 instead of crashing when a student is assigned to the belt.
+
+        Regression test: deleting a belt that students are currently assigned to
+        used to raise an unhandled IntegrityError (500), since SQLAlchemy's default
+        ORM behavior nulls out Student.current_belt_id before the delete, and that
+        column is NOT NULL.
+        """
+        belt = make_belt(db_session, name="In Use")
+        make_student(db_session, current_belt_id=belt.id)
+        db_session.commit()
+
+        with pytest.raises(HTTPException) as exc_info:
+            BeltService.delete_belt(db_session, belt.id)
+        assert exc_info.value.status_code == 409
+        assert BeltService.get_belt(db_session, belt.id) is not None
+
+    def test_delete_belt_with_promotion_history_raises_409(self, db_session):
+        """Should raise 409 when the belt has promotion history."""
+        belt = make_belt(db_session, name="Promoted To")
+        other_belt = make_belt(db_session, name="Other")
+        student = make_student(db_session, current_belt_id=other_belt.id)
+        make_belt_promotion(db_session, student_id=student.id, belt_id=belt.id)
+        db_session.commit()
+
+        with pytest.raises(HTTPException) as exc_info:
+            BeltService.delete_belt(db_session, belt.id)
+        assert exc_info.value.status_code == 409
+        assert BeltService.get_belt(db_session, belt.id) is not None
+
+    def test_delete_belt_with_exam_raises_409(self, db_session):
+        """Should raise 409 when the belt has an exam associated with it."""
+        belt = make_belt(db_session, name="Exam Belt")
+        make_exam(db_session, belt_id=belt.id)
+        db_session.commit()
+
+        with pytest.raises(HTTPException) as exc_info:
+            BeltService.delete_belt(db_session, belt.id)
+        assert exc_info.value.status_code == 409
+        assert BeltService.get_belt(db_session, belt.id) is not None
+
+    def test_delete_belt_with_requirement_raises_409(self, db_session):
+        """Should raise 409 when the belt has a requirement defined."""
+        belt = make_belt(db_session, name="Requirement Belt")
+        et = make_event_type(db_session)
+        make_belt_requirement(db_session, belt_id=belt.id, event_type_id=et.id)
+        db_session.commit()
+
+        with pytest.raises(HTTPException) as exc_info:
+            BeltService.delete_belt(db_session, belt.id)
+        assert exc_info.value.status_code == 409
+        assert BeltService.get_belt(db_session, belt.id) is not None
 
 
 class TestBeltRequirementService:
