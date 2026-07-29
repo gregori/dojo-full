@@ -18,14 +18,6 @@ on:
           - downgrade -1
           - current
           - history
-      admin_email:
-        description: 'One-time bootstrap admin: email (leave blank to skip)'
-        required: false
-        type: string
-      admin_password:
-        description: 'One-time bootstrap admin: password (leave blank to skip)'
-        required: false
-        type: string
 
 jobs:
   migrate:
@@ -50,30 +42,3 @@ jobs:
           key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
           script: |
             sudo k3s kubectl -n dojo exec deploy/dojo-backend -- alembic ${{ github.event.inputs.migration_command }}
-
-      - name: Create bootstrap admin user
-        if: github.event.inputs.admin_email != ''
-        uses: appleboy/ssh-action@v1
-        env:
-          ADMIN_EMAIL: ${{ github.event.inputs.admin_email }}
-          ADMIN_PASSWORD: ${{ github.event.inputs.admin_password }}
-        with:
-          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
-          username: opc
-          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
-          envs: ADMIN_EMAIL,ADMIN_PASSWORD
-          script: |
-            sudo k3s kubectl -n dojo exec deploy/dojo-backend -- python -c "
-            from app.core.database import SessionLocal
-            from app.schemas import UserCreate
-            from app.services.auth_service import UserService
-            db = SessionLocal()
-            email = '$ADMIN_EMAIL'
-            existing = UserService.get_user_by_email(db, email)
-            if existing:
-                print('User already exists:', existing.email)
-            else:
-                user = UserService.create_user(db, UserCreate(email=email, password='$ADMIN_PASSWORD', full_name='Admin', role='admin', is_active=True))
-                print('Created admin user:', user.email)
-            db.close()
-            "
