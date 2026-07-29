@@ -63,4 +63,17 @@ jobs:
           key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
           envs: ADMIN_EMAIL,ADMIN_PASSWORD
           script: |
-            sudo k3s kubectl -n dojo exec deploy/dojo-backend -- python scripts/create_admin.py --email "$ADMIN_EMAIL" --password "$ADMIN_PASSWORD"
+            sudo k3s kubectl -n dojo exec deploy/dojo-backend -- python -c "
+            from app.core.database import SessionLocal
+            from app.schemas import UserCreate
+            from app.services.auth_service import UserService
+            db = SessionLocal()
+            email = '$ADMIN_EMAIL'
+            existing = UserService.get_user_by_email(db, email)
+            if existing:
+                print('User already exists:', existing.email)
+            else:
+                user = UserService.create_user(db, UserCreate(email=email, password='$ADMIN_PASSWORD', full_name='Admin', role='admin', is_active=True))
+                print('Created admin user:', user.email)
+            db.close()
+            "
