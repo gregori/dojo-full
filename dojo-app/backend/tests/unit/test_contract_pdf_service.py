@@ -5,8 +5,10 @@ from decimal import Decimal
 
 import pytest
 from fastapi import HTTPException
+from reportlab.platypus import HRFlowable, ListFlowable, Paragraph
 
 from app.services.contract_pdf_service import REQUIRED_STUDENT_FIELDS, ContractPdfService
+from app.services.markdown_pdf import MarkdownPdfConverter
 from tests.unit.conftest import make_plan_tier, make_plan_version, make_student_with_contract_data
 
 
@@ -54,13 +56,20 @@ class TestRenderPdf:
 
     def test_produces_non_empty_pdf_bytes(self, db_session):
         context = self._context(db_session)
+        template_body = "Contrato de {{ student.contract_name }}.\n\nPlano: {{ plan_tier.name }}."
 
-        content = ContractPdfService.render_pdf(
-            "Contrato de {{ student.contract_name }}.\n\nPlano: {{ plan_tier.name }}.", context
-        )
+        content = ContractPdfService.render_pdf(template_body, context)
 
         assert content.startswith(b"%PDF-")
         assert len(content) > 0
+
+        # CTM-04: still exactly two plain paragraphs, no new formatting introduced.
+        rendered = f"Contrato de {context['student']['contract_name']}.\n\nPlano: {context['plan_tier']['name']}."
+        flowables = MarkdownPdfConverter.to_flowables(rendered)
+        paragraphs = [f for f in flowables if isinstance(f, Paragraph)]
+        assert len(paragraphs) == 2
+        assert not any(isinstance(f, ListFlowable | HRFlowable) for f in flowables)
+        assert not any(paragraph.style.name in ("Heading1", "Heading2") for paragraph in paragraphs)
 
     def test_signature_image_increases_output_size(self, db_session):
         context = self._context(db_session)
@@ -72,3 +81,10 @@ class TestRenderPdf:
 
         assert with_signature.startswith(b"%PDF-")
         assert len(with_signature) > len(without_signature)
+
+        # CTM-04: still exactly one plain paragraph, no new formatting introduced.
+        flowables = MarkdownPdfConverter.to_flowables("Corpo do contrato.")
+        paragraphs = [f for f in flowables if isinstance(f, Paragraph)]
+        assert len(paragraphs) == 1
+        assert paragraphs[0].style.name not in ("Heading1", "Heading2")
+        assert not any(isinstance(f, ListFlowable | HRFlowable) for f in flowables)

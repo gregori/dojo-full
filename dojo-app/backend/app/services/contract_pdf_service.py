@@ -13,6 +13,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer
 
 from app.models import PlanTier, PlanVersion, Student
+from app.services.markdown_pdf import MarkdownPdfConverter
 
 REQUIRED_STUDENT_FIELDS = [
     "contract_name",
@@ -64,17 +65,11 @@ class ContractPdfService:
 
     @staticmethod
     def render_pdf(template_body: str, context: dict, signature_png: bytes | None = None) -> bytes:
-        """Render the merged template body (paragraph breaks on blank lines) into PDF bytes."""
-        rendered = Template(template_body).render(**context)
+        """Render the merged template body (Markdown subset -- CTM) into PDF bytes."""
+        rendered = Template(template_body).render(**MarkdownPdfConverter.escape_context(context))
 
         styles = getSampleStyleSheet()
-        story = []
-        for paragraph_text in rendered.split("\n\n"):
-            paragraph_text = paragraph_text.strip()
-            if not paragraph_text:
-                continue
-            story.append(Paragraph(paragraph_text.replace("\n", "<br/>"), styles["Normal"]))
-            story.append(Spacer(1, 12))
+        story = MarkdownPdfConverter.to_flowables(rendered)
 
         if signature_png is not None:
             story.append(Spacer(1, 24))

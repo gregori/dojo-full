@@ -97,7 +97,7 @@ O aluno aceita os termos e condições da escola.`,
         cy.get('[title="Contrato"]', { timeout: 5000 }).click()
       })
 
-      cy.contains('Contrato').should('be.visible')
+      cy.get('h3').contains('Contrato').should('be.visible')
       cy.get('h3').contains(studentData.full_name).scrollIntoView().should('be.visible')
 
       cy.intercept('POST', `/api/v1/students/${studentData.id}/contracts/matricular`).as('matricular')
@@ -650,6 +650,90 @@ O aluno aceita os termos e condições da escola.`,
         failOnStatusCode: false,
       }).then((response) => {
         expect(response.status).to.equal(401)
+      })
+    })
+  })
+
+  describe('Scenario 7: CTM - Markdown rendering in the template "Ver conteúdo" preview modal', () => {
+    const markdownBody = `# Contrato de Matrícula
+
+## Dados do Aluno
+
+Aluno: {{ student.contract_name }}
+
+**Cláusula 1** - O aluno aceita os termos e condições da escola.
+
+_Observação_: leia com atenção antes de assinar.
+
+- Item um
+- Item dois
+
+1. Primeiro
+2. Segundo
+
+---
+
+Fim do contrato.`
+
+    beforeEach(() => {
+      cy.getAuthToken(adminEmail, adminPassword).then(() => {
+        cy.createContractTemplate({ body: markdownBody })
+      })
+    })
+
+    it('renders real headings/bold/italic/list/hr elements and keeps the placeholder literal', () => {
+      cy.clearLocalStorage()
+      cy.intercept('POST', '/api/v1/auth/login').as('loginRequest')
+      cy.visit('/login')
+      cy.get('input[type="email"]').type(adminEmail)
+      cy.get('input[type="password"]').type(adminPassword)
+      cy.get('button[type="submit"]').click()
+      cy.wait('@loginRequest')
+
+      cy.intercept('GET', '/api/v1/contract-templates').as('getTemplates')
+      cy.visit('/contract-templates')
+      cy.wait('@getTemplates')
+
+      cy.get('[title="Ver conteúdo"]').first().click()
+
+      cy.get('h1').contains('Contrato de Matrícula').should('be.visible')
+      cy.get('h2').contains('Dados do Aluno').should('be.visible')
+      cy.get('strong').contains('Cláusula 1').should('be.visible')
+      cy.get('em').contains('Observação').should('be.visible')
+      cy.get('li').contains('Item um').should('be.visible')
+      cy.get('li').contains('Primeiro').should('be.visible')
+      cy.get('hr').should('exist')
+      cy.contains('{{ student.contract_name }}').should('be.visible')
+    })
+  })
+
+  describe('cy.createBelt is idempotent', () => {
+    it('reuses an existing belt with the same name+category instead of creating a duplicate', () => {
+      const uniqueName = `Faixa Teste ${Date.now()}`
+
+      cy.getAuthToken(adminEmail, adminPassword).then((token: any) => {
+        cy.createBelt({ name: uniqueName, category: 'adult', sort_order: 99 }).then(
+          (first: any) => {
+            expect(first).to.have.property('id')
+
+            cy.createBelt({ name: uniqueName, category: 'adult', sort_order: 99 }).then(
+              (second: any) => {
+                expect(second.id).to.equal(first.id)
+
+                cy.request({
+                  method: 'GET',
+                  url: 'http://localhost:8000/api/v1/belts',
+                  headers: { Authorization: `Bearer ${token}` },
+                }).then((response) => {
+                  const matches = response.body.filter(
+                    (belt: any) => belt.name === uniqueName && belt.category === 'adult'
+                  )
+                  expect(matches).to.have.length(1)
+                })
+              }
+            )
+          }
+        )
       })
     })
   })
