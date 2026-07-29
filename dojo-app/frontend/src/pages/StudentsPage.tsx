@@ -185,6 +185,7 @@ export default function StudentsPage() {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null)
   const [formData, setFormData] = useState({
     full_name: '',
+    registration_number: '' as string | undefined,
     email: '',
     phone: '',
     birth_date: '',
@@ -487,6 +488,7 @@ export default function StudentsPage() {
   const resetForm = () => {
     setFormData({
       full_name: '',
+      registration_number: '',
       email: '',
       phone: '',
       birth_date: '',
@@ -509,6 +511,7 @@ export default function StudentsPage() {
     if (editingStudent) {
       const updateData = { ...formData }
       if (!updateData.pin) delete updateData.pin
+      if (!updateData.registration_number) delete updateData.registration_number
       updateMutation.mutate({ id: editingStudent.id, data: updateData })
     } else {
       createMutation.mutate(formData)
@@ -519,6 +522,7 @@ export default function StudentsPage() {
     setEditingStudent(student)
     setFormData({
       full_name: student.full_name,
+      registration_number: student.registration_number,
       email: student.email || '',
       phone: student.phone || '',
       birth_date: student.birth_date
@@ -591,6 +595,18 @@ export default function StudentsPage() {
                 onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                 className="w-full px-3 py-2 border rounded-md"
                 required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Matrícula {!editingStudent && '(deixe em branco para gerar automaticamente)'}
+              </label>
+              <input
+                type="text"
+                value={formData.registration_number}
+                onChange={(e) => setFormData({ ...formData, registration_number: e.target.value })}
+                className="w-full px-3 py-2 border rounded-md"
+                placeholder="Gerada automaticamente se em branco"
               />
             </div>
             <div>
@@ -930,12 +946,14 @@ export default function StudentsPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
                           onClick={() => handleEdit(student)}
+                          title="Editar"
                           className="text-blue-600 hover:text-blue-900 mr-3"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => deleteMutation.mutate(student.id)}
+                          title="Excluir"
                           className="text-red-600 hover:text-red-900"
                         >
                           <Trash2 className="w-4 h-4" />

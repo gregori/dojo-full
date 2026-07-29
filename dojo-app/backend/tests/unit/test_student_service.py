@@ -7,6 +7,7 @@ from app.core.security import verify_password
 from app.schemas import StudentCreate, StudentUpdate
 from app.services.student_service import StudentService
 from tests.unit.conftest import (
+    make_attendance,
     make_belt,
     make_belt_requirement,
     make_dojo,
@@ -196,6 +197,39 @@ class TestStudentServiceUpdate:
             StudentService.update_student(db_session, "nonexistent", update)
         assert exc_info.value.status_code == 404
 
+    def test_update_student_registration_number(self, db_session):
+        """Should update student's registration_number."""
+        belt = make_belt(db_session)
+        student = make_student(db_session, registration_number="OLD001", current_belt_id=belt.id)
+        db_session.commit()
+
+        update = StudentUpdate(registration_number="NEW001")
+        updated = StudentService.update_student(db_session, student.id, update)
+        assert updated.registration_number == "NEW001"
+
+    def test_update_student_duplicate_registration_number(self, db_session):
+        """Should raise 409 when new registration number is already in use."""
+        belt = make_belt(db_session)
+        make_student(db_session, registration_number="TAKEN001", current_belt_id=belt.id)
+        student = make_student(db_session, registration_number="OWN001", current_belt_id=belt.id)
+        db_session.commit()
+
+        update = StudentUpdate(registration_number="TAKEN001")
+        with pytest.raises(HTTPException) as exc_info:
+            StudentService.update_student(db_session, student.id, update)
+        assert exc_info.value.status_code == 409
+
+    def test_update_student_current_belt(self, db_session):
+        """Should update student's current_belt_id."""
+        belt1 = make_belt(db_session, name="White", sort_order=1)
+        belt2 = make_belt(db_session, name="Blue", sort_order=2)
+        student = make_student(db_session, current_belt_id=belt1.id)
+        db_session.commit()
+
+        update = StudentUpdate(current_belt_id=belt2.id)
+        updated = StudentService.update_student(db_session, student.id, update)
+        assert updated.current_belt_id == belt2.id
+
 
 class TestStudentServiceDeactivate:
     """Tests for StudentService.deactivate_student."""
@@ -251,6 +285,57 @@ class TestStudentServiceProgress:
         with pytest.raises(HTTPException) as exc_info:
             StudentService.get_student_progress(db_session, "nonexistent")
         assert exc_info.value.status_code == 404
+
+    def test_progress_counts_attendance_for_event_type_that_counts_for_belt(self, db_session):
+        """Should count attendances whose event type counts for belt progress."""
+        from datetime import UTC, datetime
+
+        belt1 = make_belt(db_session, name="White", sort_order=1)
+        belt2 = make_belt(db_session, name="Blue", sort_order=2)
+        et = make_event_type(db_session, name="Regular Class", counts_for_belt=True)
+        db_session.commit()
+
+        make_belt_requirement(db_session, belt_id=belt2.id, event_type_id=et.id, required_count=10)
+        student = make_student(
+            db_session,
+            current_belt_id=belt1.id,
+            registration_number="P010",
+            created_at=datetime(2020, 1, 1, tzinfo=UTC),
+        )
+        db_session.commit()
+
+        event = make_event(db_session, event_type_id=et.id)
+        make_attendance(db_session, event_id=event.id, student_id=student.id)
+        db_session.commit()
+
+        progress = StudentService.get_student_progress(db_session, student.id)
+        assert progress["requirements"][0]["completed"] == 1
+
+    def test_progress_ignores_attendance_for_event_type_that_does_not_count_for_belt(self, db_session):
+        """Should not count attendances whose event type is flagged as not counting for belt."""
+        from datetime import UTC, datetime
+
+        belt1 = make_belt(db_session, name="White", sort_order=1)
+        belt2 = make_belt(db_session, name="Blue", sort_order=2)
+        et = make_event_type(db_session, name="Social Event", counts_for_belt=False)
+        db_session.commit()
+
+        make_belt_requirement(db_session, belt_id=belt2.id, event_type_id=et.id, required_count=10)
+        student = make_student(
+            db_session,
+            current_belt_id=belt1.id,
+            registration_number="P011",
+            created_at=datetime(2020, 1, 1, tzinfo=UTC),
+        )
+        db_session.commit()
+
+        event = make_event(db_session, event_type_id=et.id)
+        make_attendance(db_session, event_id=event.id, student_id=student.id)
+        db_session.commit()
+
+        progress = StudentService.get_student_progress(db_session, student.id)
+        assert progress["requirements"][0]["completed"] == 0
+        assert progress["requirements"][0]["is_complete"] is False
 
 
 class TestStudentServiceExamHistory:

@@ -39,6 +39,24 @@ def step_belt_requirement_exists(context, event_type_name, belt_name, count):
     step_belt_requirement_set(context, event_type_name, belt_name, count)
 
 
+@given('o aluno "{name}" está na faixa "{belt_name}"')
+def step_student_belt_is(context, name, belt_name):
+    """Set a student's current belt explicitly (Portuguese)."""
+    db = context.db
+    student = context.students.get(name) if hasattr(context, "students") else None
+    if student is None:
+        student = context.current_student
+    assert student is not None, f"Student '{name}' not found in context"
+
+    belt = context.belts.get(belt_name) if hasattr(context, "belts") else None
+    if belt is None:
+        belt = db.query(Belt).filter_by(name=belt_name).first()
+    assert belt is not None, f"Belt '{belt_name}' not found"
+
+    student.current_belt_id = belt.id
+    db.commit()
+
+
 @given('o aluno "{name}" tem {count:d} presenças em "{event_type_name}"')
 def step_student_has_attendances(context, name, count, event_type_name):
     """Pre-seed multiple attendance records for a student."""

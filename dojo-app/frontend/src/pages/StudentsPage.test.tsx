@@ -57,7 +57,11 @@ function setupApiMocks() {
 
   mockedGet.mockImplementation((url: string) => {
     if (url === '/api/v1/students') return Promise.resolve({ data: [STUDENT] })
-    if (url === '/api/v1/belts') return Promise.resolve({ data: [] })
+    if (url === '/api/v1/belts') {
+      return Promise.resolve({
+        data: [{ id: 'belt-1', name: 'Branca', color: '#ffffff', order: 1, category: 'adult' }],
+      })
+    }
     if (url.endsWith('/progress')) {
       return Promise.resolve({
         data: {
@@ -194,6 +198,39 @@ describe('StudentsPage contract integration', () => {
 
     await waitFor(() =>
       expect(mockedPost).toHaveBeenCalledWith('/api/v1/contracts/contract-1/regenerate')
+    )
+  })
+
+  it('prefills the edit form with the registration number and current belt, and sends edits to the API', async () => {
+    mockedPost.mockResolvedValue({})
+    const mockedPut = api.put as jest.Mock
+    mockedPut.mockResolvedValue({ data: { ...STUDENT } })
+    const user = userEvent.setup()
+    renderPage()
+
+    await screen.findByText('Aluno Teste')
+    await user.click(screen.getByTitle('Editar'))
+
+    const formSection = (await screen.findByText('Editar Aluno')).closest('div')!
+    const registrationLabel = within(formSection).getByText(/Matrícula/)
+    const registrationInput = within(registrationLabel.closest('div')!).getByRole(
+      'textbox'
+    ) as HTMLInputElement
+    expect(registrationInput).toHaveValue('REG001')
+
+    const beltLabel = within(formSection).getByText('Faixa')
+    const beltSelect = within(beltLabel.closest('div')!).getByRole('combobox') as HTMLSelectElement
+    expect(beltSelect.value).toBe('belt-1')
+
+    await user.clear(registrationInput)
+    await user.type(registrationInput, 'REG999')
+    await user.click(screen.getByText('Atualizar'))
+
+    await waitFor(() =>
+      expect(mockedPut).toHaveBeenCalledWith(
+        `/api/v1/students/${STUDENT.id}`,
+        expect.objectContaining({ registration_number: 'REG999' })
+      )
     )
   })
 

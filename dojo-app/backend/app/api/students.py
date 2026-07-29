@@ -12,7 +12,7 @@ from app.services import StudentService
 router = APIRouter(prefix="/api/v1/students", tags=["students"])
 
 
-@router.get("", response_model=list[StudentResponse])
+@router.get("", response_model=list[StudentWithBelt])
 def list_students(
     category: str | None = None,
     is_active: bool | None = True,
