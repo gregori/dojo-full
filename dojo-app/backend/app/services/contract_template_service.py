@@ -17,8 +17,19 @@ class ContractTemplateService:
 
     @staticmethod
     def get_history(db: Session) -> list[ContractTemplateVersion]:
-        """Return the full template version history, most recent first."""
-        return db.query(ContractTemplateVersion).order_by(ContractTemplateVersion.created_at.desc()).all()
+        """Return the full template version history, most recent first.
+
+        Orders by created_at with id as a tiebreaker: without a secondary key,
+        rows created within the same DB timestamp resolution have no
+        guaranteed order, which is exactly what made this query flaky (see
+        TimestampMixin's fsp=6 precision -- that shrinks the tie window, this
+        makes ties (of any width) deterministic).
+        """
+        return (
+            db.query(ContractTemplateVersion)
+            .order_by(ContractTemplateVersion.created_at.desc(), ContractTemplateVersion.id.desc())
+            .all()
+        )
 
     @staticmethod
     def create_version(db: Session, body: str, effective_from: datetime, created_by: str) -> ContractTemplateVersion:
