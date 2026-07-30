@@ -48,6 +48,12 @@ Per project CLAUDE.md's UI-change verification rule, root started the app via `d
 
 No functional issues found. (Unrelated hiccups during manual testing, not app bugs: an accidental click on the sidebar "Sair" logged out a tab mid-test, and the native multi-segment `<input type="datetime-local">`/`<input type="date">` fields were fiddly to drive via synthetic keystrokes in the create-event/create-series forms -- both were testing-tool friction, not feature defects.)
 
+## PR #41 CI Fix (2026-07-30)
+
+CI's "test" job failed on the Prettier `format:check` step (4 files: `QrCodeModal.test.tsx`, `CheckInPrintPage.test.tsx`, `CheckInPrintPage.tsx`, `clipboard.test.ts`) -- root's local gate pass had covered `lint`/`tsc`/`jest` but not `npm run format:check` or `npm run build`, both of which are also required by `.github/workflows/ci-frontend.yml`'s `test` job (workflow file lives on `master`, not checked out on this `develop`-based working tree, hence not discovered until CI actually ran it). Root reproduced the failure locally (`npm run format:check`), ran `npx prettier --write` on the 4 flagged files (formatting-only diff, 8 insertions/16 deletions), then re-ran the full `test` job locally end-to-end (`lint`, `format:check`, `npm run build`, `npm test -- --coverage --watchAll=false --passWithNoTests`) before committing (`29d83b5`) and pushing. Re-triggered CI confirmed both `test` and `e2e` jobs green; `build` correctly skips (guarded to `master`-branch pushes only, not PRs).
+
+Also noted for awareness (not actioned, pre-existing CI scope, unrelated to this PR): the `e2e` job's Cypress run uses a hardcoded `--spec` list (`precheckin.cy.ts`, `medical-exam.cy.ts`, `financial.cy.ts`, `contracts.cy.ts`, `reports.cy.ts`) that does not include `events.cy.ts` or the new `qrcode-precheckin.cy.ts` -- neither this PR's new Cypress spec nor the pre-existing `events.cy.ts` currently run in CI. This is a pre-existing gap in `ci-frontend.yml`'s spec list, not something introduced by this PR.
+
 ## Next Action
 
-Feature is implementation-complete, gate-clean, independently reviewed, all 3 non-blocking follow-ups addressed (including a real cross-tab-storage bug caught and fixed during the fix pass itself), and manually re-verified in a real browser. Ready for user's commit/PR decision.
+Feature is implementation-complete, gate-clean (all CI jobs green on PR #41), independently reviewed, all 3 non-blocking follow-ups addressed (including a real cross-tab-storage bug caught and fixed during the fix pass itself), and manually re-verified in a real browser. Awaiting PR review/merge.

@@ -13,7 +13,7 @@
   "review_path": ".workflow/runs/qrcode-precheckin-links/review.md",
   "review_verdict": "approved_with_followups",
   "checks_path": ".workflow/runs/qrcode-precheckin-links/checks.json",
-  "next_action": "Committed (389f9b5) on feature/reports and pushed; PR #41 opened against develop (https://github.com/gregori/dojo-full/pull/41). PR contains exactly this one commit (verified via git log origin/develop..feature/reports). No further action -- run closed pending PR review/merge.",
+  "next_action": "PR #41 CI initially failed on the 'test' job's Prettier format:check step (4 files not run through prettier --write before committing -- a gate root had not replicated locally). Root reproduced the exact failure locally, ran prettier --write on the 4 flagged files, re-verified the full CI 'test' job locally (lint, format:check, tsc/build, npm test --coverage) plus re-ran the pre-existing full suite (79/79), committed (29d83b5) and pushed. CI re-run confirmed both 'test' and 'e2e' jobs green (https://github.com/gregori/dojo-full/actions/runs/30588997261); 'build' job correctly skips (only runs on push to master). No further action -- run closed pending PR review/merge.",
   "next_agent": null,
   "pr_url": "https://github.com/gregori/dojo-full/pull/41",
   "commit": "389f9b5",
