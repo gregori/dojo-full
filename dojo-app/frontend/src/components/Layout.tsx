@@ -12,6 +12,7 @@ import {
   FileText,
   BarChart3,
   Repeat,
+  UserCog,
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -43,6 +44,7 @@ export default function Layout({ children }: LayoutProps) {
           { path: '/belts', label: 'Faixas', icon: Award },
           { path: '/dojos', label: 'Dojos', icon: Settings },
           { path: '/belt-requirements', label: 'Requisitos', icon: Settings },
+          { path: '/users', label: 'Usuários', icon: UserCog },
         ]
       : []),
   ]
