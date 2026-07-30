@@ -17,3 +17,14 @@ Layer the testing as:
 - **Unit tests**: Test individual components or functions in isolation. Use Pytest for backend and Jest for frontend.
 - **Integration tests**: Test interactions between components or modules. Use Pytest for backend and Jest for frontend.
 - **End-to-end tests**: Test the entire application flow from the user's perspective. Use Cypress for frontend and Behave for backend.
+
+## Frontend pre-commit gates
+
+Before committing any change under `dojo-app/frontend/`, run these commands from that directory and confirm they all pass. They mirror `.github/workflows/ci-frontend.yml`'s `test` job exactly (that workflow file lives on `master`, so it won't show up in a `develop`-based checkout) — skipping them locally only means CI catches it later:
+
+```bash
+npm run lint
+npm run format:check   # Prettier; run `npm run format` (or `npx prettier --write <files>`) to fix
+npm run build           # runs tsc then vite build
+npm test -- --coverage --watchAll=false --passWithNoTests
+```

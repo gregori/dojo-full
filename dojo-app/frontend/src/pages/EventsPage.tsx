@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Edit, Trash2, QrCode, Users, X } from 'lucide-react'
+import { Plus, Edit, Trash2, QrCode, Users, X, Copy } from 'lucide-react'
 import api from '../services/api'
+import QrCodeModal from '../components/QrCodeModal'
+import { buildPreCheckInUrl } from '../utils/url'
+import { copyToClipboardWithToast } from '../utils/clipboard'
 
 interface EventType {
   id: string
@@ -112,6 +115,7 @@ export default function EventsPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingEvent, setEditingEvent] = useState<Event | null>(null)
   const [rosterEvent, setRosterEvent] = useState<Event | null>(null)
+  const [qrItem, setQrItem] = useState<{ title: string; token: string } | null>(null)
   const [formData, setFormData] = useState({
     title: '',
     event_type_id: '',
@@ -229,17 +233,27 @@ export default function EventsPage() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800">Eventos</h2>
-        <button
-          onClick={() => {
-            setEditingEvent(null)
-            resetForm()
-            setShowForm(true)
-          }}
-          className="flex items-center bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Evento
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            type="button"
+            onClick={() => copyToClipboardWithToast(buildPreCheckInUrl())}
+            className="flex items-center border border-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-50"
+          >
+            <Copy className="w-4 h-4 mr-2" />
+            Copiar link de pré-check-in
+          </button>
+          <button
+            onClick={() => {
+              setEditingEvent(null)
+              resetForm()
+              setShowForm(true)
+            }}
+            className="flex items-center bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Evento
+          </button>
+        </div>
       </div>
 
       {showForm && (
@@ -412,15 +426,23 @@ export default function EventsPage() {
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
-                  <a
-                    href={`/checkin?token=${event.check_in_token}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    type="button"
+                    onClick={() => setQrItem({ title: event.title, token: event.check_in_token })}
                     className="text-green-600 hover:text-green-900"
-                    title="Link de Check-in"
+                    title="Ver QR code de check-in"
                   >
                     <QrCode className="w-4 h-4" />
-                  </a>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboardWithToast(buildPreCheckInUrl(event.id))}
+                    className="ml-3 text-gray-600 hover:text-gray-900"
+                    title="Copiar link de pré-check-in"
+                    aria-label={`Copiar link de pré-check-in de ${event.title}`}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
                   <button
                     type="button"
                     onClick={() => setRosterEvent(event)}
@@ -436,6 +458,10 @@ export default function EventsPage() {
           </tbody>
         </table>
       </div>
+
+      {qrItem && (
+        <QrCodeModal title={qrItem.title} token={qrItem.token} onClose={() => setQrItem(null)} />
+      )}
     </div>
   )
 }

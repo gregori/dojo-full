@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Edit, QrCode, RefreshCw, Ban } from 'lucide-react'
 import api from '../services/api'
 import { showToast } from '../components/Toast'
+import QrCodeModal from '../components/QrCodeModal'
 
 // Index i (0-6) is both the display order and the exact integer sent to the
 // API -- matches Python's date.weekday() convention (Monday=0). This
@@ -99,6 +100,7 @@ export default function EventSeriesPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingSeries, setEditingSeries] = useState<EventSeries | null>(null)
   const [formData, setFormData] = useState<EventSeriesFormData>(emptyFormData)
+  const [qrItem, setQrItem] = useState<{ title: string; token: string } | null>(null)
 
   const { data: seriesList } = useQuery<EventSeries[]>({
     queryKey: ['event-series'],
@@ -470,15 +472,14 @@ export default function EventSeriesPage() {
                   >
                     <RefreshCw className="w-4 h-4" />
                   </button>
-                  <a
-                    href={`/checkin?token=${series.check_in_token}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    type="button"
+                    onClick={() => setQrItem({ title: series.title, token: series.check_in_token })}
                     className="text-green-600 hover:text-green-900 mr-3"
-                    title="Link de Check-in"
+                    title="Ver QR code de check-in"
                   >
                     <QrCode className="w-4 h-4" />
-                  </a>
+                  </button>
                   <button
                     onClick={() => deactivateMutation.mutate(series.id)}
                     className="text-red-600 hover:text-red-900"
@@ -493,6 +494,10 @@ export default function EventSeriesPage() {
           </tbody>
         </table>
       </div>
+
+      {qrItem && (
+        <QrCodeModal title={qrItem.title} token={qrItem.token} onClose={() => setQrItem(null)} />
+      )}
     </div>
   )
 }
