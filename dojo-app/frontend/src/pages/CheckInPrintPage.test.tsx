@@ -43,9 +43,7 @@ describe('CheckInPrintPage', () => {
     renderAt('/checkin-print?token=abc')
 
     expect(screen.getByText('Check-in')).toBeInTheDocument()
-    expect(
-      screen.getByRole('img', { name: 'QR code de check-in: Check-in' })
-    ).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'QR code de check-in: Check-in' })).toBeInTheDocument()
   })
 
   it('calls window.print() when the Imprimir button is clicked', async () => {
@@ -63,9 +61,7 @@ describe('CheckInPrintPage', () => {
   it('shows the unavailable message and no QR/print button when token is missing', () => {
     renderAt('/checkin-print')
 
-    expect(
-      screen.getByText('Link de check-in indisponível para este item.')
-    ).toBeInTheDocument()
+    expect(screen.getByText('Link de check-in indisponível para este item.')).toBeInTheDocument()
     expect(screen.queryByTestId('qr-svg')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Imprimir' })).not.toBeInTheDocument()
   })

@@ -53,9 +53,7 @@ describe('QrCodeModal', () => {
     (token) => {
       render(<QrCodeModal title="Aula de Judo" token={token} onClose={jest.fn()} />)
 
-      expect(
-        screen.getByText('Link de check-in indisponível para este item.')
-      ).toBeInTheDocument()
+      expect(screen.getByText('Link de check-in indisponível para este item.')).toBeInTheDocument()
       expect(screen.queryByTestId('qr-svg')).not.toBeInTheDocument()
       expect(screen.queryByRole('link', { name: 'Imprimir' })).not.toBeInTheDocument()
     }

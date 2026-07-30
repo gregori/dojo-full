@@ -35,9 +35,7 @@ export default function CheckInPrintPage() {
           </button>
         </>
       ) : (
-        <p className="text-center text-rose-700">
-          Link de check-in indisponível para este item.
-        </p>
+        <p className="text-center text-rose-700">Link de check-in indisponível para este item.</p>
       )}
     </main>
   )

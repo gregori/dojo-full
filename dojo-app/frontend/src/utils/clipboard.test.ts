@@ -20,9 +20,7 @@ describe('copyToClipboardWithToast', () => {
 
     await copyToClipboardWithToast('https://app.example.com/precheckin')
 
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
-      'https://app.example.com/precheckin'
-    )
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('https://app.example.com/precheckin')
     expect(mockedShowToast).toHaveBeenCalledWith('Link copiado', 'success')
   })
 
@@ -31,7 +29,9 @@ describe('copyToClipboardWithToast', () => {
       clipboard: { writeText: jest.fn().mockRejectedValue(new Error('denied')) },
     })
 
-    await expect(copyToClipboardWithToast('https://app.example.com/precheckin')).resolves.toBeUndefined()
+    await expect(
+      copyToClipboardWithToast('https://app.example.com/precheckin')
+    ).resolves.toBeUndefined()
 
     expect(mockedShowToast).toHaveBeenCalledWith('Não foi possível copiar o link', 'error')
   })
