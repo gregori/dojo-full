@@ -2,7 +2,7 @@
   "schema_version": 1,
   "run_id": "qrcode-precheckin-links",
   "work_item": "QR codes reais (imagem) para check-in de Eventos/Séries e link de pré-checkin compartilhável para o administrador enviar aos alunos",
-  "status": "fix_pass_complete_ready_for_commit",
+  "status": "committed_pr_opened",
   "created_at": "2026-07-30",
   "updated_at": "2026-07-30",
   "requirements_review": "approved_with_followups",
@@ -13,7 +13,9 @@
   "review_path": ".workflow/runs/qrcode-precheckin-links/review.md",
   "review_verdict": "approved_with_followups",
   "checks_path": ".workflow/runs/qrcode-precheckin-links/checks.json",
-  "next_action": "All 10 acceptance criteria (QRL-01..QRL-10) plus all 3 non-blocking review follow-ups are now addressed: title no longer travels in the /checkin-print URL (moved to localStorage, read-once, with a 'Check-in' fallback), and a shared QrImage component replaced the duplicated QR markup. A real cross-tab-storage bug (sessionStorage doesn't survive rel=noopener new-tab boundaries) was caught via manual browser re-verification of the fix pass and corrected (switched to localStorage) before being reported done -- automated tests alone (Jest/jsdom, Cypress) could not have caught this. Gates re-confirmed by root after the fix: Jest 79/79, ESLint clean, tsc clean. Not committed/pushed yet -- awaiting user's explicit go-ahead.",
+  "next_action": "Committed (389f9b5) on feature/reports and pushed; PR #41 opened against develop (https://github.com/gregori/dojo-full/pull/41). PR contains exactly this one commit (verified via git log origin/develop..feature/reports). No further action -- run closed pending PR review/merge.",
   "next_agent": null,
+  "pr_url": "https://github.com/gregori/dojo-full/pull/41",
+  "commit": "389f9b5",
   "checks_path": ".workflow/runs/qrcode-precheckin-links/checks.json"
 }
