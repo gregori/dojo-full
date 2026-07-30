@@ -7,6 +7,7 @@ import StudentsPage from './pages/StudentsPage'
 import EventsPage from './pages/EventsPage'
 import EventSeriesPage from './pages/EventSeriesPage'
 import CheckInPage from './pages/CheckInPage'
+import CheckInPrintPage from './pages/CheckInPrintPage'
 import PreCheckInPage from './pages/PreCheckInPage'
 import MedicalExamPage from './pages/MedicalExamPage'
 import ExamsPage from './pages/ExamsPage'
@@ -74,6 +75,14 @@ function App() {
               element={
                 <PrivateRoute>
                   <EventSeriesPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/checkin-print"
+              element={
+                <PrivateRoute>
+                  <CheckInPrintPage />
                 </PrivateRoute>
               }
             />

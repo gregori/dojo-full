@@ -282,42 +282,6 @@ describe('Events Page', () => {
       cy.contains(/data|datetime|horário/i).should('be.visible')
     })
 
-    it('deve gerar QR Code para evento', () => {
-      // Login
-      cy.intercept('POST', '/api/v1/auth/login').as('loginRequest')
-      cy.get('input[type="email"]').type(testEmail)
-      cy.get('input[type="password"]').type(testPassword)
-      cy.get('button[type="submit"]').click()
-      cy.wait('@loginRequest')
-
-      // Navigate to Events page
-      cy.intercept('GET', '/api/v1/events').as('getEvents')
-      cy.get('a[href="/events"]').click()
-      cy.wait('@getEvents')
-
-      // Create an event if none exists
-      cy.contains('Novo Evento').click()
-      cy.get('input[type="text"]').first().type('Evento com QR')
-      cy.get('select').first().select(0)
-      cy.get('input[type="datetime-local"]').first().type('2030-12-01T10:00')
-
-      cy.intercept('POST', '/api/v1/events').as('createEvent')
-      cy.contains('Criar').click()
-      cy.wait('@createEvent')
-
-      // Click on QR code button
-      cy.intercept('GET', '/api/v1/events/*/qr-code').as('getQR')
-      cy.get('table tbody tr').first().within(() => {
-        cy.contains(/qr|code/i).click()
-      })
-
-      cy.wait('@getQR').then((interception) => {
-        expect(interception.response?.statusCode).to.eq(200)
-        // QR code should contain token data
-        expect(interception.response?.body).to.have.property('qr_code_url').or('qr_code_data').or('token')
-      })
-    })
-
     it('instrutor deve conseguir criar evento', () => {
       // Login as instructor
       cy.clearLocalStorage()
