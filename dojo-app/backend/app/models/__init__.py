@@ -18,6 +18,7 @@ from sqlalchemy import (
     UniqueConstraint,
     create_engine,
 )
+from sqlalchemy.dialects import mysql
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -34,11 +35,20 @@ class UUIDMixin:
 
 
 class TimestampMixin:
-    """Mixin to add created/updated timestamps."""
+    """Mixin to add created/updated timestamps.
 
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    MySQL's DATETIME truncates to whole seconds unless given an explicit
+    fractional-seconds precision (fsp): two rows created within the same
+    second are otherwise indistinguishable by created_at, which is exactly
+    what made ContractTemplateService.get_history's ordering flaky. fsp=6
+    (microseconds) matches what datetime.now() already produces in Python,
+    so no application code needs to change -- only the column's own
+    resolution was ever the bottleneck.
+    """
+
+    created_at: Mapped[datetime] = mapped_column(mysql.DATETIME(fsp=6), default=lambda: datetime.now(UTC))
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
+        mysql.DATETIME(fsp=6),
         default=lambda: datetime.now(UTC),
         onupdate=lambda: datetime.now(UTC),
     )
