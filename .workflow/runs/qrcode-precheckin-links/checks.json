@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "run_id": "qrcode-precheckin-links",
+  "updated_at": "2026-07-30 (re-verified after fix pass)",
+  "gate_types": ["lint", "typecheck", "test"],
+  "gates": {
+    "lint": {
+      "status": "passed",
+      "command": "npm run lint (dojo-app/frontend)",
+      "note": "ESLint: No issues found. Run directly by root, not just self-reported by implementer."
+    },
+    "typecheck": {
+      "status": "passed",
+      "command": "npx tsc --noEmit (dojo-app/frontend)",
+      "note": "TypeScript: No errors found. Run directly by root."
+    },
+    "test": {
+      "status": "passed",
+      "command": "npm test (dojo-app/frontend, full suite)",
+      "note": "15 suites / 79 tests passed (79 after the fix pass added 2 more test cases), 0 failures, no regressions. Run directly by root, twice: once after initial implementation (77/77, after fixing 8 initial jsdom-mocking failures), and again after the 3-finding fix pass (79/79, after also fixing a real sessionStorage-vs-localStorage cross-tab bug caught via manual browser testing -- see handoff.md)."
+    }
+  },
+  "e2e": {
+    "status": "not_run",
+    "note": "Cypress specs written (new qrcode-precheckin.cy.ts covering QRL-01,04,05,06,07,08,10; events.cy.ts modified to remove a stale test that intercepted a backend QR endpoint that never existed) but not executed -- requires a live app+backend, out of scope for this gate pass per project convention (mirrors contract-markdown-rendering and recurring-event-series runs, where e2e was also not executed by the automated gate)."
+  }
+}

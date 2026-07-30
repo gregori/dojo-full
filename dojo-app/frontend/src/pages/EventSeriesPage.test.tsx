@@ -149,13 +149,38 @@ describe('EventSeriesPage', () => {
     await waitFor(() => expect(mockedDelete).toHaveBeenCalledWith('/api/v1/event-series/series-1'))
   })
 
-  it('renders a plain anchor link to /checkin?token=... for the QR action', async () => {
+  it('clicking the QR icon opens the QR modal showing the series title', async () => {
+    const user = userEvent.setup()
     renderPage()
 
     const row = (await screen.findByText('Aikido Geral')).closest('tr')
     if (!row) throw new Error('series row not found')
 
-    const qrLink = within(row).getByTitle('Link de Check-in')
-    expect(qrLink).toHaveAttribute('href', '/checkin?token=series-token-abc')
+    await user.click(within(row).getByTitle('Ver QR code de check-in'))
+
+    const modalHeading = await screen.findByRole('heading', { name: 'Aikido Geral' })
+    expect(modalHeading).toBeInTheDocument()
+  })
+
+  it('shows the inline unavailable message when opening the QR modal for a series with an empty check_in_token', async () => {
+    mockedGet.mockImplementation((url: string) => {
+      if (url === '/api/v1/event-series')
+        return Promise.resolve({ data: [{ ...sampleSeries, check_in_token: '' }] })
+      if (url === '/api/v1/events/types')
+        return Promise.resolve({ data: [{ id: 'type-1', name: 'Aula Regular', color: '#3498db' }] })
+      if (url === '/api/v1/belts') return Promise.resolve({ data: [] })
+      return Promise.resolve({ data: [] })
+    })
+    const user = userEvent.setup()
+    renderPage()
+
+    const row = (await screen.findByText('Aikido Geral')).closest('tr')
+    if (!row) throw new Error('series row not found')
+
+    await user.click(within(row).getByTitle('Ver QR code de check-in'))
+
+    expect(
+      await screen.findByText('Link de check-in indisponível para este item.')
+    ).toBeInTheDocument()
   })
 })
