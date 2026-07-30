@@ -31,7 +31,7 @@ const sampleSeries = {
   title: 'Aikido Geral',
   event_type_id: 'type-1',
   description: null,
-  location: 'Tatame Principal',
+  dojo_id: null,
   minimum_belt_id: null,
   days_of_week: [0, 2, 5],
   start_time: '07:00:00',
@@ -66,6 +66,7 @@ describe('EventSeriesPage', () => {
       if (url === '/api/v1/events/types')
         return Promise.resolve({ data: [{ id: 'type-1', name: 'Aula Regular', color: '#3498db' }] })
       if (url === '/api/v1/belts') return Promise.resolve({ data: [] })
+      if (url === '/api/v1/dojos') return Promise.resolve({ data: [] })
       return Promise.resolve({ data: [] })
     })
   })

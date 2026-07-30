@@ -187,7 +187,7 @@ class EventSeries(UUIDMixin, TimestampMixin, Base):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     event_type_id: Mapped[str] = mapped_column(ForeignKey("event_types.id"), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    location: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    dojo_id: Mapped[str | None] = mapped_column(ForeignKey("dojos.id"), nullable=True)
     minimum_belt_id: Mapped[str | None] = mapped_column(ForeignKey("belts.id"), nullable=True)
     days_of_week: Mapped[str] = mapped_column(String(20), nullable=False)
     start_time: Mapped[time] = mapped_column(Time, nullable=False)
@@ -200,6 +200,7 @@ class EventSeries(UUIDMixin, TimestampMixin, Base):
     organization_id: Mapped[str | None] = mapped_column(ForeignKey("organizations.id"), nullable=True)
 
     event_type: Mapped["EventType"] = relationship()
+    dojo: Mapped[Dojo | None] = relationship()
     minimum_belt: Mapped[Belt | None] = relationship(foreign_keys=[minimum_belt_id])
     organization: Mapped[Organization | None] = relationship()
     occurrences: Mapped[list["Event"]] = relationship(back_populates="event_series")

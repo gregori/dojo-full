@@ -8,7 +8,7 @@ class EventSeriesBase(BaseModel):
     title: str
     event_type_id: str
     description: str | None = None
-    location: str | None = None
+    dojo_id: str | None = None
     minimum_belt_id: str | None = None
     organization_id: str | None = None
     days_of_week: list[int]
@@ -41,7 +41,7 @@ class EventSeriesUpdate(BaseModel):
     title: str | None = None
     event_type_id: str | None = None
     description: str | None = None
-    location: str | None = None
+    dojo_id: str | None = None
     minimum_belt_id: str | None = None
     days_of_week: list[int] | None = None
     start_time: time | None = None
