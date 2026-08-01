@@ -12,5 +12,12 @@ terraform {
     skip_metadata_api_check     = true
     skip_requesting_account_id  = true
     force_path_style            = true
+    # OCI's S3-compatible endpoint returns 501 NotImplemented for the
+    # aws-chunked/checksum-trailer PutObject encoding aws-sdk-go-v2 sends
+    # by default (https://github.com/hashicorp/terraform/issues/34053).
+    # This backend-native flag (added in Terraform 1.6.4) disables it;
+    # the AWS_REQUEST_CHECKSUM_CALCULATION/AWS_RESPONSE_CHECKSUM_VALIDATION
+    # env vars previously tried do not cover this code path and had no effect.
+    skip_s3_checksum = true
   }
 }
