@@ -22,6 +22,11 @@ resource "oci_core_instance" "k8s_node" {
     subnet_id        = var.subnet_id
     assign_public_ip = true
     display_name     = "dojo-k8s-node-vnic"
+    # Required because this node routes/masquerades pod-network traffic
+    # (Flannel NAT) through this VNIC; OCI's source/dest check (default
+    # on) rejects any packet whose source IP doesn't match the VNIC's
+    # own address, which blocks all pod-initiated outbound connections.
+    skip_source_dest_check = true
   }
 
   source_details {
@@ -40,6 +45,15 @@ resource "oci_core_instance" "k8s_node" {
   lifecycle {
     ignore_changes = [
       metadata,
+      # data.oci_core_images.k8s_image always resolves to the newest
+      # published Oracle Linux 8 image, so this drifts on essentially
+      # every plan. Confirmed the hard way: applying that "update" isn't
+      # a metadata-only change -- it triggers a real boot volume
+      # replacement (reimaging), which failed here on OCI's hypervisor
+      # healthcheck precheck before completing. Boot source is a
+      # launch-time-only concern for this node; never let a routine
+      # plan/apply attempt to reimage it.
+      source_details,
     ]
   }
 }
