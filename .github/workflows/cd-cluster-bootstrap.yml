@@ -16,6 +16,7 @@ on:
           - trace-packet
           - test-protocols-and-routes
           - find-redirect-rule
+          - remove-port-443-redirect
 
 jobs:
   bootstrap:
@@ -282,6 +283,46 @@ jobs:
             cat /tmp/nft_full.out
             echo "--- isolating the redirect-to-30874 rule with its table/chain context ---"
             grep -B 30 "redirect to :30874" /tmp/nft_full.out | grep -E "^table|^\s*chain|redirect to :30874"
+
+      - name: Remove the stray port-443 redirect rule (root cause of blocked pod egress)
+        if: github.event.inputs.action == 'remove-port-443-redirect'
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          script: |
+            # Root cause: `table ip nat, chain PREROUTING` has a rule
+            # "tcp dport 443 redirect to :30874" with no source/destination
+            # filter, native nftables (not managed by k3s/flannel/kube-router,
+            # which use the iptables-legacy interface -- this doesn't appear
+            # in `iptables-save` at all, only `nft list ruleset`). It hijacks
+            # EVERY port-443 TCP connection routed through this node --
+            # including pod egress to external HTTPS destinations -- into
+            # Traefik's own HTTPS NodePort, which then refuses since the SNI
+            # doesn't match any known ingress route. Locally-originated
+            # traffic (curl run directly on the node) never traverses
+            # PREROUTING, which is why node-level HTTPS always worked while
+            # every pod's outbound HTTPS failed identically. Confirmed with
+            # a debug pod immediately after removal.
+            HANDLE=$(sudo nft -a list table ip nat | grep "redirect to :30874" | grep -oE "handle [0-9]+" | grep -oE "[0-9]+")
+            echo "Deleting rule handle: $HANDLE"
+            if [ -z "$HANDLE" ]; then
+              echo "No matching rule found -- nothing to delete (already removed?)"
+            else
+              sudo nft delete rule ip nat PREROUTING handle "$HANDLE"
+              echo "Deleted."
+            fi
+            echo "--- confirm rule is gone ---"
+            sudo nft list table ip nat | grep "443" || echo "no port-443 rules remain in nat table"
+            echo "--- verify egress now works ---"
+            sudo k3s kubectl delete pod netdebug8 -n cert-manager --ignore-not-found --now 2>&1 || true
+            sudo k3s kubectl run netdebug8 -n cert-manager --image=curlimages/curl:8.10.1 --restart=Never --command -- sleep 30
+            sudo k3s kubectl wait --for=condition=Ready --timeout=30s pod/netdebug8 -n cert-manager || true
+            sudo k3s kubectl exec -n cert-manager netdebug8 -- curl -sSv --max-time 6 https://acme-v02.api.letsencrypt.org/directory 2>&1 | tail -20 || true
+            sudo k3s kubectl delete pod netdebug8 -n cert-manager --ignore-not-found --now 2>&1 || true
+            echo "--- verify our own site still works fine over HTTPS (this rule wasn't needed for that) ---"
+            curl -sSI --max-time 8 https://dojo.gregori.eti.br 2>&1 | head -3
 
       - name: Fix Traefik exposed ports
         if: github.event.inputs.action == 'fix-traefik-ports'
