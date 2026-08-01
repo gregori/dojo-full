@@ -14,6 +14,7 @@ on:
           - create-cluster-issuer
           - test-nwplcy-default-accept
           - trace-packet
+          - test-protocols-and-routes
 
 jobs:
   bootstrap:
@@ -195,6 +196,33 @@ jobs:
             cat /tmp/trace.log 2>&1 | grep -i "TRACE:" | head -60
             echo "--- if empty, dmesg fallback ---"
             sudo dmesg -T 2>&1 | grep -i "TRACE:" | tail -60 || true
+
+      - name: Test ICMP/UDP vs TCP, and check the pod's own network namespace
+        if: github.event.inputs.action == 'test-protocols-and-routes'
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          script: |
+            sudo k3s kubectl delete pod netdebug6 -n cert-manager --ignore-not-found --now 2>&1 || true
+            sudo k3s kubectl run netdebug6 -n cert-manager --image=curlimages/curl:8.10.1 --restart=Never --command -- sleep 60
+            sudo k3s kubectl wait --for=condition=Ready --timeout=30s pod/netdebug6 -n cert-manager || true
+            POD_IP=$(sudo k3s kubectl get pod netdebug6 -n cert-manager -o jsonpath='{.status.podIP}')
+            echo "pod IP: $POD_IP"
+            echo "--- pod's own routing table ---"
+            sudo k3s kubectl exec -n cert-manager netdebug6 -- sh -c "cat /proc/net/route" 2>&1 || true
+            echo "--- ping external IP (ICMP) from pod ---"
+            sudo k3s kubectl exec -n cert-manager netdebug6 -- sh -c "ping -c 3 -W 3 8.8.8.8" 2>&1 || true
+            echo "--- ping cluster-internal IP (node itself, 10.0.1.8) from pod, sanity check ---"
+            sudo k3s kubectl exec -n cert-manager netdebug6 -- sh -c "ping -c 3 -W 3 10.0.1.8" 2>&1 || true
+            echo "--- TCP to an internal cluster service (kubernetes.default, should work) ---"
+            sudo k3s kubectl exec -n cert-manager netdebug6 -- sh -c "curl -sSk --max-time 4 https://kubernetes.default.svc.cluster.local/ -o /dev/null -w 'http_code=%{http_code}\n'" 2>&1 || true
+            echo "--- TCP to node's own IP on an open port (22, should get SYN-ACK or at least not instant refuse) ---"
+            sudo k3s kubectl exec -n cert-manager netdebug6 -- sh -c "curl -sSv --max-time 4 telnet://10.0.1.8:22" 2>&1 | tail -10 || true
+            echo "--- host node's ARP/neighbor table for pod IP ---"
+            ip neigh show | grep "$POD_IP" || echo "no neighbor entry"
+            sudo k3s kubectl delete pod netdebug6 -n cert-manager --ignore-not-found --now 2>&1 || true
 
       - name: Fix Traefik exposed ports
         if: github.event.inputs.action == 'fix-traefik-ports'
