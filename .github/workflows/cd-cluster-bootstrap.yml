@@ -87,8 +87,19 @@ jobs:
           key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
           command_timeout: 5m
           script: |
-            sudo k3s kubectl apply -f https://github.com/cert-manager/cert-manager/releases/latest/download/cert-manager.yaml
+            # Pinned, not "latest": this cluster runs k3s v1.29.14, and
+            # cert-manager's newer CRD manifests (v1.17+) use the CRD
+            # "selectableFields" field, only understood by Kubernetes >=1.31 --
+            # the apiserver here rejects those specific CRDs with a strict
+            # decoding error ("unknown field") while unrelated CRDs and all
+            # Deployments still apply/start fine, silently leaving
+            # certificates.cert-manager.io (and siblings) missing. v1.15.3
+            # predates that CRD field and is a supported release for 1.29.
+            sudo k3s kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.15.3/cert-manager.yaml
             sudo k3s kubectl wait --for=condition=Available --timeout=180s -n cert-manager deployment/cert-manager deployment/cert-manager-webhook deployment/cert-manager-cainjector
+            sleep 10
+            echo "--- CRDs ---"
+            sudo k3s kubectl get crd | grep cert-manager.io
 
       - name: Create ClusterIssuer
         if: github.event.inputs.action == 'create-cluster-issuer'
