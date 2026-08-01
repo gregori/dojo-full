@@ -17,6 +17,7 @@ on:
           - test-protocols-and-routes
           - find-redirect-rule
           - remove-port-443-redirect
+          - retry-cluster-issuer
 
 jobs:
   bootstrap:
@@ -400,3 +401,56 @@ jobs:
                       ingressClassName: traefik
             EOF
             sudo k3s kubectl get clusterissuer letsencrypt-prod -o wide
+
+      - name: Retry ClusterIssuer + CertificateRequest (delete and recreate to force fresh reconciliation)
+        if: github.event.inputs.action == 'retry-cluster-issuer'
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          script: |
+            # kubectl apply of an unchanged spec doesn't trigger cert-manager
+            # to retry -- its ClusterIssuer/Certificate controllers back off
+            # on repeated failures. Delete + recreate forces an immediate
+            # fresh reconciliation now that the actual blocker (the stray
+            # :443 redirect) is gone.
+            sudo k3s kubectl delete clusterissuer letsencrypt-prod --ignore-not-found
+            sudo k3s kubectl delete certificaterequest -n dojo --all --ignore-not-found
+            sudo k3s kubectl apply -f - <<'EOF'
+            apiVersion: cert-manager.io/v1
+            kind: ClusterIssuer
+            metadata:
+              name: letsencrypt-prod
+            spec:
+              acme:
+                server: https://acme-v02.api.letsencrypt.org/directory
+                email: rodrigo.gregori@gmail.com
+                privateKeySecretRef:
+                  name: letsencrypt-prod-key
+                solvers:
+                - http01:
+                    ingress:
+                      ingressClassName: traefik
+            EOF
+            echo "--- waiting for ClusterIssuer to become Ready ---"
+            for i in $(seq 1 12); do
+              READY=$(sudo k3s kubectl get clusterissuer letsencrypt-prod -o jsonpath='{.status.conditions[0].status}' 2>/dev/null)
+              echo "attempt $i: Ready=$READY"
+              if [ "$READY" = "True" ]; then break; fi
+              sleep 5
+            done
+            sudo k3s kubectl get clusterissuer letsencrypt-prod -o wide
+            echo "--- forcing Certificate re-issue by deleting the Certificate object (cert-manager recreates it from the Ingress annotation) ---"
+            sudo k3s kubectl delete certificate dojo-tls -n dojo --ignore-not-found
+            sleep 5
+            sudo k3s kubectl get certificate -n dojo -o wide
+            echo "--- waiting up to 90s for Certificate to become Ready ---"
+            for i in $(seq 1 18); do
+              READY=$(sudo k3s kubectl get certificate dojo-tls -n dojo -o jsonpath='{.status.conditions[0].status}' 2>/dev/null)
+              echo "attempt $i: Ready=$READY"
+              if [ "$READY" = "True" ]; then break; fi
+              sleep 5
+            done
+            sudo k3s kubectl get certificate -n dojo -o wide
+            sudo k3s kubectl describe certificate dojo-tls -n dojo | tail -20
