@@ -39,6 +39,18 @@ jobs:
             echo "--- Certificate (dojo) ---"
             sudo k3s kubectl get certificate -n dojo -o wide || true
             sudo k3s kubectl describe certificate -n dojo dojo-tls || true
+            echo "--- CertificateRequest (dojo) ---"
+            sudo k3s kubectl get certificaterequest -n dojo -o wide || true
+            echo "--- Order (dojo) ---"
+            sudo k3s kubectl get order -n dojo -o wide || true
+            sudo k3s kubectl describe order -n dojo || true
+            echo "--- Challenge (dojo) ---"
+            sudo k3s kubectl get challenge -n dojo -o wide || true
+            sudo k3s kubectl describe challenge -n dojo || true
+            echo "--- ACME solver ingress/pods (dojo) ---"
+            sudo k3s kubectl get ingress,pods -n dojo -l acme.cert-manager.io/http01-solver=true || true
+            echo "--- cert-manager controller logs (last 60 lines) ---"
+            sudo k3s kubectl logs -n cert-manager -l app.kubernetes.io/component=controller --tail=60 || true
             echo "--- cert-manager namespace ---"
             sudo k3s kubectl get ns cert-manager || echo "not installed"
             echo "--- cert-manager pods ---"
