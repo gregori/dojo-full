@@ -47,6 +47,13 @@ jobs:
           username: opc
           key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
           script: |
+            # Removes the existing global web->websecure redirect
+            # (additionalArguments: --entrypoints.web.http.redirections...),
+            # which pointed at the entrypoint's internal port (:8443, unreachable
+            # externally) and would also break every future cert-manager HTTP-01
+            # challenge/renewal by redirecting the ACME solver's port-80 requests
+            # away before they can be validated. Service/NodePort mapping
+            # (80->8000, 443->8443) is already correct and untouched.
             sudo k3s kubectl apply -f - <<'EOF'
             apiVersion: helm.cattle.io/v1
             kind: HelmChartConfig
@@ -54,16 +61,11 @@ jobs:
               name: traefik
               namespace: kube-system
             spec:
-              valuesContent: |-
-                ports:
-                  web:
-                    exposedPort: 80
-                    redirectTo: null
-                  websecure:
-                    exposedPort: 443
+              valuesContent: ""
             EOF
-            sleep 5
+            sleep 15
             sudo k3s kubectl get pods -n kube-system -l app.kubernetes.io/name=traefik
+            sudo k3s kubectl get pods -n kube-system -l app.kubernetes.io/name=traefik -o jsonpath='{.items[0].spec.containers[0].args}'
 
       - name: Install cert-manager
         if: github.event.inputs.action == 'install-cert-manager'
