@@ -25,6 +25,29 @@ jobs:
           username: opc
           key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
           script: |
+            echo "--- NetworkPolicy resources (any namespace) ---"
+            sudo k3s kubectl get networkpolicy -A 2>&1
+            echo "--- kube-router pods ---"
+            sudo k3s kubectl get pods -n kube-system -o wide | grep -i router || echo "no kube-router pods found by name"
+            sudo k3s kubectl get pods -n kube-system -l k8s-app=kube-router -o wide 2>&1 || true
+            echo "--- kube-router logs mentioning 'network policy' or 'default' (last 40 matching lines) ---"
+            KUBE_ROUTER_POD=$(sudo k3s kubectl get pods -n kube-system -l k8s-app=kube-router -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+            echo "kube-router pod: $KUBE_ROUTER_POD"
+            if [ -n "$KUBE_ROUTER_POD" ]; then
+              sudo k3s kubectl logs -n kube-system "$KUBE_ROUTER_POD" --tail=200 2>&1 | grep -iE "network ?polic|default|deny|firewall" | tail -40
+            fi
+            echo "--- long-lived debug pod: create, wait 10s for kube-router sync, then check its specific FW chain + test egress ---"
+            sudo k3s kubectl delete pod netdebug3 -n cert-manager --ignore-not-found --now 2>&1 || true
+            sudo k3s kubectl run netdebug3 -n cert-manager --image=curlimages/curl:8.10.1 --restart=Never --command -- sleep 120
+            sudo k3s kubectl wait --for=condition=Ready --timeout=30s pod/netdebug3 -n cert-manager || true
+            POD_IP=$(sudo k3s kubectl get pod netdebug3 -n cert-manager -o jsonpath='{.status.podIP}')
+            echo "netdebug3 IP: $POD_IP"
+            sleep 10
+            echo "-- matching iptables rules for this pod IP --"
+            sudo iptables-save 2>&1 | grep "$POD_IP" | head -20
+            echo "-- egress test after the 10s sync wait --"
+            sudo k3s kubectl exec -n cert-manager netdebug3 -- curl -sS -v --max-time 4 https://github.com 2>&1 | tail -15 || true
+            sudo k3s kubectl delete pod netdebug3 -n cert-manager --ignore-not-found --now 2>&1 || true
             echo "--- Node health/uptime (sanity check after a failed boot-volume-replacement precheck) ---"
             uptime
             sudo k3s kubectl get nodes -o wide
