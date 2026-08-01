@@ -15,6 +15,7 @@ on:
           - test-nwplcy-default-accept
           - trace-packet
           - test-protocols-and-routes
+          - find-redirect-rule
 
 jobs:
   bootstrap:
@@ -267,6 +268,20 @@ jobs:
             echo ":443 capture:"
             cat /tmp/cap443.out
             sudo k3s kubectl delete pod netdebug7 -n cert-manager --ignore-not-found --now 2>&1 || true
+
+      - name: Find the exact table/chain/handle of the port-443 redirect rule
+        if: github.event.inputs.action == 'find-redirect-rule'
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          script: |
+            echo "--- full nft ruleset with handles ---"
+            sudo nft -a list ruleset > /tmp/nft_full.out 2>&1
+            cat /tmp/nft_full.out
+            echo "--- isolating the redirect-to-30874 rule with its table/chain context ---"
+            grep -B 30 "redirect to :30874" /tmp/nft_full.out | grep -E "^table|^\s*chain|redirect to :30874"
 
       - name: Fix Traefik exposed ports
         if: github.event.inputs.action == 'fix-traefik-ports'
