@@ -27,10 +27,17 @@ jobs:
           script: |
             echo "--- Node-level connectivity to Let's Encrypt ---"
             curl -v --max-time 8 https://acme-v02.api.letsencrypt.org/directory 2>&1 | tail -20
-            echo "--- Pod-level connectivity to Let's Encrypt (from a cert-manager pod) ---"
-            POD=$(sudo k3s kubectl get pods -n cert-manager -l app.kubernetes.io/component=controller -o jsonpath='{.items[0].metadata.name}')
-            sudo k3s kubectl exec -n cert-manager "$POD" -- wget -qO- --timeout=8 https://acme-v02.api.letsencrypt.org/directory 2>&1 | head -c 300 || true
-            echo ""
+            echo "--- Pod-level connectivity to Let's Encrypt (dedicated debug pod, same cluster network) ---"
+            sudo k3s kubectl delete pod netdebug -n cert-manager --ignore-not-found --now 2>&1 || true
+            sudo k3s kubectl run netdebug -n cert-manager --image=curlimages/curl:8.10.1 --restart=Never --command -- sleep 60
+            sudo k3s kubectl wait --for=condition=Ready --timeout=30s pod/netdebug -n cert-manager || true
+            echo "-- DNS resolution --"
+            sudo k3s kubectl exec -n cert-manager netdebug -- nslookup acme-v02.api.letsencrypt.org 2>&1 || true
+            echo "-- curl -v to ACME directory --"
+            sudo k3s kubectl exec -n cert-manager netdebug -- curl -v --max-time 8 https://acme-v02.api.letsencrypt.org/directory 2>&1 | tail -25 || true
+            echo "-- curl -v to a known-good external host (github.com) for comparison --"
+            sudo k3s kubectl exec -n cert-manager netdebug -- curl -v --max-time 8 https://github.com 2>&1 | tail -10 || true
+            sudo k3s kubectl delete pod netdebug -n cert-manager --ignore-not-found --now 2>&1 || true
             echo "--- firewalld status ---"
             sudo systemctl is-active firewalld 2>&1 || true
             echo "--- iptables REJECT/DROP rules (OUTPUT/FORWARD) ---"
