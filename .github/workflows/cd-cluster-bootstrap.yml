@@ -50,12 +50,12 @@ jobs:
             curl -sS --max-time 8 -L http://169.254.169.254/opc/v2/vnics/ -H "Authorization: Bearer Oracle" 2>&1
             echo "--- outbound curl from node with explicit source IP = pod gateway (10.42.0.1) sanity check ---"
             curl -sSv --max-time 8 --interface 10.0.1.8 https://github.com 2>&1 | tail -10 || true
-            echo "--- iptables filter FORWARD chain (full, unfiltered) ---"
-            sudo iptables -L FORWARD -n -v --line-numbers 2>&1
-            echo "--- KUBE-FORWARD sub-chain (if present) ---"
-            sudo iptables -L KUBE-FORWARD -n -v 2>&1 || true
-            echo "--- KUBE-SERVICES/KUBE-FIREWALL/KUBE-EXTERNAL-SERVICES sub-chains (if present) ---"
-            sudo iptables -L KUBE-FIREWALL -n -v 2>&1 || true
+            echo "--- FULL iptables-save (all tables: filter, nat, mangle, raw) ---"
+            sudo iptables-save -c 2>&1
+            echo "--- rp_filter sysctl ---"
+            sudo sysctl -a 2>/dev/null | grep rp_filter
+            echo "--- routing table ---"
+            ip route show 2>&1
             echo "--- primary physical interface ---"
             PRIMARY_IF=$(ip route get 8.8.8.8 | awk '/dev/ {for(i=1;i<=NF;i++) if ($i=="dev") print $(i+1)}')
             echo "primary interface: $PRIMARY_IF"
