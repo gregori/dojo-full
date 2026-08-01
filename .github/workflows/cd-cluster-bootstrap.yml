@@ -230,6 +230,44 @@ jobs:
             sudo k3s kubectl exec -n cert-manager netdebug6 -- sh -c "curl -sSv --max-time 4 https://1.1.1.1/ -k" 2>&1 | tail -12 || true
             sudo k3s kubectl delete pod netdebug6 -n cert-manager --ignore-not-found --now 2>&1 || true
 
+      - name: Look for eBPF/XDP or a security agent below iptables, and compare wire captures for :53 (works) vs :443 (fails)
+        if: github.event.inputs.action == 'test-protocols-and-routes'
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          script: |
+            echo "--- XDP/eBPF programs attached to interfaces ---"
+            ip link show 2>&1 | grep -i xdp || echo "no xdp shown in ip link"
+            sudo bpftool prog list 2>&1 || echo "bpftool not available"
+            sudo bpftool net list 2>&1 || true
+            echo "--- suspicious security/agent services running ---"
+            systemctl list-units --type=service --state=running 2>&1 | grep -iE "oci|cloud.?guard|falco|osquery|crowdstrike|security|agent|waf|firewall"
+            echo "--- all listening/active nftables (in case this is nftables-native, not iptables-legacy) ---"
+            sudo nft list ruleset 2>&1 | grep -iE "443|reject|drop" | head -40 || echo "nft not available or empty"
+            echo "--- primary interface (again) ---"
+            PRIMARY_IF=$(ip route get 8.8.8.8 | awk '/dev/ {for(i=1;i<=NF;i++) if ($i=="dev") print $(i+1)}')
+            echo "--- capture BOTH a working :53 attempt and a failing :443 attempt on physical interface, back to back ---"
+            sudo k3s kubectl delete pod netdebug7 -n cert-manager --ignore-not-found --now 2>&1 || true
+            sudo k3s kubectl run netdebug7 -n cert-manager --image=curlimages/curl:8.10.1 --restart=Never --command -- sleep 30
+            sudo k3s kubectl wait --for=condition=Ready --timeout=30s pod/netdebug7 -n cert-manager || true
+            sudo timeout 6 tcpdump -ni "$PRIMARY_IF" host 8.8.8.8 -c 10 > /tmp/cap53.out 2>&1 &
+            P1=$!
+            sleep 1
+            sudo k3s kubectl exec -n cert-manager netdebug7 -- sh -c "curl -sS --max-time 3 telnet://8.8.8.8:53" 2>&1 || true
+            wait $P1 2>&1 || true
+            echo ":53 capture:"
+            cat /tmp/cap53.out
+            sudo timeout 6 tcpdump -ni "$PRIMARY_IF" host 8.8.8.8 -c 10 > /tmp/cap443.out 2>&1 &
+            P2=$!
+            sleep 1
+            sudo k3s kubectl exec -n cert-manager netdebug7 -- sh -c "curl -sSk --max-time 3 https://8.8.8.8/" 2>&1 || true
+            wait $P2 2>&1 || true
+            echo ":443 capture:"
+            cat /tmp/cap443.out
+            sudo k3s kubectl delete pod netdebug7 -n cert-manager --ignore-not-found --now 2>&1 || true
+
       - name: Fix Traefik exposed ports
         if: github.event.inputs.action == 'fix-traefik-ports'
         uses: appleboy/ssh-action@v1
