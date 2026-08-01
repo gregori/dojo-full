@@ -3,11 +3,16 @@ kind: Ingress
 metadata:
   name: dojo-frontend-ingress
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web
+    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   ingressClassName: traefik
+  tls:
+  - hosts:
+    - dojo.gregori.eti.br
+    secretName: dojo-tls
   rules:
-  - http:
+  - host: dojo.gregori.eti.br
+    http:
       paths:
       - path: /
         pathType: Prefix
@@ -21,12 +26,15 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: dojo-backend-ingress
-  annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web
 spec:
   ingressClassName: traefik
+  tls:
+  - hosts:
+    - dojo.gregori.eti.br
+    secretName: dojo-tls
   rules:
-  - http:
+  - host: dojo.gregori.eti.br
+    http:
       paths:
       - path: /api
         pathType: Prefix
