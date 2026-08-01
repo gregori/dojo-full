@@ -1,0 +1,104 @@
+name: CD - Cluster Bootstrap (one-time HTTPS setup)
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Bootstrap action to run'
+        required: true
+        type: choice
+        options:
+          - status
+          - fix-traefik-ports
+          - install-cert-manager
+          - create-cluster-issuer
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Status check
+        if: github.event.inputs.action == 'status'
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          script: |
+            echo "--- Traefik HelmChart ---"
+            sudo k3s kubectl get helmchart -n kube-system traefik -o yaml || true
+            echo "--- Traefik HelmChartConfig ---"
+            sudo k3s kubectl get helmchartconfig -n kube-system traefik -o yaml || true
+            echo "--- Traefik pod args ---"
+            sudo k3s kubectl get pods -n kube-system -l app.kubernetes.io/name=traefik -o jsonpath='{.items[0].spec.containers[0].args}' || true
+            echo ""
+            echo "--- Traefik service ---"
+            sudo k3s kubectl get svc -n kube-system traefik -o yaml || true
+            echo "--- Ingress (dojo) ---"
+            sudo k3s kubectl get ingress -n dojo -o wide
+            echo "--- cert-manager namespace ---"
+            sudo k3s kubectl get ns cert-manager || echo "not installed"
+
+      - name: Fix Traefik exposed ports
+        if: github.event.inputs.action == 'fix-traefik-ports'
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          script: |
+            sudo k3s kubectl apply -f - <<'EOF'
+            apiVersion: helm.cattle.io/v1
+            kind: HelmChartConfig
+            metadata:
+              name: traefik
+              namespace: kube-system
+            spec:
+              valuesContent: |-
+                ports:
+                  web:
+                    exposedPort: 80
+                    redirectTo: null
+                  websecure:
+                    exposedPort: 443
+            EOF
+            sleep 5
+            sudo k3s kubectl get pods -n kube-system -l app.kubernetes.io/name=traefik
+
+      - name: Install cert-manager
+        if: github.event.inputs.action == 'install-cert-manager'
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          command_timeout: 5m
+          script: |
+            sudo k3s kubectl apply -f https://github.com/cert-manager/cert-manager/releases/latest/download/cert-manager.yaml
+            sudo k3s kubectl wait --for=condition=Available --timeout=180s -n cert-manager deployment/cert-manager deployment/cert-manager-webhook deployment/cert-manager-cainjector
+
+      - name: Create ClusterIssuer
+        if: github.event.inputs.action == 'create-cluster-issuer'
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          script: |
+            sudo k3s kubectl apply -f - <<'EOF'
+            apiVersion: cert-manager.io/v1
+            kind: ClusterIssuer
+            metadata:
+              name: letsencrypt-prod
+            spec:
+              acme:
+                server: https://acme-v02.api.letsencrypt.org/directory
+                email: rodrigo.gregori@gmail.com
+                privateKeySecretRef:
+                  name: letsencrypt-prod-key
+                solvers:
+                - http01:
+                    ingress:
+                      ingressClassName: traefik
+            EOF
+            sudo k3s kubectl get clusterissuer letsencrypt-prod -o wide
