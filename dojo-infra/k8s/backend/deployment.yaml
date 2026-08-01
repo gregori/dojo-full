@@ -35,6 +35,15 @@ spec:
               key: secret-key
         - name: ENVIRONMENT
           value: "production"
+        - name: VAPID_PUBLIC_KEY
+          value: "change-me-vapid-public-key"
+        - name: VAPID_SUBJECT
+          value: "mailto:admin@example.com"
+        - name: VAPID_PRIVATE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: dojo-secrets
+              key: vapid-private-key
         resources:
           requests:
             memory: "256Mi"

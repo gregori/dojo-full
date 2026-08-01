@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "run_id": "notification-hub",
+  "work_item": "Notification feature for the hub: at minimum notify on pre-check-in, medical exam expiration, and monthly fee (mensalidade) expiration",
+  "status": "review_approved_followup_applied",
+  "created_at": "2026-07-30",
+  "updated_at": "2026-07-31",
+  "requirements_review": "approved_with_followups",
+  "requirements_review_path": ".workflow/runs/notification-hub/review-requirements.md",
+  "requirements_path": ".workflow/runs/notification-hub/requirements.md",
+  "plan_path": ".workflow/runs/notification-hub/plan.md",
+  "handoff_path": ".workflow/runs/notification-hub/handoff.md",
+  "review_verdict": "APPROVED (2026-07-31) -- independent reviewer confirmed the implementation matches plan.md closely: NH-03/04/05/06/07 trigger logic, idempotency (UniqueConstraint + IntegrityError catch, verified with a real simulated-race test), America/Sao_Paulo day-boundary arithmetic, BalanceService call signature, mark_read student-scoping, rate limiting on all three credential endpoints, no VAPID-private-key leakage, no localStorage credential persistence, no XSS surface, and service-worker scope were all independently verified, not just trusted from self-report. One High finding (deployment blocker): .github/workflows/deploy-k8s.yml did not create the vapid-private-key Kubernetes secret entry nor substitute the real VAPID_PUBLIC_KEY value, which would have broken both the new CronJob and the backend Deployment itself (CreateContainerConfigError) on a real deploy. Root fixed this directly (outside all three specialists' write scopes): added --from-literal=vapid-private-key=\"${{ secrets.VAPID_PRIVATE_KEY }}\" to the dojo-secrets creation step, and a sed substitution replacing the change-me-vapid-public-key placeholder with ${{ secrets.VAPID_PUBLIC_KEY }} during the Render/Substitute/Apply step, both in .github/workflows/deploy-k8s.yml. One Low/informational finding (RateLimiter.check_rate_limit's datetime.utcnow() usage) is pre-existing, not introduced by this feature, left untouched. Deterministic gates independently re-run by root (not just agent self-report): backend ruff check/format clean, pytest 505 passed (0 failed, 95% coverage, new files 100%), full Behave suite 73/73 scenarios passed; frontend eslint 0 errors, prettier clean, tsc+vite build clean, jest 84/84 passed; dojo-infra/k8s kustomize build succeeds.",
+  "review_path": null,
+  "next_action": "Implemented and reviewed. Two new GitHub Actions repository secrets (VAPID_PRIVATE_KEY, VAPID_PUBLIC_KEY) must be added by a repo admin before deploy-k8s.yml's next run against master, or the backend Deployment/CronJob will fail to start (CreateContainerConfigError) -- generate via `vapid --gen` (bundled with pywebpush) as noted in plan.md. Not committed/pushed yet -- awaiting user's explicit go-ahead.",
+  "next_agent": null,
+  "checks_path": ".workflow/runs/notification-hub/checks.json"
+}

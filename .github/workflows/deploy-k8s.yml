@@ -28,6 +28,7 @@ jobs:
               --from-literal=mysql-password="${{ secrets.MYSQL_PASSWORD }}" \
               --from-literal=secret-key="${{ secrets.SECRET_KEY }}" \
               --from-literal=database-url="mysql+pymysql://dojo_user:${{ secrets.MYSQL_PASSWORD }}@mysql:3306/dojo_db" \
+              --from-literal=vapid-private-key="${{ secrets.VAPID_PRIVATE_KEY }}" \
               --dry-run=client -o yaml | sudo k3s kubectl apply -f -
             sudo k3s kubectl create secret docker-registry ocir-secret -n dojo \
               --docker-server=${{ secrets.OCI_REGISTRY }} \
@@ -54,9 +55,11 @@ jobs:
           script: |
             REGISTRY=${{ secrets.OCI_REGISTRY }}
             NAMESPACE=${{ secrets.OCI_TENANCY_NAMESPACE }}
+            VAPID_PUBLIC_KEY="${{ secrets.VAPID_PUBLIC_KEY }}"
             # Render kustomize output, replace placeholders in single stream, then apply
             sudo k3s kubectl kustomize /tmp/dojo-manifests/dojo-infra/k8s/ | \
-              sed -e "s|<region>\.ocir\.io/<tenancy>|$REGISTRY/$NAMESPACE|g" | \
+              sed -e "s|<region>\.ocir\.io/<tenancy>|$REGISTRY/$NAMESPACE|g" \
+                  -e "s|change-me-vapid-public-key|$VAPID_PUBLIC_KEY|g" | \
               sudo k3s kubectl apply -f -
 
       - name: Wait for Rollout via SSH
