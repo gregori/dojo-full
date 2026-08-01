@@ -22,6 +22,11 @@ resource "oci_core_instance" "k8s_node" {
     subnet_id        = var.subnet_id
     assign_public_ip = true
     display_name     = "dojo-k8s-node-vnic"
+    # Required because this node routes/masquerades pod-network traffic
+    # (Flannel NAT) through this VNIC; OCI's source/dest check (default
+    # on) rejects any packet whose source IP doesn't match the VNIC's
+    # own address, which blocks all pod-initiated outbound connections.
+    skip_source_dest_check = true
   }
 
   source_details {
