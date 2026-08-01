@@ -222,6 +222,12 @@ jobs:
             sudo k3s kubectl exec -n cert-manager netdebug6 -- sh -c "curl -sSv --max-time 4 telnet://10.0.1.8:22" 2>&1 | tail -10 || true
             echo "--- host node's ARP/neighbor table for pod IP ---"
             ip neigh show | grep "$POD_IP" || echo "no neighbor entry"
+            echo "--- TCP to 8.8.8.8:443 (same external IP ping already proved reachable, but TCP+443) ---"
+            sudo k3s kubectl exec -n cert-manager netdebug6 -- sh -c "curl -sSv --max-time 4 https://8.8.8.8/ -k" 2>&1 | tail -12 || true
+            echo "--- TCP to 8.8.8.8:53 (external IP, different port, DNS-over-TCP) ---"
+            sudo k3s kubectl exec -n cert-manager netdebug6 -- sh -c "curl -sSv --max-time 4 telnet://8.8.8.8:53" 2>&1 | tail -10 || true
+            echo "--- TCP to 1.1.1.1:443 (different external provider entirely, not Cloudflare-fronted like our earlier targets... wait this IS cloudflare, use a third-party) ---"
+            sudo k3s kubectl exec -n cert-manager netdebug6 -- sh -c "curl -sSv --max-time 4 https://1.1.1.1/ -k" 2>&1 | tail -12 || true
             sudo k3s kubectl delete pod netdebug6 -n cert-manager --ignore-not-found --now 2>&1 || true
 
       - name: Fix Traefik exposed ports
