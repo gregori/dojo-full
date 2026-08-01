@@ -96,7 +96,7 @@ jobs:
           exit 1
 
       - name: Run Cypress e2e tests
-        run: npx cypress run --spec "cypress/e2e/precheckin.cy.ts,cypress/e2e/medical-exam.cy.ts,cypress/e2e/financial.cy.ts,cypress/e2e/contracts.cy.ts,cypress/e2e/reports.cy.ts"
+        run: npx cypress run --spec "cypress/e2e/precheckin.cy.ts,cypress/e2e/medical-exam.cy.ts,cypress/e2e/financial.cy.ts,cypress/e2e/contracts.cy.ts,cypress/e2e/reports.cy.ts,cypress/e2e/notification-hub.cy.ts"
         working-directory: dojo-app/frontend
         env:
           VITE_API_URL: http://localhost:8000
