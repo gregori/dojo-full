@@ -38,6 +38,17 @@ jobs:
             sudo k3s kubectl get ingress -n dojo -o wide
             echo "--- cert-manager namespace ---"
             sudo k3s kubectl get ns cert-manager || echo "not installed"
+            echo "--- cert-manager pods ---"
+            sudo k3s kubectl get pods -n cert-manager -o wide || true
+            echo "--- cert-manager webhook logs (last 40 lines) ---"
+            sudo k3s kubectl logs -n cert-manager -l app.kubernetes.io/component=webhook --tail=40 || true
+            echo "--- cainjector logs (last 40 lines) ---"
+            sudo k3s kubectl logs -n cert-manager -l app.kubernetes.io/component=cainjector --tail=40 || true
+            echo "--- ValidatingWebhookConfiguration caBundle present? ---"
+            sudo k3s kubectl get validatingwebhookconfiguration cert-manager-webhook -o jsonpath='{.webhooks[0].clientConfig.caBundle}' | head -c 50
+            echo ""
+            echo "--- node time ---"
+            date -u
 
       - name: Fix Traefik exposed ports
         if: github.event.inputs.action == 'fix-traefik-ports'
