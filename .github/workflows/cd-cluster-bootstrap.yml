@@ -13,6 +13,7 @@ on:
           - install-cert-manager
           - create-cluster-issuer
           - test-nwplcy-default-accept
+          - trace-packet
 
 jobs:
   bootstrap:
@@ -166,6 +167,34 @@ jobs:
             sudo k3s kubectl delete pod netdebug4 -n cert-manager --ignore-not-found --now 2>&1 || true
             echo "--- current KUBE-NWPLCY-DEFAULT content ---"
             sudo iptables -L KUBE-NWPLCY-DEFAULT -n -v --line-numbers
+
+      - name: Trace packet through netfilter with iptables -j TRACE
+        if: github.event.inputs.action == 'trace-packet'
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          script: |
+            sudo modprobe nf_log_ipv4 2>&1 || true
+            sudo sysctl -w net.netfilter.nf_log.2=nf_log_ipv4 2>&1 || true
+            sudo iptables -t raw -I OUTPUT 1 -d 4.228.31.150 -j TRACE
+            sudo iptables -t raw -I PREROUTING 1 -d 4.228.31.150 -j TRACE
+            sudo journalctl -k --since "1 second ago" -f > /tmp/trace.log 2>&1 &
+            JLOG_PID=$!
+            sudo k3s kubectl delete pod netdebug5 -n cert-manager --ignore-not-found --now 2>&1 || true
+            sudo k3s kubectl run netdebug5 -n cert-manager --image=curlimages/curl:8.10.1 --restart=Never --command -- sleep 30
+            sudo k3s kubectl wait --for=condition=Ready --timeout=30s pod/netdebug5 -n cert-manager || true
+            sudo k3s kubectl exec -n cert-manager netdebug5 -- curl -sS --max-time 4 https://github.com 2>&1 || true
+            sleep 2
+            sudo kill $JLOG_PID 2>&1 || true
+            sudo k3s kubectl delete pod netdebug5 -n cert-manager --ignore-not-found --now 2>&1 || true
+            sudo iptables -t raw -D OUTPUT -d 4.228.31.150 -j TRACE 2>&1 || true
+            sudo iptables -t raw -D PREROUTING -d 4.228.31.150 -j TRACE 2>&1 || true
+            echo "--- TRACE log ---"
+            cat /tmp/trace.log 2>&1 | grep -i "TRACE:" | head -60
+            echo "--- if empty, dmesg fallback ---"
+            sudo dmesg -T 2>&1 | grep -i "TRACE:" | tail -60 || true
 
       - name: Fix Traefik exposed ports
         if: github.event.inputs.action == 'fix-traefik-ports'
