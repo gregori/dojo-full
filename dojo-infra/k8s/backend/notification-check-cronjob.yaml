@@ -1,0 +1,63 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: notification-check
+  namespace: dojo
+  labels:
+    app: notification-check
+spec:
+  # Hourly, not once-daily -- a missed tick only skips one hour's chance to
+  # catch a threshold crossing, not a whole day's (see plan.md Autocritica:
+  # "Cadence" for why a lookback window was rejected in favor of this).
+  schedule: "0 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      # Small, sane bounds for a lightweight job expected to finish in
+      # seconds: 2 retries before giving up, and a 5-minute hard cap so a
+      # stuck run can never bleed into the next hourly tick.
+      backoffLimit: 2
+      activeDeadlineSeconds: 300
+      template:
+        metadata:
+          labels:
+            app: notification-check
+        spec:
+          restartPolicy: OnFailure
+          imagePullSecrets:
+          - name: ocir-secret
+          containers:
+          - name: notification-check
+            image: <region>.ocir.io/<tenancy>/dojo-backend:latest
+            command: ["python", "-m", "app.jobs.notification_check"]
+            env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: dojo-secrets
+                  key: database-url
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: dojo-secrets
+                  key: secret-key
+            - name: ENVIRONMENT
+              value: "production"
+            - name: VAPID_PUBLIC_KEY
+              value: "change-me-vapid-public-key"
+            - name: VAPID_SUBJECT
+              value: "mailto:admin@example.com"
+            - name: VAPID_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: dojo-secrets
+                  key: vapid-private-key
+            resources:
+              requests:
+                memory: "128Mi"
+                cpu: "100m"
+              limits:
+                memory: "256Mi"
+                cpu: "250m"

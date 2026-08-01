@@ -13,6 +13,7 @@ from app.api import (
     exams,
     medical_exams,
     mensalidades,
+    notifications,
     organizations,
     payments,
     plans,
@@ -57,6 +58,7 @@ app.include_router(contracts.router)
 app.include_router(reports.router)
 app.include_router(organizations.router)
 app.include_router(dojos.router)
+app.include_router(notifications.router)
 
 
 @app.get("/")

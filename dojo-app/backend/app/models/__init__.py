@@ -181,6 +181,8 @@ class Student(UUIDMixin, TimestampMixin, Base):
     mensalidades: Mapped[list["Mensalidade"]] = relationship(back_populates="student")
     payments: Mapped[list["Payment"]] = relationship(back_populates="student")
     contracts: Mapped[list["Contract"]] = relationship(back_populates="student")
+    notifications: Mapped[list["Notification"]] = relationship(back_populates="student")
+    push_subscriptions: Mapped[list["PushSubscription"]] = relationship(back_populates="student")
 
 
 class EventSeries(UUIDMixin, TimestampMixin, Base):
@@ -589,3 +591,57 @@ class BeltPromotion(UUIDMixin, TimestampMixin, Base):
     belt: Mapped[Belt] = relationship()
     promoter: Mapped[User | None] = relationship(foreign_keys=[promoted_by])
     exam: Mapped[Exam | None] = relationship()
+
+
+class Notification(UUIDMixin, TimestampMixin, Base):
+    """A one-time, student-facing reminder for a single event/exam/mensalidade occurrence.
+
+    ``message`` is fully rendered and frozen at creation time (NH-10) -- the
+    history view never joins back to Event/MedicalExam/Mensalidade to display
+    it. ``reference_id`` is the underlying record's id, deliberately not a FK
+    (see plan.md Autocritica): it exists only as half of the idempotency key
+    below, never dereferenced/joined at read time.
+
+    The three-way UniqueConstraint set is this feature's concrete mechanism
+    for NH-06 ("fires at most once per occurrence, ever"): student_id +
+    notification_type + reference_id together identify one specific
+    occurrence for one specific student, exactly once, enforced by the
+    database, not just application logic (mirrors EventSeries' own
+    UNIQUE(event_series_id, occurrence_date) idiom).
+    """
+
+    __tablename__ = "notifications"
+    __table_args__ = (
+        UniqueConstraint(
+            "student_id", "notification_type", "reference_id", name="uq_notifications_student_type_reference"
+        ),
+    )
+
+    student_id: Mapped[str] = mapped_column(ForeignKey("students.id"), nullable=False)
+    notification_type: Mapped[str] = mapped_column(
+        Enum("pre_checkin_reminder", "medical_exam_expiring", "mensalidade_due", name="notification_type"),
+        nullable=False,
+    )
+    reference_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    student: Mapped["Student"] = relationship(back_populates="notifications")
+
+
+class PushSubscription(UUIDMixin, TimestampMixin, Base):
+    """One browser's Web Push subscription, linked to a student (NH-01/NH-02).
+
+    No uniqueness constraint on ``endpoint`` -- NH-02 explicitly allows more
+    than one subscription row per physical device (see plan.md Autocritica).
+    Multiple rows per student are expected and all receive deliveries (NH-09).
+    """
+
+    __tablename__ = "push_subscriptions"
+
+    student_id: Mapped[str] = mapped_column(ForeignKey("students.id"), nullable=False)
+    endpoint: Mapped[str] = mapped_column(String(500), nullable=False)
+    p256dh_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    auth_key: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    student: Mapped["Student"] = relationship(back_populates="push_subscriptions")

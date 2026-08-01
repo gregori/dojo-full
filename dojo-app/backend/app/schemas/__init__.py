@@ -57,6 +57,13 @@ from app.schemas.mensalidade import (
     MensalidadeResponse,
     OverdueDashboardItem,
 )
+from app.schemas.notification import (
+    NotificationResponse,
+    PushSubscribeRequest,
+    PushSubscriptionKeys,
+    StudentCredentials,
+    VapidPublicKeyResponse,
+)
 from app.schemas.organization import (
     DojoCreate,
     DojoResponse,
