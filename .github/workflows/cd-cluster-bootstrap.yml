@@ -56,18 +56,24 @@ jobs:
             sudo iptables -L KUBE-FORWARD -n -v 2>&1 || true
             echo "--- KUBE-SERVICES/KUBE-FIREWALL/KUBE-EXTERNAL-SERVICES sub-chains (if present) ---"
             sudo iptables -L KUBE-FIREWALL -n -v 2>&1 || true
+            echo "--- primary physical interface ---"
+            PRIMARY_IF=$(ip route get 8.8.8.8 | awk '/dev/ {for(i=1;i<=NF;i++) if ($i=="dev") print $(i+1)}')
+            echo "primary interface: $PRIMARY_IF"
+            ip -4 addr show "$PRIMARY_IF" 2>&1
             echo "--- tcpdump availability ---"
             which tcpdump 2>&1 || sudo dnf install -y tcpdump 2>&1 | tail -5 || true
-            echo "--- realtime tcpdump while a debug pod tries to connect ---"
+            echo "--- realtime tcpdump ON THE PHYSICAL INTERFACE (not 'any', which can show pre-NAT addresses misleadingly) while a debug pod tries to connect ---"
             sudo k3s kubectl delete pod netdebug2 -n cert-manager --ignore-not-found --now 2>&1 || true
             sudo k3s kubectl run netdebug2 -n cert-manager --image=curlimages/curl:8.10.1 --restart=Never --command -- sleep 30
             sudo k3s kubectl wait --for=condition=Ready --timeout=30s pod/netdebug2 -n cert-manager || true
-            sudo timeout 8 tcpdump -ni any host 172.65.32.248 -c 20 > /tmp/tcpdump.out 2>&1 &
+            sudo timeout 8 tcpdump -ni "$PRIMARY_IF" host 172.65.32.248 -c 20 > /tmp/tcpdump_phys.out 2>&1 &
             TCPDUMP_PID=$!
             sleep 1
             sudo k3s kubectl exec -n cert-manager netdebug2 -- curl -sS --max-time 4 https://acme-v02.api.letsencrypt.org/directory 2>&1 || true
             wait $TCPDUMP_PID 2>&1 || true
-            cat /tmp/tcpdump.out 2>&1 || true
+            cat /tmp/tcpdump_phys.out 2>&1 || true
+            echo "--- conntrack table entries for this pod IP ---"
+            sudo conntrack -L 2>&1 | grep "10.42.0" | head -10 || echo "conntrack not available or no entries"
             sudo k3s kubectl delete pod netdebug2 -n cert-manager --ignore-not-found --now 2>&1 || true
             echo "--- firewalld status ---"
             sudo systemctl is-active firewalld 2>&1 || true
