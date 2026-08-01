@@ -50,6 +50,25 @@ jobs:
             curl -sS --max-time 8 -L http://169.254.169.254/opc/v2/vnics/ -H "Authorization: Bearer Oracle" 2>&1
             echo "--- outbound curl from node with explicit source IP = pod gateway (10.42.0.1) sanity check ---"
             curl -sSv --max-time 8 --interface 10.0.1.8 https://github.com 2>&1 | tail -10 || true
+            echo "--- iptables filter FORWARD chain (full, unfiltered) ---"
+            sudo iptables -L FORWARD -n -v --line-numbers 2>&1
+            echo "--- KUBE-FORWARD sub-chain (if present) ---"
+            sudo iptables -L KUBE-FORWARD -n -v 2>&1 || true
+            echo "--- KUBE-SERVICES/KUBE-FIREWALL/KUBE-EXTERNAL-SERVICES sub-chains (if present) ---"
+            sudo iptables -L KUBE-FIREWALL -n -v 2>&1 || true
+            echo "--- tcpdump availability ---"
+            which tcpdump 2>&1 || sudo dnf install -y tcpdump 2>&1 | tail -5 || true
+            echo "--- realtime tcpdump while a debug pod tries to connect ---"
+            sudo k3s kubectl delete pod netdebug2 -n cert-manager --ignore-not-found --now 2>&1 || true
+            sudo k3s kubectl run netdebug2 -n cert-manager --image=curlimages/curl:8.10.1 --restart=Never --command -- sleep 30
+            sudo k3s kubectl wait --for=condition=Ready --timeout=30s pod/netdebug2 -n cert-manager || true
+            sudo timeout 8 tcpdump -ni any host 172.65.32.248 -c 20 > /tmp/tcpdump.out 2>&1 &
+            TCPDUMP_PID=$!
+            sleep 1
+            sudo k3s kubectl exec -n cert-manager netdebug2 -- curl -sS --max-time 4 https://acme-v02.api.letsencrypt.org/directory 2>&1 || true
+            wait $TCPDUMP_PID 2>&1 || true
+            cat /tmp/tcpdump.out 2>&1 || true
+            sudo k3s kubectl delete pod netdebug2 -n cert-manager --ignore-not-found --now 2>&1 || true
             echo "--- firewalld status ---"
             sudo systemctl is-active firewalld 2>&1 || true
             echo "--- iptables REJECT/DROP rules (OUTPUT/FORWARD) ---"
