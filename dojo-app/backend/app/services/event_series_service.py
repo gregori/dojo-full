@@ -53,7 +53,7 @@ class EventSeriesService:
             title=data.title,
             event_type_id=data.event_type_id,
             description=data.description,
-            location=data.location,
+            dojo_id=data.dojo_id,
             minimum_belt_id=data.minimum_belt_id,
             organization_id=data.organization_id,
             days_of_week=_serialize_days(data.days_of_week),
@@ -139,7 +139,7 @@ class EventSeriesService:
                 event.title = series.title
                 event.event_type_id = series.event_type_id
                 event.description = series.description
-                event.location = series.location
+                event.location = EventSeriesService._resolve_location(series)
                 event.minimum_belt_id = series.minimum_belt_id
                 event.start_datetime = datetime.combine(event.occurrence_date, series.start_time, tzinfo=APP_TIMEZONE)
                 event.end_datetime = (
@@ -234,6 +234,11 @@ class EventSeriesService:
         return occurrence_date.weekday() in _parse_days(series.days_of_week)
 
     @staticmethod
+    def _resolve_location(series: EventSeries) -> str | None:
+        """Event.location stays free text; a series-linked dojo resolves to its name."""
+        return series.dojo.name if series.dojo_id else None
+
+    @staticmethod
     def _get_or_create_occurrence(db: Session, series: EventSeries, occurrence_date) -> tuple[Event, bool]:
         """The single idempotent-creation choke point (RES-02 + RES-04 share it).
 
@@ -254,7 +259,7 @@ class EventSeriesService:
             title=series.title,
             event_type_id=series.event_type_id,
             description=series.description,
-            location=series.location,
+            location=EventSeriesService._resolve_location(series),
             minimum_belt_id=series.minimum_belt_id,
             start_datetime=start_datetime,
             end_datetime=end_datetime,

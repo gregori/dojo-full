@@ -7,6 +7,7 @@ from app.api import (
     checkin,
     contract_templates,
     contracts,
+    dojos,
     event_series,
     events,
     exams,
@@ -56,6 +57,7 @@ app.include_router(contract_templates.router)
 app.include_router(contracts.router)
 app.include_router(reports.router)
 app.include_router(organizations.router)
+app.include_router(dojos.router)
 app.include_router(notifications.router)
 
 

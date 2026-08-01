@@ -24,12 +24,17 @@ interface Belt {
   category: string
 }
 
+interface Dojo {
+  id: string
+  name: string
+}
+
 interface EventSeries {
   id: string
   title: string
   event_type_id: string
   description?: string | null
-  location?: string | null
+  dojo_id?: string | null
   minimum_belt_id?: string | null
   days_of_week: number[]
   start_time: string
@@ -49,7 +54,7 @@ interface EventSeriesFormData {
   title: string
   event_type_id: string
   description: string
-  location: string
+  dojo_id: string
   minimum_belt_id: string
   days_of_week: number[]
   start_time: string
@@ -65,7 +70,7 @@ const emptyFormData: EventSeriesFormData = {
   title: '',
   event_type_id: '',
   description: '',
-  location: '',
+  dojo_id: '',
   minimum_belt_id: '',
   days_of_week: [],
   start_time: '07:00',
@@ -82,7 +87,7 @@ function buildPayload(formData: EventSeriesFormData) {
     title: formData.title,
     event_type_id: formData.event_type_id,
     description: formData.description || undefined,
-    location: formData.location || undefined,
+    dojo_id: formData.dojo_id || undefined,
     minimum_belt_id: formData.minimum_belt_id || undefined,
     days_of_week: formData.days_of_week,
     start_time: `${formData.start_time}:00`,
@@ -115,6 +120,11 @@ export default function EventSeriesPage() {
   const { data: belts } = useQuery<Belt[]>({
     queryKey: ['belts'],
     queryFn: async () => (await api.get('/api/v1/belts')).data,
+  })
+
+  const { data: dojos } = useQuery<Dojo[]>({
+    queryKey: ['dojos'],
+    queryFn: async () => (await api.get('/api/v1/dojos')).data,
   })
 
   const resetForm = () => setFormData(emptyFormData)
@@ -200,7 +210,7 @@ export default function EventSeriesPage() {
       title: series.title,
       event_type_id: series.event_type_id,
       description: series.description || '',
-      location: series.location || '',
+      dojo_id: series.dojo_id || '',
       minimum_belt_id: series.minimum_belt_id || '',
       days_of_week: series.days_of_week,
       start_time: series.start_time.slice(0, 5),
@@ -270,13 +280,19 @@ export default function EventSeriesPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Local</label>
-              <input
-                type="text"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              <label className="block text-sm font-medium text-gray-700 mb-1">Dojo</label>
+              <select
+                value={formData.dojo_id}
+                onChange={(e) => setFormData({ ...formData, dojo_id: e.target.value })}
                 className="w-full px-3 py-2 border rounded-md"
-              />
+              >
+                <option value="">Sem dojo definido</option>
+                {dojos?.map((dojo) => (
+                  <option key={dojo.id} value={dojo.id}>
+                    {dojo.name}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">

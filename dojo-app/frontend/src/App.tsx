@@ -19,6 +19,7 @@ import BeltsPage from './pages/BeltsPage'
 import DojosPage from './pages/DojosPage'
 import EventTypesPage from './pages/EventTypesPage'
 import ReportsPage from './pages/ReportsPage'
+import UsersPage from './pages/UsersPage'
 import Layout from './components/Layout'
 import { ToastContainer } from './components/Toast'
 
@@ -149,6 +150,14 @@ function App() {
               element={
                 <AdminRoute>
                   <DojosPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/users"
+              element={
+                <AdminRoute>
+                  <UsersPage />
                 </AdminRoute>
               }
             />
