@@ -36,6 +36,9 @@ jobs:
             sudo k3s kubectl get svc -n kube-system traefik -o yaml || true
             echo "--- Ingress (dojo) ---"
             sudo k3s kubectl get ingress -n dojo -o wide
+            echo "--- Certificate (dojo) ---"
+            sudo k3s kubectl get certificate -n dojo -o wide || true
+            sudo k3s kubectl describe certificate -n dojo dojo-tls || true
             echo "--- cert-manager namespace ---"
             sudo k3s kubectl get ns cert-manager || echo "not installed"
             echo "--- cert-manager pods ---"
