@@ -33,11 +33,15 @@ from app.models import (
     EventType,
     Exam,
     ExamParticipant,
+    MedicalExam,
     Mensalidade,
+    Notification,
     Organization,
     Payment,
     PlanTier,
     PlanVersion,
+    PreCheckIn,
+    PushSubscription,
     Student,
     StudentPlan,
     User,
@@ -495,3 +499,80 @@ def make_payment(db, student_id=None, recorded_by=None, **kwargs):
     db.add(payment)
     db.flush()
     return payment
+
+
+def make_pre_checkin(db, event_id=None, student_id=None, **kwargs):
+    from datetime import datetime
+
+    if event_id is None:
+        event = make_event(db)
+        event_id = event.id
+    if student_id is None:
+        student = make_student(db)
+        student_id = student.id
+    defaults = {
+        "event_id": event_id,
+        "student_id": student_id,
+        "status": "confirmed",
+        "confirmed_at": datetime.now(UTC),
+    }
+    defaults.update(kwargs)
+    pre_checkin = PreCheckIn(**defaults)
+    db.add(pre_checkin)
+    db.flush()
+    return pre_checkin
+
+
+def make_medical_exam(db, student_id=None, **kwargs):
+    from datetime import datetime
+
+    if student_id is None:
+        student = make_student(db)
+        student_id = student.id
+    defaults = {
+        "student_id": student_id,
+        "exam_date": datetime.now(UTC),
+        "expires_at": datetime.now(UTC),
+        "status": "active",
+    }
+    defaults.update(kwargs)
+    medical_exam = MedicalExam(**defaults)
+    db.add(medical_exam)
+    db.flush()
+    return medical_exam
+
+
+def make_notification(db, student_id=None, **kwargs):
+    if student_id is None:
+        student = make_student(db)
+        student_id = student.id
+    n = _next_id()
+    defaults = {
+        "student_id": student_id,
+        "notification_type": "pre_checkin_reminder",
+        "reference_id": f"ref-{n}",
+        "message": f"Test notification message {n}",
+    }
+    defaults.update(kwargs)
+    notification = Notification(**defaults)
+    db.add(notification)
+    db.flush()
+    return notification
+
+
+def make_push_subscription(db, student_id=None, **kwargs):
+    n = _next_id()
+    if student_id is None:
+        student = make_student(db)
+        student_id = student.id
+    defaults = {
+        "student_id": student_id,
+        "endpoint": f"https://push.example.com/subscription/{n}",
+        "p256dh_key": f"p256dh-key-{n}",
+        "auth_key": f"auth-key-{n}",
+    }
+    defaults.update(kwargs)
+    subscription = PushSubscription(**defaults)
+    db.add(subscription)
+    db.flush()
+    return subscription

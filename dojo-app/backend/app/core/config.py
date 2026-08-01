@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     oci_private_key: str = ""
     oci_region: str = "sa-saopaulo-1"
 
+    # Web Push (VAPID, RFC 8292)
+    vapid_private_key: str = ""
+    vapid_public_key: str = ""
+    vapid_subject: str = "mailto:admin@example.com"
+
     class Config:
         env_file = ".env"
         case_sensitive = False

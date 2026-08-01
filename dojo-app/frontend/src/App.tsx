@@ -10,6 +10,7 @@ import CheckInPage from './pages/CheckInPage'
 import CheckInPrintPage from './pages/CheckInPrintPage'
 import PreCheckInPage from './pages/PreCheckInPage'
 import MedicalExamPage from './pages/MedicalExamPage'
+import NotificationHubPage from './pages/NotificationHubPage'
 import ExamsPage from './pages/ExamsPage'
 import PlansPage from './pages/PlansPage'
 import ContractTemplatesPage from './pages/ContractTemplatesPage'
@@ -46,6 +47,7 @@ function App() {
             <Route path="/checkin" element={<CheckInPage />} />
             <Route path="/precheckin" element={<PreCheckInPage />} />
             <Route path="/medical-exam" element={<MedicalExamPage />} />
+            <Route path="/notifications" element={<NotificationHubPage />} />
             <Route
               path="/"
               element={

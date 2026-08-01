@@ -16,7 +16,7 @@ from factory.alchemy import SQLAlchemyModelFactory
 
 from app.core.security import get_password_hash
 from app.core.timezone import local_today
-from app.models import Belt, Event, EventSeries, EventType, Exam, Student, User
+from app.models import Belt, Event, EventSeries, EventType, Exam, Notification, PushSubscription, Student, User
 
 
 class UserFactory(SQLAlchemyModelFactory):
@@ -98,3 +98,23 @@ class ExamFactory(SQLAlchemyModelFactory):
     status = "scheduled"
     notes = ""
     created_by = factory.LazyAttribute(lambda _: UserFactory().id)
+
+
+class NotificationFactory(SQLAlchemyModelFactory):
+    class Meta:
+        model = Notification
+
+    student_id = factory.LazyAttribute(lambda _: StudentFactory().id)
+    notification_type = "pre_checkin_reminder"
+    reference_id = factory.Sequence(lambda n: f"ref-{n}")
+    message = factory.Sequence(lambda n: f"Notification message {n}")
+
+
+class PushSubscriptionFactory(SQLAlchemyModelFactory):
+    class Meta:
+        model = PushSubscription
+
+    student_id = factory.LazyAttribute(lambda _: StudentFactory().id)
+    endpoint = factory.Sequence(lambda n: f"https://push.example.com/endpoint/{n}")
+    p256dh_key = factory.Sequence(lambda n: f"p256dh-{n}")
+    auth_key = factory.Sequence(lambda n: f"auth-{n}")
