@@ -25,6 +25,10 @@ jobs:
           username: opc
           key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
           script: |
+            echo "--- Node health/uptime (sanity check after a failed boot-volume-replacement precheck) ---"
+            uptime
+            sudo k3s kubectl get nodes -o wide
+            sudo k3s kubectl get pods -A -o wide | grep -v Running
             echo "--- Node-level connectivity to Let's Encrypt ---"
             curl -v --max-time 8 https://acme-v02.api.letsencrypt.org/directory 2>&1 | tail -20
             echo "--- Pod-level connectivity to Let's Encrypt (dedicated debug pod, same cluster network) ---"
