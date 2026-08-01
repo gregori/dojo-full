@@ -42,6 +42,14 @@ jobs:
             echo "-- curl -v to a known-good external host (github.com) for comparison --"
             sudo k3s kubectl exec -n cert-manager netdebug -- curl -v --max-time 8 https://github.com 2>&1 | tail -10 || true
             sudo k3s kubectl delete pod netdebug -n cert-manager --ignore-not-found --now 2>&1 || true
+            echo "--- iptables nat POSTROUTING (MASQUERADE rules) ---"
+            sudo iptables -t nat -L POSTROUTING -n -v 2>&1
+            echo "--- ip_forward sysctl ---"
+            sudo sysctl net.ipv4.ip_forward 2>&1
+            echo "--- VNIC skip_source_dest_check (actual OCI API state, not terraform) ---"
+            curl -sS --max-time 8 -L http://169.254.169.254/opc/v2/vnics/ -H "Authorization: Bearer Oracle" 2>&1
+            echo "--- outbound curl from node with explicit source IP = pod gateway (10.42.0.1) sanity check ---"
+            curl -sSv --max-time 8 --interface 10.0.1.8 https://github.com 2>&1 | tail -10 || true
             echo "--- firewalld status ---"
             sudo systemctl is-active firewalld 2>&1 || true
             echo "--- iptables REJECT/DROP rules (OUTPUT/FORWARD) ---"
