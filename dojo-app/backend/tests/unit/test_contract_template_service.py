@@ -42,3 +42,18 @@ class TestCreateVersion:
 
     def test_get_active_version_returns_none_when_no_template_exists(self, db_session):
         assert ContractTemplateService.get_active_version(db_session) is None
+
+    def test_get_history_breaks_created_at_ties_deterministically(self, db_session):
+        """MySQL's whole-second DATETIME made two same-second creates order
+        arbitrarily (the ContractTemplatesPage e2e flake); id is the
+        documented tiebreaker, so an exact tie is still ordered predictably.
+        """
+        user = make_user(db_session)
+        tied_timestamp = datetime.now(UTC)
+        first = make_contract_template_version(db_session, created_by=user.id, created_at=tied_timestamp)
+        second = make_contract_template_version(db_session, created_by=user.id, created_at=tied_timestamp)
+
+        history = ContractTemplateService.get_history(db_session)
+
+        expected_order = sorted([first.id, second.id], reverse=True)
+        assert [v.id for v in history] == expected_order

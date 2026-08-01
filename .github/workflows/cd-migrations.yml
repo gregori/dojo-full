@@ -3,6 +3,11 @@ name: CD - Database Migrations
 on:
   workflow_dispatch:
     inputs:
+      reset_schema:
+        description: 'DANGER: drop and recreate the database before migrating (destroys all data)'
+        required: false
+        default: false
+        type: boolean
       migration_command:
         description: 'Alembic command to run'
         required: true
@@ -19,6 +24,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Reset database schema
+        if: github.event.inputs.reset_schema == 'true'
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          script: |
+            sudo k3s kubectl -n dojo exec deploy/mysql -- sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS dojo_db; CREATE DATABASE dojo_db;"'
+
       - name: Run database migration via k3s
         uses: appleboy/ssh-action@v1
         with:

@@ -18,6 +18,7 @@ from sqlalchemy import (
     UniqueConstraint,
     create_engine,
 )
+from sqlalchemy.dialects import mysql
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -34,11 +35,20 @@ class UUIDMixin:
 
 
 class TimestampMixin:
-    """Mixin to add created/updated timestamps."""
+    """Mixin to add created/updated timestamps.
 
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    MySQL's DATETIME truncates to whole seconds unless given an explicit
+    fractional-seconds precision (fsp): two rows created within the same
+    second are otherwise indistinguishable by created_at, which is exactly
+    what made ContractTemplateService.get_history's ordering flaky. fsp=6
+    (microseconds) matches what datetime.now() already produces in Python,
+    so no application code needs to change -- only the column's own
+    resolution was ever the bottleneck.
+    """
+
+    created_at: Mapped[datetime] = mapped_column(mysql.DATETIME(fsp=6), default=lambda: datetime.now(UTC))
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
+        mysql.DATETIME(fsp=6),
         default=lambda: datetime.now(UTC),
         onupdate=lambda: datetime.now(UTC),
     )
@@ -189,7 +199,7 @@ class EventSeries(UUIDMixin, TimestampMixin, Base):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     event_type_id: Mapped[str] = mapped_column(ForeignKey("event_types.id"), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    location: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    dojo_id: Mapped[str | None] = mapped_column(ForeignKey("dojos.id"), nullable=True)
     minimum_belt_id: Mapped[str | None] = mapped_column(ForeignKey("belts.id"), nullable=True)
     days_of_week: Mapped[str] = mapped_column(String(20), nullable=False)
     start_time: Mapped[time] = mapped_column(Time, nullable=False)
@@ -202,6 +212,7 @@ class EventSeries(UUIDMixin, TimestampMixin, Base):
     organization_id: Mapped[str | None] = mapped_column(ForeignKey("organizations.id"), nullable=True)
 
     event_type: Mapped["EventType"] = relationship()
+    dojo: Mapped[Dojo | None] = relationship()
     minimum_belt: Mapped[Belt | None] = relationship(foreign_keys=[minimum_belt_id])
     organization: Mapped[Organization | None] = relationship()
     occurrences: Mapped[list["Event"]] = relationship(back_populates="event_series")

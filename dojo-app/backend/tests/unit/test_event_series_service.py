@@ -15,6 +15,7 @@ from app.services.attendance_service import AttendanceService
 from app.services.event_series_service import DEFAULT_GENERATION_WINDOW_DAYS, EventSeriesService
 from tests.unit.conftest import (
     make_belt,
+    make_dojo,
     make_event,
     make_event_series,
     make_event_type,
@@ -551,6 +552,7 @@ class TestReconcileFutureOccurrences:
         et2 = make_event_type(db_session, name="New Type")
         belt = make_belt(db_session)
         user = make_user(db_session)
+        new_dojo = make_dojo(db_session, name="New Dojo")
         db_session.commit()
 
         today = local_today()
@@ -584,7 +586,7 @@ class TestReconcileFutureOccurrences:
             EventSeriesUpdate(
                 title="New Title",
                 event_type_id=et2.id,
-                location="New Location",
+                dojo_id=new_dojo.id,
                 minimum_belt_id=belt.id,
                 start_time=time(19, 30),
                 duration_minutes=90,
@@ -594,7 +596,7 @@ class TestReconcileFutureOccurrences:
         db_session.refresh(future_event)
         assert future_event.title == "New Title"
         assert future_event.event_type_id == et2.id
-        assert future_event.location == "New Location"
+        assert future_event.location == "New Dojo"
         assert future_event.minimum_belt_id == belt.id
         expected_start = datetime.combine(future_date, time(19, 30), tzinfo=APP_TIMEZONE).replace(tzinfo=None)
         assert future_event.start_datetime == expected_start

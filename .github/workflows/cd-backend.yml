@@ -73,3 +73,12 @@ jobs:
           key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
           script: |
             sudo k3s kubectl rollout status deployment/dojo-backend -n dojo --timeout=300s
+
+      - name: Run Database Migrations via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          script: |
+            sudo k3s kubectl -n dojo exec deploy/dojo-backend -- alembic upgrade head
