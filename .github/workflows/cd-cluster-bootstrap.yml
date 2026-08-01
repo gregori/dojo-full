@@ -12,6 +12,7 @@ on:
           - fix-traefik-ports
           - install-cert-manager
           - create-cluster-issuer
+          - test-nwplcy-default-accept
 
 jobs:
   bootstrap:
@@ -142,6 +143,29 @@ jobs:
             echo ""
             echo "--- node time ---"
             date -u
+
+      - name: Test - insert temporary ACCEPT at top of KUBE-NWPLCY-DEFAULT
+        if: github.event.inputs.action == 'test-nwplcy-default-accept'
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.K8S_NODE_PUBLIC_IP }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          script: |
+            # Purely diagnostic and ephemeral: kube-router will overwrite this
+            # chain on its next reconciliation loop regardless. Confirms
+            # whether KUBE-NWPLCY-DEFAULT (reached by every pod's egress path
+            # even with zero NetworkPolicy objects in the cluster) is really
+            # the block, before looking for the proper permanent fix.
+            sudo iptables -I KUBE-NWPLCY-DEFAULT 1 -j ACCEPT
+            echo "--- rule inserted, testing egress now ---"
+            sudo k3s kubectl delete pod netdebug4 -n cert-manager --ignore-not-found --now 2>&1 || true
+            sudo k3s kubectl run netdebug4 -n cert-manager --image=curlimages/curl:8.10.1 --restart=Never --command -- sleep 30
+            sudo k3s kubectl wait --for=condition=Ready --timeout=30s pod/netdebug4 -n cert-manager || true
+            sudo k3s kubectl exec -n cert-manager netdebug4 -- curl -sS -v --max-time 6 https://github.com 2>&1 | tail -15 || true
+            sudo k3s kubectl delete pod netdebug4 -n cert-manager --ignore-not-found --now 2>&1 || true
+            echo "--- current KUBE-NWPLCY-DEFAULT content ---"
+            sudo iptables -L KUBE-NWPLCY-DEFAULT -n -v --line-numbers
 
       - name: Fix Traefik exposed ports
         if: github.event.inputs.action == 'fix-traefik-ports'
